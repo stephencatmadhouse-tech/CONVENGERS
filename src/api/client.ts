@@ -72,6 +72,20 @@ class ApiClient {
     return response.json();
   }
 
+  public updateCachedDashboard(updater: (prev: FullDashboardData) => FullDashboardData): void {
+    if (typeof window === 'undefined') return;
+    try {
+      const cached = localStorage.getItem('convengers_cached_dashboard');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        const updated = updater(parsed);
+        localStorage.setItem('convengers_cached_dashboard', JSON.stringify(updated));
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   // --- AUTH ---
   public async login(email: string, password: string): Promise<{ token: string; user: User }> {
     const res = await this.request<{ token: string; user: User }>('/api/auth/login', {
@@ -114,23 +128,91 @@ class ApiClient {
 
   // --- DATA ---
   public async getFullDashboard(): Promise<FullDashboardData> {
-    return this.request<FullDashboardData>('/api/data/all');
+    try {
+      const res = await this.request<FullDashboardData>('/api/data/all');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('convengers_cached_dashboard', JSON.stringify(res));
+      }
+      return res;
+    } catch (err) {
+      console.warn('API unavailable, falling back to local storage cache / seed data:', err);
+      if (typeof window !== 'undefined') {
+        const cached = localStorage.getItem('convengers_cached_dashboard');
+        if (cached) {
+          try {
+            return JSON.parse(cached);
+          } catch {
+            // ignore
+          }
+        }
+      }
+      // Import seed data dynamically if needed
+      const {
+        INITIAL_SETTINGS,
+        INITIAL_MILESTONES,
+        INITIAL_SCOPES,
+        INITIAL_CONCRETE_POURS,
+        INITIAL_EPISODES,
+        INITIAL_CHARACTERS,
+        INITIAL_USERS,
+      } = await import('../db/seedData.ts');
+
+      const fallback: FullDashboardData = {
+        user: INITIAL_USERS[0],
+        settings: { ...INITIAL_SETTINGS },
+        milestones: [...INITIAL_MILESTONES],
+        scopes: [...INITIAL_SCOPES],
+        activities: [],
+        pours: [...INITIAL_CONCRETE_POURS],
+        episodes: [...INITIAL_EPISODES],
+        characters: [...INITIAL_CHARACTERS],
+        overrides: {},
+        auditLogs: [],
+      };
+      return fallback;
+    }
   }
 
   // --- MILESTONES ---
   public async updateMilestone(id: string, updates: Partial<Milestone>): Promise<Milestone> {
-    return this.request<Milestone>(`/api/milestones/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates),
-    });
+    try {
+      const res = await this.request<Milestone>(`/api/milestones/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+      this.updateCachedDashboard((prev) => ({
+        ...prev,
+        milestones: prev.milestones.map((m) => (m.id === id ? res : m)),
+      }));
+      return res;
+    } catch (err) {
+      this.updateCachedDashboard((prev) => ({
+        ...prev,
+        milestones: prev.milestones.map((m) => (m.id === id ? { ...m, ...updates } : m)),
+      }));
+      return { id, index: 0, dateText: '', label: '', status: 'Upcoming', ...updates } as Milestone;
+    }
   }
 
   // --- SCOPES ---
   public async updateScopeProgress(id: string, percent: number): Promise<ScopeItem> {
-    return this.request<ScopeItem>(`/api/scopes/${id}/progress`, {
-      method: 'PUT',
-      body: JSON.stringify({ percent }),
-    });
+    try {
+      const res = await this.request<ScopeItem>(`/api/scopes/${id}/progress`, {
+        method: 'PUT',
+        body: JSON.stringify({ percent }),
+      });
+      this.updateCachedDashboard((prev) => ({
+        ...prev,
+        scopes: prev.scopes.map((s) => (s.id === id ? res : s)),
+      }));
+      return res;
+    } catch (err) {
+      this.updateCachedDashboard((prev) => ({
+        ...prev,
+        scopes: prev.scopes.map((s) => (s.id === id ? { ...s, percentComplete: percent } : s)),
+      }));
+      return { id, floor: 'GF', phase: 'Structural', name: '', dateText: '', workingDays: 1, percentComplete: percent, sortOrder: 0 };
+    }
   }
 
   public async addScope(scope: Omit<ScopeItem, 'id'>): Promise<ScopeItem> {
