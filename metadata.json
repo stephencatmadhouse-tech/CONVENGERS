@@ -1,0 +1,6 @@
+{
+  "name": "Convengers Bahay Build — Scope of Work Timeline",
+  "description": "Interactive project dashboard for the Convengers Bahay Build: timeline, scopes of work, concrete pouring milestones, upcoming activities, and content calendar with real-time persistent database, authentication, and role-based permissions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
