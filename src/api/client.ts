@@ -16,6 +16,15 @@ import {
   SystemSettings,
   AuditLog,
 } from '../types/index.ts';
+import {
+  INITIAL_SETTINGS,
+  INITIAL_MILESTONES,
+  INITIAL_SCOPES,
+  INITIAL_CONCRETE_POURS,
+  INITIAL_EPISODES,
+  INITIAL_CHARACTERS,
+  INITIAL_USERS,
+} from '../db/seedData.ts';
 
 const TOKEN_KEY = 'convengers_auth_token';
 
@@ -76,24 +85,77 @@ class ApiClient {
     if (typeof window === 'undefined') return;
     try {
       const cached = localStorage.getItem('convengers_cached_dashboard');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        const updated = updater(parsed);
-        localStorage.setItem('convengers_cached_dashboard', JSON.stringify(updated));
-      }
+      const base = cached ? JSON.parse(cached) : this.getInitialDashboard();
+      const updated = updater(base);
+      localStorage.setItem('convengers_cached_dashboard', JSON.stringify(updated));
     } catch {
       // ignore
     }
   }
 
+  public getInitialDashboard(): FullDashboardData {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('convengers_cached_dashboard');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && Array.isArray(parsed.milestones) && Array.isArray(parsed.scopes)) {
+            return parsed;
+          }
+        }
+      } catch {
+        // ignore parsing error
+      }
+    }
+
+    return {
+      user: {
+        id: INITIAL_USERS[0].id,
+        name: INITIAL_USERS[0].name,
+        email: INITIAL_USERS[0].email,
+        role: INITIAL_USERS[0].role,
+        createdAt: INITIAL_USERS[0].createdAt,
+      },
+      settings: { ...INITIAL_SETTINGS },
+      milestones: [...INITIAL_MILESTONES],
+      scopes: [...INITIAL_SCOPES],
+      activities: [],
+      pours: [...INITIAL_CONCRETE_POURS],
+      episodes: [...INITIAL_EPISODES],
+      characters: [...INITIAL_CHARACTERS],
+      overrides: {},
+      auditLogs: [],
+    };
+  }
+
   // --- AUTH ---
   public async login(email: string, password: string): Promise<{ token: string; user: User }> {
-    const res = await this.request<{ token: string; user: User }>('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    this.setToken(res.token);
-    return res;
+    try {
+      const res = await this.request<{ token: string; user: User }>('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      this.setToken(res.token);
+      this.updateCachedDashboard((prev) => ({ ...prev, user: res.user }));
+      return res;
+    } catch (err) {
+      // Local fallback for offline/preview
+      const found = INITIAL_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
+      if (found) {
+        const fakeToken = `local_token_${found.role}`;
+        this.setToken(fakeToken);
+        const user: User = {
+          id: found.id,
+          name: found.name,
+          email: found.email,
+          role: found.role,
+          createdAt: found.createdAt,
+        };
+        this.updateCachedDashboard((prev) => ({ ...prev, user }));
+        return { token: fakeToken, user };
+      }
+      throw err;
+    }
   }
 
   public async register(name: string, email: string, password: string, role?: string): Promise<{ token: string; user: User }> {
@@ -102,27 +164,51 @@ class ApiClient {
       body: JSON.stringify({ name, email, password, role }),
     });
     this.setToken(res.token);
+    this.updateCachedDashboard((prev) => ({ ...prev, user: res.user }));
     return res;
   }
 
   public async switchDemo(email: string): Promise<{ token: string; user: User }> {
-    const res = await this.request<{ token: string; user: User }>('/api/auth/switch-demo', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
-    this.setToken(res.token);
-    return res;
+    try {
+      const res = await this.request<{ token: string; user: User }>('/api/auth/switch-demo', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+      this.setToken(res.token);
+      this.updateCachedDashboard((prev) => ({ ...prev, user: res.user }));
+      return res;
+    } catch {
+      // Offline fallback
+      const found = INITIAL_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase()) || INITIAL_USERS[0];
+      const user: User = {
+        id: found.id,
+        name: found.name,
+        email: found.email,
+        role: found.role,
+        createdAt: found.createdAt,
+      };
+      this.setToken(`local_demo_${found.role}`);
+      this.updateCachedDashboard((prev) => ({ ...prev, user }));
+      return { token: `local_demo_${found.role}`, user };
+    }
   }
 
   public async getMe(): Promise<{ user: User | null }> {
-    return this.request<{ user: User | null }>('/api/auth/me');
+    try {
+      return await this.request<{ user: User | null }>('/api/auth/me');
+    } catch {
+      return { user: null };
+    }
   }
 
   public async logout(): Promise<void> {
     try {
       await this.request('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // ignore
     } finally {
       this.setToken(null);
+      this.updateCachedDashboard((prev) => ({ ...prev, user: null }));
     }
   }
 
@@ -135,41 +221,8 @@ class ApiClient {
       }
       return res;
     } catch (err) {
-      console.warn('API unavailable, falling back to local storage cache / seed data:', err);
-      if (typeof window !== 'undefined') {
-        const cached = localStorage.getItem('convengers_cached_dashboard');
-        if (cached) {
-          try {
-            return JSON.parse(cached);
-          } catch {
-            // ignore
-          }
-        }
-      }
-      // Import seed data dynamically if needed
-      const {
-        INITIAL_SETTINGS,
-        INITIAL_MILESTONES,
-        INITIAL_SCOPES,
-        INITIAL_CONCRETE_POURS,
-        INITIAL_EPISODES,
-        INITIAL_CHARACTERS,
-        INITIAL_USERS,
-      } = await import('../db/seedData.ts');
-
-      const fallback: FullDashboardData = {
-        user: INITIAL_USERS[0],
-        settings: { ...INITIAL_SETTINGS },
-        milestones: [...INITIAL_MILESTONES],
-        scopes: [...INITIAL_SCOPES],
-        activities: [],
-        pours: [...INITIAL_CONCRETE_POURS],
-        episodes: [...INITIAL_EPISODES],
-        characters: [...INITIAL_CHARACTERS],
-        overrides: {},
-        auditLogs: [],
-      };
-      return fallback;
+      console.warn('API unavailable or offline, loading cached baseline:', err);
+      return this.getInitialDashboard();
     }
   }
 

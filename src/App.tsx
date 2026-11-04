@@ -37,8 +37,8 @@ const PAPER_SIZES: Record<string, { size: string; width: number; height: number 
 };
 
 export default function App() {
-  const [data, setData] = useState<FullDashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<FullDashboardData>(() => api.getInitialDashboard());
+  const [loading, setLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isEditingText, setIsEditingText] = useState(false);
 
@@ -61,14 +61,13 @@ export default function App() {
   const fetchData = useCallback(async () => {
     try {
       const full = await api.getFullDashboard();
-      setData(full);
+      if (full) {
+        setData(full);
+      }
     } catch (err: any) {
-      console.error('Failed to load dashboard data:', err);
-      showToast('Could not reach server, retrying...');
-    } finally {
-      setLoading(false);
+      console.warn('Network sync notice:', err);
     }
-  }, [showToast]);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -122,7 +121,7 @@ export default function App() {
     `;
   }, [data?.settings?.paper]);
 
-  if (loading || !data) {
+  if (!data) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#03051a] text-white">
         <div className="flex flex-col items-center gap-3">

@@ -343,7 +343,7 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
 
               return (
                 <React.Fragment key={ep.id}>
-                  {start && (
+                  {start && end && (
                     <div
                       title={`Ep ${ep.number} shoot: ${ep.title} (${ep.shootStart} - ${ep.shootEnd || ep.shootStart})`}
                       style={{

@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import crypto from 'node:crypto';
 import {
   Milestone,
   ScopeItem,
@@ -13,25 +12,16 @@ import {
   SystemSettings,
 } from '../types/index.ts';
 
-function hashPassword(password: string): { hash: string; salt: string } {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
-  return { hash, salt };
-}
-
-const adminCreds = hashPassword('Admin@123');
-const managerCreds = hashPassword('Manager@123');
-const staffCreds = hashPassword('Staff@123');
-const viewerCreds = hashPassword('Viewer@123');
-
+// Precomputed scrypt hashes for initial demo users (avoids node:crypto in browser bundles)
+// Passwords: Admin@123, Manager@123, Staff@123, Viewer@123
 export const INITIAL_USERS: UserWithCredentials[] = [
   {
     id: 'usr_admin',
     name: 'Chief Project Director',
     email: 'admin@convengers.ph',
     role: 'admin',
-    passwordHash: adminCreds.hash,
-    salt: adminCreds.salt,
+    passwordHash: '475a04021af67a79f12b778e446763363f8862f70e79468247e86e0d563abdc84adaf14589abdffe5dc6ef9b2353421e073620c8b09d347ff4f2b19d160093ba',
+    salt: 'b72c34ef41e055e61170c4eebe06d558',
     createdAt: '2026-10-01T08:00:00.000Z',
   },
   {
@@ -39,8 +29,8 @@ export const INITIAL_USERS: UserWithCredentials[] = [
     name: 'Site Operations Manager',
     email: 'manager@convengers.ph',
     role: 'manager',
-    passwordHash: managerCreds.hash,
-    salt: managerCreds.salt,
+    passwordHash: '4969b36fd90d2351c9cf03c3b575742d876d1ca81ac21cada8cb879ce19a79ecfefcd47b12d85fe27b98583e9748bad2d91a3485c9cc0843060118ff7142e608',
+    salt: 'a2f6122457c6da3cf68b49aa6b6b7e1b',
     createdAt: '2026-10-01T08:00:00.000Z',
   },
   {
@@ -48,8 +38,8 @@ export const INITIAL_USERS: UserWithCredentials[] = [
     name: 'Lead Site Engineer',
     email: 'staff@convengers.ph',
     role: 'staff',
-    passwordHash: staffCreds.hash,
-    salt: staffCreds.salt,
+    passwordHash: '84572e53b339ad1f7c8acd3bdb02967da8b282868db8035deda38c48ef29234ed5099ec017dc206dd6064dcb769d947d8132282859b24ad675450eda83aa9e52',
+    salt: 'e0719ca3f507340a04baea9d53ae824f',
     createdAt: '2026-10-01T08:00:00.000Z',
   },
   {
@@ -57,8 +47,8 @@ export const INITIAL_USERS: UserWithCredentials[] = [
     name: 'Stakeholder / Client Viewer',
     email: 'viewer@convengers.ph',
     role: 'viewer',
-    passwordHash: viewerCreds.hash,
-    salt: viewerCreds.salt,
+    passwordHash: '7cce3cd053237cee436902c8764f06e6d62bc8b8ee9287d380d0c91c25e3919c055df8010550b5880d5e045afef90e3601fd20cf02e7af8bd7dc1f577d729c65',
+    salt: '1832d867a25f0c0c31d29cb97770aca4',
     createdAt: '2026-10-01T08:00:00.000Z',
   },
 ];
