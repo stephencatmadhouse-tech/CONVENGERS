@@ -4,9 +4,11 @@
  */
 
 import React, { useState } from 'react';
-import { ScopeItem, Episode, SystemSettings } from '../types/index.ts';
+import { ScopeItem, Episode, SystemSettings, RemoteFocus } from '../types/index.ts';
 import { LOGO_SVG, STATUS_COLORS } from '../constants/assets.ts';
 import { calculateFloorProgress, parseDateWindow, parseIsoDate } from '../utils/calculations.ts';
+import { CollaborativeCell } from './CollaborativeCell.tsx';
+import { realtime } from '../utils/realtime.ts';
 
 interface FloorScopeSlideProps {
   floor: 'GF' | '2F' | '3F';
@@ -16,8 +18,10 @@ interface FloorScopeSlideProps {
   settings: SystemSettings;
   canEdit: boolean;
   onUpdateProgress: (id: string, percent: number) => void;
+  onUpdateScopeField?: (id: string, field: 'name' | 'dateText', value: string) => void;
   onAddScope: (scope: Omit<ScopeItem, 'id'>) => void;
   onDeleteScope: (id: string) => void;
+  remoteFocusMap?: Record<string, RemoteFocus>;
 }
 
 export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
@@ -28,8 +32,10 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
   settings,
   canEdit,
   onUpdateProgress,
+  onUpdateScopeField,
   onAddScope,
   onDeleteScope,
+  remoteFocusMap = {},
 }) => {
   const [addingPhase, setAddingPhase] = useState<'Structural' | 'Finishing' | null>(null);
   const [newScopeName, setNewScopeName] = useState('');
@@ -402,7 +408,16 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
             }}
           />
           <div style={{ flex: 1, fontSize: '16px', fontWeight: 600, lineHeight: '20px', color: '#F5C518' }}>
-            {scope.name}
+            <CollaborativeCell
+              cellId={`scope_${scope.id}_name`}
+              value={scope.name}
+              fallbackValue={scope.name}
+              remoteFocus={remoteFocusMap[`scope_${scope.id}_name`]}
+              canEdit={canEdit}
+              onSave={(val) => {
+                if (onUpdateScopeField) onUpdateScopeField(scope.id, 'name', val);
+              }}
+            />
             {scope.subNote && (
               <div style={{ fontSize: '13px', fontWeight: 400, color: '#BAC4E2', lineHeight: '17px' }}>
                 {scope.subNote}
@@ -410,13 +425,38 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
             )}
           </div>
           <div className="dt" style={{ width: '205px', flex: 'none', textAlign: 'right', fontSize: '16px', fontWeight: 700, lineHeight: '20px' }}>
-            {scope.dateText}
+            <CollaborativeCell
+              cellId={`scope_${scope.id}_date`}
+              value={scope.dateText}
+              fallbackValue={scope.dateText}
+              remoteFocus={remoteFocusMap[`scope_${scope.id}_date`]}
+              canEdit={canEdit}
+              onSave={(val) => {
+                if (onUpdateScopeField) onUpdateScopeField(scope.id, 'dateText', val);
+              }}
+            />
           </div>
           <div className="dur" style={{ width: '92px', flex: 'none', textAlign: 'right', fontSize: '12px', color: '#BAC4E2', lineHeight: '20px' }}>
             {scope.workingDays} working day{scope.workingDays > 1 ? 's' : ''}
           </div>
           <div style={{ width: '136px', flex: 'none', textAlign: 'right', lineHeight: '20px' }}>
-            <span className="cell">
+            <span
+              className="cell"
+              style={{
+                position: 'relative',
+                outline: remoteFocusMap[`scope_${scope.id}_pct`] ? `2px solid ${remoteFocusMap[`scope_${scope.id}_pct`].userColor}` : undefined,
+                outlineOffset: '2px',
+                borderRadius: '6px',
+              }}
+            >
+              {remoteFocusMap[`scope_${scope.id}_pct`] && (
+                <span
+                  className="absolute -top-3.5 right-0 z-20 px-1 py-0.2 text-[9px] font-bold rounded shadow pointer-events-none whitespace-nowrap"
+                  style={{ background: remoteFocusMap[`scope_${scope.id}_pct`].userColor, color: '#060A24' }}
+                >
+                  {remoteFocusMap[`scope_${scope.id}_pct`].userName}
+                </span>
+              )}
               <input
                 className="pct"
                 type="number"
@@ -425,6 +465,8 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
                 step="5"
                 value={scope.percentComplete}
                 disabled={!canEdit}
+                onFocus={() => realtime.focusCell(`scope_${scope.id}_pct`)}
+                onBlur={() => realtime.blurCell(`scope_${scope.id}_pct`)}
                 onChange={(e) => onUpdateProgress(scope.id, parseFloat(e.target.value) || 0)}
                 aria-label="Percent complete"
               />

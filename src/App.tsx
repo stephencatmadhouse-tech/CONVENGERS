@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { api } from './api/client.ts';
+import { realtime } from './utils/realtime.ts';
 import {
   FullDashboardData,
   User,
@@ -16,6 +17,8 @@ import {
   ActivityOverride,
   SystemSettings,
   AuditLog,
+  Collaborator,
+  RemoteFocus,
 } from './types/index.ts';
 import { Toolbar } from './components/Toolbar.tsx';
 import { OverviewSlide } from './components/OverviewSlide.tsx';
@@ -38,6 +41,8 @@ const PAPER_SIZES: Record<string, { size: string; width: number; height: number 
 
 export default function App() {
   const [data, setData] = useState<FullDashboardData>(() => api.getInitialDashboard());
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [remoteFocusMap, setRemoteFocusMap] = useState<Record<string, RemoteFocus>>({});
   const [loading, setLoading] = useState(false);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -60,7 +65,7 @@ export default function App() {
     }, 2400);
   }, []);
 
-  // Fetch data
+  // Fetch full data from server
   const fetchData = useCallback(async () => {
     try {
       const full = await api.getFullDashboard();
@@ -83,60 +88,71 @@ export default function App() {
     }
   }, []);
 
-  // Real-time SSE synchronization across teammates & phones
+  // Real-Time Google Sheets Style Multi-User Collaboration
   useEffect(() => {
-    let eventSource: EventSource | null = null;
-    let pollTimer: NodeJS.Timeout | null = null;
-    let reconnectTimer: NodeJS.Timeout | null = null;
+    realtime.init(data.user);
 
-    const connectSSE = () => {
-      try {
-        eventSource = new EventSource('/api/events');
+    const unsubConn = realtime.onConnection((conn) => {
+      setIsLiveConnected(conn);
+    });
 
-        eventSource.onopen = () => {
-          setIsLiveConnected(true);
+    const unsubPresence = realtime.onPresence((cols) => {
+      setCollaborators(cols);
+    });
+
+    const unsubFocus = realtime.onRemoteFocus((focusMap) => {
+      setRemoteFocusMap(focusMap);
+    });
+
+    const unsubCellEdit = realtime.onCellEdit((editEvent) => {
+      // Instant reflection (<30ms) of teammate typing and edits
+      setData((prev) => {
+        if (!prev) return prev;
+        if (editEvent.entityType === 'milestone') {
+          return {
+            ...prev,
+            milestones: prev.milestones.map((m) =>
+              m.id === editEvent.entityId ? { ...m, [editEvent.field]: editEvent.value } : m
+            ),
+          };
+        }
+        if (editEvent.entityType === 'scope') {
+          return {
+            ...prev,
+            scopes: prev.scopes.map((s) =>
+              s.id === editEvent.entityId ? { ...s, [editEvent.field]: editEvent.value } : s
+            ),
+          };
+        }
+        if (editEvent.entityType === 'pour') {
+          return {
+            ...prev,
+            pours: prev.pours.map((p) =>
+              p.id === editEvent.entityId ? { ...p, [editEvent.field]: editEvent.value } : p
+            ),
+          };
+        }
+        return prev;
+      });
+    });
+
+    const unsubDashboard = realtime.onDashboard((freshData) => {
+      setData((prev) => {
+        if (isEditingTextRef.current) return prev;
+        return {
+          ...freshData,
+          user: prev?.user || freshData.user,
+          settings: {
+            ...freshData.settings,
+            theme: prev?.settings?.theme || freshData.settings.theme,
+            paper: prev?.settings?.paper || freshData.settings.paper,
+          },
         };
+      });
+    });
 
-        eventSource.onmessage = (event) => {
-          try {
-            const payload = JSON.parse(event.data);
-            if (payload && (payload.type === 'DASHBOARD_UPDATED' || payload.type === 'CONNECTED') && payload.data) {
-              setData((prev) => {
-                if (isEditingTextRef.current) return prev;
-                const incoming = payload.data as FullDashboardData;
-                return {
-                  ...incoming,
-                  user: prev?.user || incoming.user,
-                  settings: {
-                    ...incoming.settings,
-                    theme: prev?.settings?.theme || incoming.settings.theme,
-                    paper: prev?.settings?.paper || incoming.settings.paper,
-                  },
-                };
-              });
-            }
-          } catch (e) {
-            console.error('SSE parse error:', e);
-          }
-        };
-
-        eventSource.onerror = () => {
-          setIsLiveConnected(false);
-          eventSource?.close();
-          if (reconnectTimer) clearTimeout(reconnectTimer);
-          reconnectTimer = setTimeout(connectSSE, 4000);
-        };
-      } catch {
-        setIsLiveConnected(false);
-      }
-    };
-
-    connectSSE();
-
-    // 5-second polling fallback for mobile devices
-    pollTimer = setInterval(() => {
-      fetchData();
-    }, 5000);
+    // 6-second polling fallback
+    const pollTimer = setInterval(fetchData, 6000);
 
     const onVisibility = () => {
       if (document.visibilityState === 'visible') {
@@ -146,12 +162,22 @@ export default function App() {
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
-      if (eventSource) eventSource.close();
-      if (pollTimer) clearInterval(pollTimer);
-      if (reconnectTimer) clearTimeout(reconnectTimer);
+      unsubConn();
+      unsubPresence();
+      unsubFocus();
+      unsubCellEdit();
+      unsubDashboard();
+      clearInterval(pollTimer);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [fetchData]);
+
+  // Update user in realtime client when session changes
+  useEffect(() => {
+    if (data?.user) {
+      realtime.updateUser(data.user);
+    }
+  }, [data?.user]);
 
   // Window resize calculation for --s
   useEffect(() => {
@@ -258,6 +284,8 @@ export default function App() {
         milestones: prev.milestones.map((m) => (m.id === id ? { ...m, status } : m)),
       };
     });
+    // Broadcast instant real-time edit to all teammates' screens
+    realtime.editCell('milestone', id, 'status', status);
     try {
       const updated = await api.updateMilestone(id, { status });
       setData((prev) => {
@@ -283,6 +311,35 @@ export default function App() {
     }
   };
 
+  const handleUpdateMilestoneField = async (id: string, field: 'label' | 'dateText', value: string) => {
+    if (!canEdit) {
+      showToast('Viewer role is read-only.');
+      return;
+    }
+    const trimmed = value.trim();
+    if (!trimmed) return;
+
+    // Optimistic local update
+    setData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        milestones: prev.milestones.map((m) =>
+          m.id === id ? { ...m, [field]: trimmed } : m
+        ),
+      };
+    });
+
+    // Realtime broadcast to all teammate screens immediately (<30ms)
+    realtime.editCell('milestone', id, field, trimmed);
+
+    try {
+      await api.updateMilestone(id, { [field]: trimmed });
+    } catch (err: any) {
+      console.warn('Milestone field sync error:', err);
+    }
+  };
+
   const handleUpdateScopeProgress = async (id: string, percent: number) => {
     if (!canEdit) {
       showToast('Viewer role is read-only. Please sign in as staff, manager, or admin.');
@@ -295,6 +352,8 @@ export default function App() {
         scopes: prev.scopes.map((s) => (s.id === id ? { ...s, percentComplete: percent } : s)),
       };
     });
+    // Realtime broadcast to all teammates
+    realtime.editCell('scope', id, 'percentComplete', percent);
     try {
       const updated = await api.updateScopeProgress(id, percent);
       setData((prev) => {
@@ -316,6 +375,22 @@ export default function App() {
       showToast(err.message || 'Failed to update progress');
       fetchData();
     }
+  };
+
+  const handleUpdateScopeField = async (id: string, field: 'name' | 'dateText', value: string) => {
+    if (!canEdit) return;
+    const trimmed = value.trim();
+    if (!trimmed) return;
+
+    setData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        scopes: prev.scopes.map((s) => (s.id === id ? { ...s, [field]: trimmed } : s)),
+      };
+    });
+
+    realtime.editCell('scope', id, field, trimmed);
   };
 
   const handleAddScope = async (scope: Omit<ScopeItem, 'id'>) => {
@@ -547,6 +622,7 @@ export default function App() {
         settings={data.settings}
         isEditing={isEditingText}
         isLiveConnected={isLiveConnected}
+        collaborators={collaborators}
         onToggleEditing={() => setIsEditingText(!isEditingText)}
         onOpenAuth={() => setIsAuthOpen(true)}
         onOpenShare={() => setIsShareOpen(true)}
@@ -579,6 +655,8 @@ export default function App() {
           settings={data.settings}
           canEdit={canEdit}
           onUpdateMilestone={handleUpdateMilestone}
+          onUpdateMilestoneField={handleUpdateMilestoneField}
+          remoteFocusMap={remoteFocusMap}
         />
 
         {/* Slide 2: Upcoming / Next Activities */}
@@ -606,8 +684,10 @@ export default function App() {
           settings={data.settings}
           canEdit={canEdit}
           onUpdateProgress={handleUpdateScopeProgress}
+          onUpdateScopeField={handleUpdateScopeField}
           onAddScope={handleAddScope}
           onDeleteScope={handleDeleteScope}
+          remoteFocusMap={remoteFocusMap}
         />
 
         {/* Slide 4: Second Floor */}
@@ -619,8 +699,10 @@ export default function App() {
           settings={data.settings}
           canEdit={canEdit}
           onUpdateProgress={handleUpdateScopeProgress}
+          onUpdateScopeField={handleUpdateScopeField}
           onAddScope={handleAddScope}
           onDeleteScope={handleDeleteScope}
+          remoteFocusMap={remoteFocusMap}
         />
 
         {/* Slide 5: Third Floor */}
@@ -632,8 +714,10 @@ export default function App() {
           settings={data.settings}
           canEdit={canEdit}
           onUpdateProgress={handleUpdateScopeProgress}
+          onUpdateScopeField={handleUpdateScopeField}
           onAddScope={handleAddScope}
           onDeleteScope={handleDeleteScope}
+          remoteFocusMap={remoteFocusMap}
         />
 
         {/* Slide 6: Structural Methodology */}

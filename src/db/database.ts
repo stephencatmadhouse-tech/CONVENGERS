@@ -297,6 +297,67 @@ export class DatabaseEngine {
     return item;
   }
 
+  public updateCellField(entityType: string, entityId: string, field: string, value: any, user: User): any {
+    if (entityType === 'milestone') {
+      const m = this.data.milestones.find(item => item.id === entityId);
+      if (!m) throw new Error('Milestone not found');
+      if (field === 'label' || field === 'dateText') {
+        if (typeof value === 'string' && value.trim()) {
+          (m as any)[field] = value.trim();
+        }
+      } else if (field === 'status') {
+        m.status = value;
+      }
+      m.updatedAt = new Date().toISOString();
+      m.updatedBy = user.name;
+      this.save();
+      return m;
+    }
+    if (entityType === 'scope') {
+      const s = this.data.scopes.find(item => item.id === entityId);
+      if (!s) throw new Error('Scope not found');
+      if (field === 'percentComplete') {
+        s.percentComplete = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+      } else if (field === 'name' && typeof value === 'string' && value.trim()) {
+        s.name = value.trim();
+      } else if (field === 'dateText' && typeof value === 'string' && value.trim()) {
+        s.dateText = value.trim();
+      }
+      s.updatedAt = new Date().toISOString();
+      s.updatedBy = user.name;
+      this.save();
+      return s;
+    }
+    if (entityType === 'pour') {
+      const p = this.data.pours.find(item => item.id === entityId);
+      if (!p) throw new Error('Concrete pour not found');
+      (p as any)[field] = value;
+      p.updatedAt = new Date().toISOString();
+      p.updatedBy = user.name;
+      this.save();
+      return p;
+    }
+    if (entityType === 'episode') {
+      const e = this.data.episodes.find(item => item.id === entityId);
+      if (!e) throw new Error('Episode not found');
+      (e as any)[field] = value;
+      e.updatedAt = new Date().toISOString();
+      e.updatedBy = user.name;
+      this.save();
+      return e;
+    }
+    if (entityType === 'activity') {
+      const a = this.data.activities.find(item => item.id === entityId);
+      if (!a) throw new Error('Activity not found');
+      (a as any)[field] = value;
+      a.updatedAt = new Date().toISOString();
+      a.updatedBy = user.name;
+      this.save();
+      return a;
+    }
+    return null;
+  }
+
   // --- SCOPE ITEMS ---
   public getScopes(): ScopeItem[] {
     return this.data.scopes;

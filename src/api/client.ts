@@ -238,6 +238,21 @@ class ApiClient {
   public async getFullDashboard(): Promise<FullDashboardData> {
     try {
       const res = await this.request<FullDashboardData>('/api/data/all');
+      if (res && Array.isArray(res.milestones)) {
+        res.milestones = res.milestones.map((m: Milestone) => {
+          const initial = INITIAL_MILESTONES.find((im) => im.id === m.id);
+          if (initial) {
+            return {
+              ...initial,
+              ...m,
+              label: m.label && m.label.trim() ? m.label : initial.label,
+              dateText: m.dateText && m.dateText.trim() ? m.dateText : initial.dateText,
+              badge: m.badge || initial.badge,
+            };
+          }
+          return m;
+        });
+      }
       if (typeof window !== 'undefined') {
         localStorage.setItem('convengers_cached_dashboard', JSON.stringify(res));
       }

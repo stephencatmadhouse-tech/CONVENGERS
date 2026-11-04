@@ -187,3 +187,32 @@ export interface FullDashboardData {
   overrides: Record<string, ActivityOverride>;
   auditLogs: AuditLog[];
 }
+
+export interface Collaborator {
+  clientId: string;
+  userId: string;
+  userName: string;
+  userRole: UserRole;
+  userColor: string;
+  focusedCellId?: string | null;
+  lastActive: number;
+  device?: 'mobile' | 'desktop';
+}
+
+export interface RemoteFocus {
+  clientId: string;
+  userId: string;
+  userName: string;
+  userColor: string;
+  cellId: string;
+}
+
+export interface CellEditEvent {
+  entityType: 'milestone' | 'scope' | 'pour' | 'episode' | 'activity' | 'override';
+  entityId: string;
+  field: string;
+  value: any;
+  clientId: string;
+  userName: string;
+}
+

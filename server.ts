@@ -4,36 +4,200 @@
  */
 
 import express, { Request, Response, NextFunction } from 'express';
+import http from 'node:http';
 import path from 'node:path';
 import fs from 'node:fs';
+import { WebSocketServer, WebSocket } from 'ws';
 import { db } from './src/db/database.ts';
-import { User, UserRole } from './src/types/index.ts';
+import { User, UserRole, Collaborator } from './src/types/index.ts';
 
 const app = express();
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server, path: '/ws' });
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const isDev = process.env.NODE_ENV !== 'production';
 
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
-// SSE Real-Time Clients
+// Active Collaborator Registry (Google Sheets style presence)
+const activeCollaborators = new Map<string, Collaborator>();
+const wsClientMap = new Map<WebSocket, string>(); // ws -> clientId
 const sseClients = new Set<Response>();
 
-export function broadcastDashboardUpdate() {
-  const data = db.getFullDashboard(null);
-  const payload = JSON.stringify({
-    type: 'DASHBOARD_UPDATED',
-    data,
-    timestamp: Date.now(),
-  });
+export function getCollaboratorsList(): Collaborator[] {
+  const now = Date.now();
+  // Prune any collaborator with no ping for > 90 seconds
+  for (const [id, c] of activeCollaborators.entries()) {
+    if (now - c.lastActive > 90000) {
+      activeCollaborators.delete(id);
+    }
+  }
+  return Array.from(activeCollaborators.values());
+}
+
+export function broadcastEvent(payload: any, excludeWs?: WebSocket) {
+  const str = JSON.stringify(payload);
+  // 1. Send to all WebSocket clients
+  for (const client of wss.clients) {
+    if (client !== excludeWs && client.readyState === WebSocket.OPEN) {
+      try {
+        client.send(str);
+      } catch {
+        // ignore
+      }
+    }
+  }
+  // 2. Also stream to all SSE clients as backup
+  const sseData = `data: ${str}\n\n`;
   for (const client of sseClients) {
     try {
-      client.write(`data: ${payload}\n\n`);
+      client.write(sseData);
     } catch {
       sseClients.delete(client);
     }
   }
 }
+
+export function broadcastDashboardUpdate() {
+  const data = db.getFullDashboard(null);
+  broadcastEvent({
+    type: 'DASHBOARD_UPDATED',
+    data,
+    timestamp: Date.now(),
+  });
+}
+
+export function broadcastPresence() {
+  const collaborators = getCollaboratorsList();
+  broadcastEvent({
+    type: 'PRESENCE_SYNC',
+    collaborators,
+    count: collaborators.length,
+    timestamp: Date.now(),
+  });
+}
+
+// WebSocket Connection Lifecycle
+wss.on('connection', (ws: WebSocket) => {
+  let boundClientId: string | null = null;
+
+  // Send current state and presence immediately
+  ws.send(JSON.stringify({
+    type: 'INIT_SYNC',
+    data: db.getFullDashboard(null),
+    collaborators: getCollaboratorsList(),
+    timestamp: Date.now(),
+  }));
+
+  ws.on('message', (messageRaw: any) => {
+    try {
+      const msg = JSON.parse(messageRaw.toString());
+      if (!msg || !msg.type) return;
+
+      if (msg.type === 'JOIN') {
+        const { clientId, userId, userName, userRole, userColor, device } = msg;
+        if (!clientId) return;
+        boundClientId = clientId;
+        wsClientMap.set(ws, clientId);
+        activeCollaborators.set(clientId, {
+          clientId,
+          userId: userId || 'usr_guest',
+          userName: userName || 'Teammate',
+          userRole: userRole || 'viewer',
+          userColor: userColor || '#3A9BFF',
+          lastActive: Date.now(),
+          device: device || 'desktop',
+          focusedCellId: null,
+        });
+        broadcastPresence();
+      } else if (msg.type === 'CELL_FOCUS') {
+        const { clientId, cellId } = msg;
+        if (!clientId) return;
+        const col = activeCollaborators.get(clientId);
+        if (col) {
+          col.focusedCellId = cellId;
+          col.lastActive = Date.now();
+          broadcastEvent({
+            type: 'CELL_FOCUS',
+            clientId,
+            userId: col.userId,
+            userName: col.userName,
+            userColor: col.userColor,
+            cellId,
+          }, ws);
+        }
+      } else if (msg.type === 'CELL_BLUR') {
+        const { clientId, cellId } = msg;
+        if (!clientId) return;
+        const col = activeCollaborators.get(clientId);
+        if (col) {
+          col.focusedCellId = null;
+          col.lastActive = Date.now();
+          broadcastEvent({
+            type: 'CELL_BLUR',
+            clientId,
+            cellId,
+          }, ws);
+        }
+      } else if (msg.type === 'CELL_EDIT') {
+        const { clientId, entityType, entityId, field, value } = msg;
+        const col = activeCollaborators.get(clientId);
+        const user = db.getDefaultUser();
+        if (col) {
+          col.lastActive = Date.now();
+          user.name = col.userName;
+        }
+
+        try {
+          const updatedRecord = db.updateCellField(entityType, entityId, field, value, user);
+          // Broadcast instant granular update to all other clients immediately (<20ms)
+          broadcastEvent({
+            type: 'CELL_EDIT_APPLIED',
+            entityType,
+            entityId,
+            field,
+            value,
+            clientId,
+            userName: col?.userName || 'Teammate',
+            updatedRecord,
+            timestamp: Date.now(),
+          }, ws);
+          // Also broadcast updated full dashboard
+          broadcastDashboardUpdate();
+        } catch (err: any) {
+          ws.send(JSON.stringify({ type: 'ERROR', message: err.message }));
+        }
+      } else if (msg.type === 'HEARTBEAT' || msg.type === 'PING') {
+        const { clientId } = msg;
+        if (clientId && activeCollaborators.has(clientId)) {
+          activeCollaborators.get(clientId)!.lastActive = Date.now();
+        }
+        ws.send(JSON.stringify({ type: 'PONG', timestamp: Date.now() }));
+      }
+    } catch (err) {
+      console.error('WebSocket message parsing error:', err);
+    }
+  });
+
+  ws.on('close', () => {
+    if (boundClientId) {
+      activeCollaborators.delete(boundClientId);
+      broadcastPresence();
+    }
+    wsClientMap.delete(ws);
+  });
+});
+
+// Periodic cleanup of stale sessions
+setInterval(() => {
+  const prevSize = activeCollaborators.size;
+  getCollaboratorsList();
+  if (activeCollaborators.size !== prevSize) {
+    broadcastPresence();
+  }
+}, 30000);
+
 
 // Extend Express Request
 declare global {
@@ -431,6 +595,88 @@ app.post('/api/reset', requireRole(['admin']), (req, res) => {
   }
 });
 
+// --- REAL-TIME REST FALLBACK ENDPOINTS ---
+app.get('/api/realtime/collaborators', (_req, res) => {
+  return res.json(getCollaboratorsList());
+});
+
+app.post('/api/realtime/heartbeat', (req, res) => {
+  const { clientId, userId, userName, userRole, userColor, focusedCellId } = req.body;
+  if (clientId) {
+    activeCollaborators.set(clientId, {
+      clientId,
+      userId: userId || req.user?.id || 'usr_guest',
+      userName: userName || req.user?.name || 'Teammate',
+      userRole: userRole || req.user?.role || 'viewer',
+      userColor: userColor || '#3A9BFF',
+      focusedCellId: focusedCellId || null,
+      lastActive: Date.now(),
+      device: req.body.device || 'desktop',
+    });
+    broadcastPresence();
+  }
+  return res.json({ ok: true, count: activeCollaborators.size });
+});
+
+app.post('/api/realtime/focus', (req, res) => {
+  const { clientId, cellId } = req.body;
+  if (clientId) {
+    const col = activeCollaborators.get(clientId);
+    if (col) {
+      col.focusedCellId = cellId;
+      col.lastActive = Date.now();
+      broadcastEvent({
+        type: 'CELL_FOCUS',
+        clientId,
+        userId: col.userId,
+        userName: col.userName,
+        userColor: col.userColor,
+        cellId,
+      });
+    }
+  }
+  return res.json({ ok: true });
+});
+
+app.post('/api/realtime/blur', (req, res) => {
+  const { clientId, cellId } = req.body;
+  if (clientId) {
+    const col = activeCollaborators.get(clientId);
+    if (col) {
+      col.focusedCellId = null;
+      col.lastActive = Date.now();
+      broadcastEvent({
+        type: 'CELL_BLUR',
+        clientId,
+        cellId,
+      });
+    }
+  }
+  return res.json({ ok: true });
+});
+
+app.post('/api/realtime/cell-edit', requireRole(['admin', 'manager', 'staff']), (req, res) => {
+  const { clientId, entityType, entityId, field, value } = req.body;
+  try {
+    const updated = db.updateCellField(entityType, entityId, field, value, req.user!);
+    broadcastEvent({
+      type: 'CELL_EDIT_APPLIED',
+      entityType,
+      entityId,
+      field,
+      value,
+      clientId,
+      userName: req.user!.name,
+      updatedRecord: updated,
+      timestamp: Date.now(),
+    });
+    broadcastDashboardUpdate();
+    return res.json(updated);
+  } catch (err: any) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
 // --- AUDIT LOGS ---
 app.get('/api/audit-logs', requireRole(['admin', 'manager']), (_req, res) => {
   return res.json(db.getAuditLogs());
@@ -455,7 +701,7 @@ async function startServer() {
     }
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  server.listen(PORT, '0.0.0.0', () => {
     console.log(`Convengers Bahay Build Server running on http://localhost:${PORT} (${isDev ? 'development' : 'production'})`);
   });
 }
@@ -464,3 +710,4 @@ startServer().catch((err) => {
   console.error('Failed to start server:', err);
   process.exit(1);
 });
+

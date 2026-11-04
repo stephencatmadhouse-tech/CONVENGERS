@@ -4,8 +4,11 @@
  */
 
 import React from 'react';
-import { Milestone, ScopeItem, ConcretePour, Episode, SystemSettings } from '../types/index.ts';
+import { Milestone, ScopeItem, ConcretePour, Episode, SystemSettings, RemoteFocus } from '../types/index.ts';
 import { LOGO_SVG, STATUS_COLORS } from '../constants/assets.ts';
+import { INITIAL_MILESTONES } from '../db/seedData.ts';
+import { CollaborativeCell } from './CollaborativeCell.tsx';
+import { realtime } from '../utils/realtime.ts';
 import {
   calculateMilestonesCompletion,
   calculateScheduleElapsed,
@@ -23,6 +26,8 @@ interface OverviewSlideProps {
   settings: SystemSettings;
   canEdit: boolean;
   onUpdateMilestone: (id: string, status: Milestone['status']) => void;
+  onUpdateMilestoneField?: (id: string, field: 'label' | 'dateText', value: string) => void;
+  remoteFocusMap?: Record<string, RemoteFocus>;
 }
 
 export const OverviewSlide: React.FC<OverviewSlideProps> = ({
@@ -33,6 +38,8 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
   settings,
   canEdit,
   onUpdateMilestone,
+  onUpdateMilestoneField,
+  remoteFocusMap = {},
 }) => {
   const overallMilestonePct = calculateMilestonesCompletion(milestones);
   const elapsed = calculateScheduleElapsed();
@@ -208,6 +215,15 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
             <div className="mgrid" style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gridTemplateRows: 'repeat(7,1fr)', gridAutoFlow: 'column', gap: '8px 16px', padding: '16px' }}>
               {milestones.map((m) => {
                 const colors = STATUS_COLORS[m.status] || STATUS_COLORS['Upcoming'];
+                const initial = INITIAL_MILESTONES.find((im) => im.id === m.id);
+                const safeDate = (m.dateText && m.dateText.trim()) || initial?.dateText || '—';
+                const safeLabel = (m.label && m.label.trim()) || initial?.label || '—';
+                const safeBadge = m.badge || initial?.badge;
+
+                const dateFocus = remoteFocusMap?.[`milestone_${m.id}_date`];
+                const labelFocus = remoteFocusMap?.[`milestone_${m.id}_label`];
+                const statusFocus = remoteFocusMap?.[`milestone_${m.id}_status`];
+
                 return (
                   <div
                     key={m.id}
@@ -225,16 +241,39 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                     }}
                   >
                     <div style={{ width: '215px', flex: 'none', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '28px', lineHeight: 1, color: '#F5C518', whiteSpace: 'nowrap' }}>
-                      <span className="mdate">{m.dateText}</span>
+                      <CollaborativeCell
+                        cellId={`milestone_${m.id}_date`}
+                        value={safeDate}
+                        fallbackValue={initial?.dateText}
+                        remoteFocus={dateFocus}
+                        canEdit={canEdit}
+                        onSave={(val) => {
+                          if (onUpdateMilestoneField) {
+                            onUpdateMilestoneField(m.id, 'dateText', val);
+                          }
+                        }}
+                        className="mdate"
+                      />
                     </div>
                     <div style={{ flex: 1, minWidth: 0, fontSize: '15px', lineHeight: '18px' }}>
-                      {m.label}
-                      {m.badge && (
+                      <CollaborativeCell
+                        cellId={`milestone_${m.id}_label`}
+                        value={safeLabel}
+                        fallbackValue={initial?.label}
+                        remoteFocus={labelFocus}
+                        canEdit={canEdit}
+                        onSave={(val) => {
+                          if (onUpdateMilestoneField) {
+                            onUpdateMilestoneField(m.id, 'label', val);
+                          }
+                        }}
+                      />
+                      {safeBadge && (
                         <span
                           style={{
                             display: 'inline-block',
-                            background: m.badge.type === 'confirmed' || m.badge.type === 'provided' ? '#4BE08A' : m.badge.type === 'planned' ? '#1F6FE0' : '#F5C518',
-                            color: m.badge.type === 'planned' ? '#fff' : '#060A24',
+                            background: safeBadge.type === 'confirmed' || safeBadge.type === 'provided' ? '#4BE08A' : safeBadge.type === 'planned' ? '#1F6FE0' : '#F5C518',
+                            color: safeBadge.type === 'planned' ? '#fff' : '#060A24',
                             fontSize: '11px',
                             fontWeight: 600,
                             padding: '0 7px',
@@ -243,15 +282,33 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                             verticalAlign: '1px',
                           }}
                         >
-                          {m.badge.text}
+                          {safeBadge.text}
                         </span>
                       )}
                     </div>
-                    <div style={{ flex: 'none' }}>
+                    <div
+                      style={{
+                        flex: 'none',
+                        position: 'relative',
+                        outline: statusFocus ? `2px solid ${statusFocus.userColor}` : undefined,
+                        outlineOffset: '2px',
+                        borderRadius: '12px',
+                      }}
+                    >
+                      {statusFocus && (
+                        <span
+                          className="absolute -top-3.5 right-0 z-20 px-1 py-0.2 text-[9px] font-bold rounded shadow pointer-events-none whitespace-nowrap"
+                          style={{ background: statusFocus.userColor, color: '#060A24' }}
+                        >
+                          {statusFocus.userName}
+                        </span>
+                      )}
                       <select
                         className="mst"
                         value={m.status}
                         disabled={!canEdit}
+                        onFocus={() => realtime.focusCell(`milestone_${m.id}_status`)}
+                        onBlur={() => realtime.blurCell(`milestone_${m.id}_status`)}
                         onChange={(e) => onUpdateMilestone(m.id, e.target.value as any)}
                         style={{ background: colors[0], color: colors[1], borderColor: colors[2] }}
                         aria-label="Milestone status"
