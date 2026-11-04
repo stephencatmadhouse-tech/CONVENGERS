@@ -63,7 +63,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
   return (
     <div className="toolbar">
-      <b>CONVENGERS BAHAY BUILD</b>
+      <div className="flex items-center gap-2 mr-2">
+        <b>CONVENGERS ASSEMBLE</b>
+        <span
+          className="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono tracking-wide text-[#F5C518] bg-[#060A24] border border-[#7B4DFF]/60 select-all"
+          title="Custom website address: www.ConvengersAssemble.com"
+        >
+          www.ConvengersAssemble.com
+        </span>
+      </div>
 
       {/* Google Sheets Live Collaborator Bar */}
       <CollaboratorBar

@@ -638,9 +638,9 @@ export default function App() {
 
       {/* Intro Header */}
       <header className="intro">
-        <h1>Convengers Bahay Build — Scope of Work Timeline</h1>
+        <h1>Convengers Assemble — Scope of Work Timeline</h1>
         <p>
-          Interactive full-stack project dashboard for the Convengers Bahay Build: timeline, scopes of work, concrete pouring milestones, upcoming activities, and content calendar. Real-time persistent database with role-based permissions and secure authentication.
+          Interactive full-stack project dashboard for the Convengers Bahay Build: timeline, scopes of work, concrete pouring milestones, upcoming activities, and content calendar. Official portal at <b className="text-[#F5C518]">www.ConvengersAssemble.com</b>. Real-time persistent database with role-based permissions and secure authentication.
         </p>
       </header>
 

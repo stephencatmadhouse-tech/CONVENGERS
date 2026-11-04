@@ -260,14 +260,31 @@ export const ShareModal: React.FC<{
   onCopyLink: () => void;
 }> = ({ onClose, onPrintPdf, onCopyLink }) => {
   const [tab, setTab] = useState<'share' | 'export'>('share');
-  const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://convengers.ph';
-  const shareText = `Here is the Convengers Bahay Build timeline: schedule, scopes of work, key milestones and content calendar.\n\nLink: ${currentUrl}`;
+  const [copiedDomain, setCopiedDomain] = useState(false);
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://www.convengersassemble.com';
+  const customDomain = 'https://www.convengersassemble.com';
+  const shareText = `Here is the Convengers Assemble Bahay Build timeline (schedule, scopes of work, key milestones, and content calendar).\n\nWebsite: ${customDomain}\nLive App: ${currentUrl}`;
+
+  const copyCustomDomain = async () => {
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(customDomain);
+        setCopiedDomain(true);
+        setTimeout(() => setCopiedDomain(false), 2000);
+      }
+    } catch {
+      // fallback
+    }
+  };
 
   return (
     <div className="shm">
-      <div className="shbox" style={{ maxWidth: '540px' }}>
+      <div className="shbox" style={{ maxWidth: '560px' }}>
         <div className="shhead">
-          <h2>Convengers Bahay Build Timeline</h2>
+          <div>
+            <h2 className="text-lg font-bold text-white tracking-wide">Convengers Assemble</h2>
+            <div className="text-xs text-[#F5C518] font-mono">www.ConvengersAssemble.com</div>
+          </div>
           <button type="button" className="shx" onClick={onClose}>
             ×
           </button>
@@ -296,14 +313,35 @@ export const ShareModal: React.FC<{
               id="shmsg"
               readOnly
               value={shareText}
-              style={{ width: '100%', minHeight: '84px', marginBottom: '12px' }}
+              style={{ width: '100%', minHeight: '96px', marginBottom: '12px' }}
             />
-            <div className="shlink">
-              <input readOnly value={currentUrl} />
-              <button type="button" className="shbtn" onClick={onCopyLink}>
-                Copy link
-              </button>
+
+            <div className="mb-3 space-y-2">
+              <div>
+                <span className="text-[11px] font-bold tracking-wider uppercase text-[#BAC4E2] block mb-1">
+                  Custom Domain Link:
+                </span>
+                <div className="shlink">
+                  <input readOnly value={customDomain} className="font-mono text-xs text-[#F5C518]" />
+                  <button type="button" className="shbtn pri" onClick={copyCustomDomain}>
+                    {copiedDomain ? 'Copied!' : 'Copy Domain'}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-[11px] font-bold tracking-wider uppercase text-[#BAC4E2] block mb-1">
+                  Direct Live Cloud Link:
+                </span>
+                <div className="shlink">
+                  <input readOnly value={currentUrl} className="font-mono text-xs" />
+                  <button type="button" className="shbtn" onClick={onCopyLink}>
+                    Copy Link
+                  </button>
+                </div>
+              </div>
             </div>
+
             <div className="shrow">
               <button
                 type="button"
@@ -312,7 +350,7 @@ export const ShareModal: React.FC<{
                   window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
                 }}
               >
-                WhatsApp
+                Share via WhatsApp
               </button>
             </div>
           </div>
