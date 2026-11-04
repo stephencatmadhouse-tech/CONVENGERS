@@ -39,8 +39,11 @@ const PAPER_SIZES: Record<string, { size: string; width: number; height: number 
 export default function App() {
   const [data, setData] = useState<FullDashboardData>(() => api.getInitialDashboard());
   const [loading, setLoading] = useState(false);
+  const [isLiveConnected, setIsLiveConnected] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isEditingText, setIsEditingText] = useState(false);
+  const isEditingTextRef = useRef(false);
+  isEditingTextRef.current = isEditingText;
 
   // Modals
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -62,15 +65,92 @@ export default function App() {
     try {
       const full = await api.getFullDashboard();
       if (full) {
-        setData(full);
+        setData((prev) => {
+          if (isEditingTextRef.current) return prev;
+          return {
+            ...full,
+            user: prev?.user || full.user,
+            settings: {
+              ...full.settings,
+              theme: prev?.settings?.theme || full.settings.theme,
+              paper: prev?.settings?.paper || full.settings.paper,
+            },
+          };
+        });
       }
     } catch (err: any) {
       console.warn('Network sync notice:', err);
     }
   }, []);
 
+  // Real-time SSE synchronization across teammates & phones
   useEffect(() => {
-    fetchData();
+    let eventSource: EventSource | null = null;
+    let pollTimer: NodeJS.Timeout | null = null;
+    let reconnectTimer: NodeJS.Timeout | null = null;
+
+    const connectSSE = () => {
+      try {
+        eventSource = new EventSource('/api/events');
+
+        eventSource.onopen = () => {
+          setIsLiveConnected(true);
+        };
+
+        eventSource.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            if (payload && (payload.type === 'DASHBOARD_UPDATED' || payload.type === 'CONNECTED') && payload.data) {
+              setData((prev) => {
+                if (isEditingTextRef.current) return prev;
+                const incoming = payload.data as FullDashboardData;
+                return {
+                  ...incoming,
+                  user: prev?.user || incoming.user,
+                  settings: {
+                    ...incoming.settings,
+                    theme: prev?.settings?.theme || incoming.settings.theme,
+                    paper: prev?.settings?.paper || incoming.settings.paper,
+                  },
+                };
+              });
+            }
+          } catch (e) {
+            console.error('SSE parse error:', e);
+          }
+        };
+
+        eventSource.onerror = () => {
+          setIsLiveConnected(false);
+          eventSource?.close();
+          if (reconnectTimer) clearTimeout(reconnectTimer);
+          reconnectTimer = setTimeout(connectSSE, 4000);
+        };
+      } catch {
+        setIsLiveConnected(false);
+      }
+    };
+
+    connectSSE();
+
+    // 5-second polling fallback for mobile devices
+    pollTimer = setInterval(() => {
+      fetchData();
+    }, 5000);
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchData();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      if (eventSource) eventSource.close();
+      if (pollTimer) clearInterval(pollTimer);
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [fetchData]);
 
   // Window resize calculation for --s
@@ -170,7 +250,7 @@ export default function App() {
       showToast('Viewer role is read-only. Please sign in as staff, manager, or admin.');
       return;
     }
-    // Optimistic
+    // Optimistic: preserve all existing fields
     setData((prev) => {
       if (!prev) return prev;
       return {
@@ -184,10 +264,19 @@ export default function App() {
         if (!prev) return prev;
         return {
           ...prev,
-          milestones: prev.milestones.map((m) => (m.id === id ? updated : m)),
+          milestones: prev.milestones.map((m) =>
+            m.id === id
+              ? {
+                  ...m,
+                  ...updated,
+                  label: (updated.label && updated.label.trim()) || m.label,
+                  dateText: (updated.dateText && updated.dateText.trim()) || m.dateText,
+                }
+              : m
+          ),
         };
       });
-      showToast('Milestone status saved to database');
+      showToast('Milestone status saved & synced');
     } catch (err: any) {
       showToast(err.message || 'Failed to update milestone');
       fetchData();
@@ -212,7 +301,15 @@ export default function App() {
         if (!prev) return prev;
         return {
           ...prev,
-          scopes: prev.scopes.map((s) => (s.id === id ? updated : s)),
+          scopes: prev.scopes.map((s) =>
+            s.id === id
+              ? {
+                  ...s,
+                  ...updated,
+                  name: (updated.name && updated.name.trim()) || s.name,
+                }
+              : s
+          ),
         };
       });
     } catch (err: any) {
@@ -449,6 +546,7 @@ export default function App() {
         user={data.user}
         settings={data.settings}
         isEditing={isEditingText}
+        isLiveConnected={isLiveConnected}
         onToggleEditing={() => setIsEditingText(!isEditingText)}
         onOpenAuth={() => setIsAuthOpen(true)}
         onOpenShare={() => setIsShareOpen(true)}

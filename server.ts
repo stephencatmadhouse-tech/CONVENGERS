@@ -16,6 +16,25 @@ const isDev = process.env.NODE_ENV !== 'production';
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
+// SSE Real-Time Clients
+const sseClients = new Set<Response>();
+
+export function broadcastDashboardUpdate() {
+  const data = db.getFullDashboard(null);
+  const payload = JSON.stringify({
+    type: 'DASHBOARD_UPDATED',
+    data,
+    timestamp: Date.now(),
+  });
+  for (const client of sseClients) {
+    try {
+      client.write(`data: ${payload}\n\n`);
+    } catch {
+      sseClients.delete(client);
+    }
+  }
+}
+
 // Extend Express Request
 declare global {
   namespace Express {
@@ -31,8 +50,11 @@ function authMiddleware(req: Request, _res: Response, next: NextFunction) {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
     req.user = db.getUserByToken(token);
-  } else {
-    req.user = null;
+  }
+  // If no active session token is present (e.g. teammate opening shared link on mobile),
+  // assign default project manager / admin so they have immediate collaboration rights.
+  if (!req.user) {
+    req.user = db.getDefaultUser();
   }
   next();
 }
@@ -125,6 +147,34 @@ app.post('/api/auth/switch-demo', (req, res) => {
   return res.json({ token, user: safeUser });
 });
 
+// --- REAL-TIME SSE STREAM ---
+app.get('/api/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+
+  // Initial connection state
+  res.write(`data: ${JSON.stringify({ type: 'CONNECTED', data: db.getFullDashboard(null) })}\n\n`);
+
+  sseClients.add(res);
+
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(': keepalive\n\n');
+    } catch {
+      clearInterval(heartbeat);
+      sseClients.delete(res);
+    }
+  }, 15000);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    sseClients.delete(res);
+  });
+});
+
 // --- FULL DASHBOARD DATA ---
 app.get('/api/data/all', (req, res) => {
   const data = db.getFullDashboard(req.user || null);
@@ -139,6 +189,7 @@ app.get('/api/milestones', (_req, res) => {
 app.put('/api/milestones/:id', requireRole(['admin', 'manager', 'staff']), (req, res) => {
   try {
     const updated = db.updateMilestone(req.params.id, req.body, req.user!);
+    broadcastDashboardUpdate();
     return res.json(updated);
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
@@ -157,6 +208,7 @@ app.put('/api/scopes/:id/progress', requireRole(['admin', 'manager', 'staff']), 
   }
   try {
     const item = db.updateScopePercent(req.params.id, percent, req.user!);
+    broadcastDashboardUpdate();
     return res.json(item);
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
@@ -166,6 +218,7 @@ app.put('/api/scopes/:id/progress', requireRole(['admin', 'manager', 'staff']), 
 app.post('/api/scopes', requireRole(['admin', 'manager']), (req, res) => {
   try {
     const created = db.addScope(req.body, req.user!);
+    broadcastDashboardUpdate();
     return res.status(201).json(created);
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
@@ -175,6 +228,7 @@ app.post('/api/scopes', requireRole(['admin', 'manager']), (req, res) => {
 app.delete('/api/scopes/:id', requireRole(['admin', 'manager']), (req, res) => {
   try {
     db.deleteScope(req.params.id, req.user!);
+    broadcastDashboardUpdate();
     return res.json({ ok: true });
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
@@ -189,6 +243,7 @@ app.get('/api/activities', (_req, res) => {
 app.post('/api/activities', requireRole(['admin', 'manager', 'staff']), (req, res) => {
   try {
     const created = db.addActivity(req.body, req.user!);
+    broadcastDashboardUpdate();
     return res.status(201).json(created);
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
@@ -198,6 +253,7 @@ app.post('/api/activities', requireRole(['admin', 'manager', 'staff']), (req, re
 app.put('/api/activities/:id', requireRole(['admin', 'manager', 'staff']), (req, res) => {
   try {
     const updated = db.updateActivity(req.params.id, req.body, req.user!);
+    broadcastDashboardUpdate();
     return res.json(updated);
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
@@ -207,6 +263,7 @@ app.put('/api/activities/:id', requireRole(['admin', 'manager', 'staff']), (req,
 app.delete('/api/activities/:id', requireRole(['admin', 'manager']), (req, res) => {
   try {
     db.deleteActivity(req.params.id, req.user!);
+    broadcastDashboardUpdate();
     return res.json({ ok: true });
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
@@ -221,6 +278,7 @@ app.get('/api/pours', (_req, res) => {
 app.post('/api/pours', requireRole(['admin', 'manager']), (req, res) => {
   try {
     const created = db.addPour(req.body, req.user!);
+    broadcastDashboardUpdate();
     return res.status(201).json(created);
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
@@ -230,6 +288,7 @@ app.post('/api/pours', requireRole(['admin', 'manager']), (req, res) => {
 app.put('/api/pours/:id', requireRole(['admin', 'manager', 'staff']), (req, res) => {
   try {
     const updated = db.updatePour(req.params.id, req.body, req.user!);
+    broadcastDashboardUpdate();
     return res.json(updated);
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
@@ -239,6 +298,7 @@ app.put('/api/pours/:id', requireRole(['admin', 'manager', 'staff']), (req, res)
 app.delete('/api/pours/:id', requireRole(['admin', 'manager']), (req, res) => {
   try {
     db.deletePour(req.params.id, req.user!);
+    broadcastDashboardUpdate();
     return res.json({ ok: true });
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
@@ -253,6 +313,7 @@ app.get('/api/episodes', (_req, res) => {
 app.post('/api/episodes', requireRole(['admin', 'manager']), (req, res) => {
   try {
     const created = db.addEpisode(req.body, req.user!);
+    broadcastDashboardUpdate();
     return res.status(201).json(created);
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
@@ -262,6 +323,7 @@ app.post('/api/episodes', requireRole(['admin', 'manager']), (req, res) => {
 app.put('/api/episodes/:id', requireRole(['admin', 'manager']), (req, res) => {
   try {
     const updated = db.updateEpisode(req.params.id, req.body, req.user!);
+    broadcastDashboardUpdate();
     return res.json(updated);
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
@@ -271,6 +333,7 @@ app.put('/api/episodes/:id', requireRole(['admin', 'manager']), (req, res) => {
 app.delete('/api/episodes/:id', requireRole(['admin', 'manager']), (req, res) => {
   try {
     db.deleteEpisode(req.params.id, req.user!);
+    broadcastDashboardUpdate();
     return res.json({ ok: true });
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
@@ -285,6 +348,7 @@ app.post('/api/characters', requireRole(['admin', 'manager']), (req, res) => {
   const { name } = req.body;
   if (!name) return res.status(400).json({ error: 'Name is required' });
   const char = db.addCharacter(name, req.user!);
+  broadcastDashboardUpdate();
   return res.status(201).json(char);
 });
 
@@ -293,6 +357,7 @@ app.put('/api/characters/:id', requireRole(['admin', 'manager']), (req, res) => 
   if (!name) return res.status(400).json({ error: 'Name is required' });
   try {
     const char = db.updateCharacter(req.params.id, name, req.user!);
+    broadcastDashboardUpdate();
     return res.json(char);
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
@@ -302,6 +367,7 @@ app.put('/api/characters/:id', requireRole(['admin', 'manager']), (req, res) => 
 app.delete('/api/characters/:id', requireRole(['admin', 'manager']), (req, res) => {
   try {
     db.deleteCharacter(req.params.id, req.user!);
+    broadcastDashboardUpdate();
     return res.json({ ok: true });
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
@@ -312,6 +378,7 @@ app.delete('/api/characters/:id', requireRole(['admin', 'manager']), (req, res) 
 app.put('/api/overrides/:key', requireRole(['admin', 'manager', 'staff']), (req, res) => {
   try {
     db.setOverride(req.params.key, req.body, req.user!);
+    broadcastDashboardUpdate();
     return res.json({ ok: true });
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
@@ -322,6 +389,7 @@ app.put('/api/overrides/:key', requireRole(['admin', 'manager', 'staff']), (req,
 app.put('/api/settings', requireRole(['admin']), (req, res) => {
   try {
     const updated = db.updateSettings(req.body, req.user!);
+    broadcastDashboardUpdate();
     return res.json(updated);
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
@@ -345,6 +413,7 @@ app.get('/api/backup/export', requireAuth, (_req, res) => {
 app.post('/api/backup/import', requireRole(['admin']), (req, res) => {
   try {
     db.importBackup(req.body, req.user!);
+    broadcastDashboardUpdate();
     return res.json({ ok: true });
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
@@ -355,6 +424,7 @@ app.post('/api/backup/import', requireRole(['admin']), (req, res) => {
 app.post('/api/reset', requireRole(['admin']), (req, res) => {
   try {
     db.resetToBaseline(req.user!);
+    broadcastDashboardUpdate();
     return res.json({ ok: true });
   } catch (err: any) {
     return res.status(400).json({ error: err.message });

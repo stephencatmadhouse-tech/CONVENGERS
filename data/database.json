@@ -68,7 +68,9 @@
         "text": "Fixed target",
         "type": "fixed"
       },
-      "status": "Upcoming"
+      "status": "In progress",
+      "updatedAt": "2026-11-04T04:14:35.556Z",
+      "updatedBy": "Chief Project Director"
     },
     {
       "id": "m_2",
@@ -79,7 +81,9 @@
         "text": "Confirmed",
         "type": "confirmed"
       },
-      "status": "Upcoming"
+      "status": "Complete",
+      "updatedAt": "2026-11-04T04:14:55.047Z",
+      "updatedBy": "Chief Project Director"
     },
     {
       "id": "m_3",
@@ -1805,5 +1809,26 @@
     }
   ],
   "overrides": {},
-  "auditLogs": []
+  "auditLogs": [
+    {
+      "id": "log_1793765695047_8bxal",
+      "userId": "usr_admin",
+      "userEmail": "admin@convengers.ph",
+      "action": "UPDATE",
+      "entityType": "Milestone",
+      "entityId": "m_2",
+      "details": "Updated to Complete",
+      "timestamp": "2026-11-04T04:14:55.047Z"
+    },
+    {
+      "id": "log_1793765675556_cegm8",
+      "userId": "usr_admin",
+      "userEmail": "admin@convengers.ph",
+      "action": "UPDATE",
+      "entityType": "Milestone",
+      "entityId": "m_1",
+      "details": "Updated to In progress",
+      "timestamp": "2026-11-04T04:14:35.556Z"
+    }
+  ]
 }

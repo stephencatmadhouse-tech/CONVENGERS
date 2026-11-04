@@ -74,6 +74,20 @@ export class DatabaseEngine {
         const raw = fs.readFileSync(this.dbPath, 'utf-8');
         const parsed = JSON.parse(raw);
         if (parsed && parsed.version && Array.isArray(parsed.milestones)) {
+          // Self-heal: ensure all milestones retain their original title, dateText, and badges if missing
+          parsed.milestones = parsed.milestones.map((m: Milestone) => {
+            const initial = INITIAL_MILESTONES.find((im) => im.id === m.id);
+            if (initial) {
+              return {
+                ...initial,
+                ...m,
+                label: m.label && m.label.trim() ? m.label : initial.label,
+                dateText: m.dateText && m.dateText.trim() ? m.dateText : initial.dateText,
+                badge: m.badge || initial.badge,
+              };
+            }
+            return m;
+          });
           return parsed;
         }
       }
@@ -221,6 +235,12 @@ export class DatabaseEngine {
     this.save();
   }
 
+  public getDefaultUser(): User {
+    const admin = this.data.users.find(u => u.role === 'admin') || this.data.users[0];
+    const { passwordHash, salt, ...safeUser } = admin;
+    return safeUser;
+  }
+
   // --- FULL DATA FETCH ---
   public getFullDashboard(currentUser: User | null): FullDashboardData {
     return {
@@ -247,10 +267,31 @@ export class DatabaseEngine {
   public updateMilestone(id: string, updates: Partial<Milestone>, user: User): Milestone {
     const item = this.data.milestones.find(m => m.id === id);
     if (!item) throw new Error('Milestone not found');
-    Object.assign(item, updates, {
+
+    // Never allow valid titles or dates to be erased with empty strings
+    const safeUpdates: Partial<Milestone> = { ...updates };
+    if ('label' in safeUpdates && (!safeUpdates.label || !safeUpdates.label.trim())) {
+      delete safeUpdates.label;
+    }
+    if ('dateText' in safeUpdates && (!safeUpdates.dateText || !safeUpdates.dateText.trim())) {
+      delete safeUpdates.dateText;
+    }
+
+    Object.assign(item, safeUpdates, {
       updatedAt: new Date().toISOString(),
       updatedBy: user.name,
     });
+
+    // Ensure item has label and dateText from INITIAL_MILESTONES if missing
+    if (!item.label || !item.dateText) {
+      const initial = INITIAL_MILESTONES.find(im => im.id === id);
+      if (initial) {
+        item.label = item.label || initial.label;
+        item.dateText = item.dateText || initial.dateText;
+        item.badge = item.badge || initial.badge;
+      }
+    }
+
     this.logAudit(user.id, user.email, 'UPDATE', 'Milestone', id, `Updated to ${item.status}`);
     this.save();
     return item;

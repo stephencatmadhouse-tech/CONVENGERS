@@ -21,6 +21,7 @@ interface ToolbarProps {
   onImportBackup: (file: File) => void;
   onOpenAuditLogs: () => void;
   onReset: () => void;
+  isLiveConnected?: boolean;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -38,6 +39,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onImportBackup,
   onOpenAuditLogs,
   onReset,
+  isLiveConnected = true,
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -59,6 +61,27 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   return (
     <div className="toolbar">
       <b>CONVENGERS BAHAY BUILD</b>
+
+      {/* Live Sync Status indicator */}
+      <div
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold select-none"
+        style={{
+          background: isLiveConnected ? 'rgba(75, 224, 138, 0.15)' : 'rgba(255, 154, 31, 0.15)',
+          border: `1px solid ${isLiveConnected ? '#4BE08A' : '#FF9A1F'}`,
+          color: isLiveConnected ? '#4BE08A' : '#FF9A1F',
+        }}
+        title={
+          isLiveConnected
+            ? 'Real-time synchronization connected. Updates sync live across all phones and devices.'
+            : 'Reconnecting real-time stream...'
+        }
+      >
+        <span
+          className={`w-2 h-2 rounded-full inline-block ${isLiveConnected ? 'animate-pulse' : ''}`}
+          style={{ background: isLiveConnected ? '#4BE08A' : '#FF9A1F' }}
+        />
+        <span>{isLiveConnected ? 'LIVE SYNC' : 'SYNCING...'}</span>
+      </div>
 
       {/* Role / Auth badge */}
       <button
