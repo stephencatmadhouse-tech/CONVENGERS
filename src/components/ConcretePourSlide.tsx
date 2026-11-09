@@ -119,7 +119,7 @@ export const ConcretePourSlide: React.FC<ConcretePourSlideProps> = ({
             className="logo"
             src={LOGO_SVG}
             alt="Logo"
-            style={{ width: '176px', height: '150px', flex: 'none', display: 'block', clipPath: 'polygon(0 0,98% 0,81% 100%,0 100%)', borderRadius: '10px 0 0 10px' }}
+            style={{ width: '176px', height: '150px', flex: 'none', display: 'block', objectFit: 'contain', borderRadius: '12px', filter: 'drop-shadow(0 0 16px rgba(123,77,255,0.65))' }}
           />
           <div className="ttl" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase' }}>
@@ -138,10 +138,10 @@ export const ConcretePourSlide: React.FC<ConcretePourSlideProps> = ({
               Concrete pouring
             </span>
             <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '22px', color: '#F5C518' }}>
-              09
+              06
             </span>
             <span style={{ fontSize: '15px', color: '#BAC4E2' }}>
-              / 11
+              / 12
             </span>
           </div>
         </div>
@@ -271,127 +271,165 @@ export const ConcretePourSlide: React.FC<ConcretePourSlideProps> = ({
                         className={`pmrow cmrow ${isOver ? 'od' : isDone ? 'ok' : ''}`}
                       >
                         <div className="pmc" data-l="Component / area">
-                          <input
-                            className="pmi"
-                            value={p.component}
-                            disabled={!canEdit}
-                            onChange={(e) => onUpdatePour(p.id, { component: e.target.value })}
-                            placeholder="Component / area"
-                          />
+                          {canEdit ? (
+                            <input
+                              className="pmi"
+                              value={p.component}
+                              onChange={(e) => onUpdatePour(p.id, { component: e.target.value })}
+                              placeholder="Component / area"
+                            />
+                          ) : (
+                            <span className="font-semibold text-white text-xs">{p.component}</span>
+                          )}
                         </div>
                         <div className="pmc" data-l="Pouring activity">
-                          <input
-                            className="pmi"
-                            value={p.activity}
-                            disabled={!canEdit}
-                            onChange={(e) => onUpdatePour(p.id, { activity: e.target.value })}
-                            placeholder="Pouring activity"
-                          />
+                          {canEdit ? (
+                            <input
+                              className="pmi"
+                              value={p.activity}
+                              onChange={(e) => onUpdatePour(p.id, { activity: e.target.value })}
+                              placeholder="Pouring activity"
+                            />
+                          ) : (
+                            <span className="text-[#BAC4E2] text-xs">{p.activity}</span>
+                          )}
+                          {p.updatedBy && (
+                            <div className="text-[10px] text-[#BAC4E2]/70 italic mt-0.5">
+                              Updated by {p.updatedBy} {p.updatedAt ? `on ${new Date(p.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                            </div>
+                          )}
                         </div>
                         <div className="pmc" data-l="Target pour">
-                          <input
-                            className="pmi"
-                            type="date"
-                            value={p.targetPour}
-                            disabled={!canEdit}
-                            onChange={(e) => onUpdatePour(p.id, { targetPour: e.target.value })}
-                          />
+                          {canEdit ? (
+                            <input
+                              className="pmi"
+                              type="date"
+                              value={p.targetPour}
+                              onChange={(e) => onUpdatePour(p.id, { targetPour: e.target.value })}
+                            />
+                          ) : (
+                            <span className="font-mono text-xs text-white">{p.targetPour || '—'}</span>
+                          )}
                         </div>
                         <div className="pmc" data-l="Actual pour">
-                          <input
-                            className="pmi"
-                            type="date"
-                            value={p.actualPour}
-                            disabled={!canEdit}
-                            onChange={(e) => onUpdatePour(p.id, { actualPour: e.target.value })}
-                          />
+                          {canEdit ? (
+                            <input
+                              className="pmi"
+                              type="date"
+                              value={p.actualPour}
+                              onChange={(e) => onUpdatePour(p.id, { actualPour: e.target.value })}
+                            />
+                          ) : (
+                            <span className="font-mono text-xs text-[#4BE08A]">{p.actualPour || '—'}</span>
+                          )}
                         </div>
                         <div className="pmc" data-l="Target compl.">
-                          <input
-                            className="pmi"
-                            type="date"
-                            value={p.targetCompletion}
-                            disabled={!canEdit}
-                            onChange={(e) => onUpdatePour(p.id, { targetCompletion: e.target.value })}
-                          />
+                          {canEdit ? (
+                            <input
+                              className="pmi"
+                              type="date"
+                              value={p.targetCompletion}
+                              onChange={(e) => onUpdatePour(p.id, { targetCompletion: e.target.value })}
+                            />
+                          ) : (
+                            <span className="font-mono text-xs text-white">{p.targetCompletion || '—'}</span>
+                          )}
                         </div>
                         <div className="pmc" data-l="Actual compl.">
-                          <input
-                            className="pmi"
-                            type="date"
-                            value={p.actualCompletion}
-                            disabled={!canEdit}
-                            onChange={(e) => onUpdatePour(p.id, { actualCompletion: e.target.value })}
-                          />
+                          {canEdit ? (
+                            <input
+                              className="pmi"
+                              type="date"
+                              value={p.actualCompletion}
+                              onChange={(e) => onUpdatePour(p.id, { actualCompletion: e.target.value })}
+                            />
+                          ) : (
+                            <span className="font-mono text-xs text-[#4BE08A]">{p.actualCompletion || '—'}</span>
+                          )}
                         </div>
                         <div className="pmc" data-l="Preparation">
-                          <select
-                            className="pms"
-                            value={p.prepStatus}
-                            disabled={!canEdit}
-                            onChange={(e) => onUpdatePour(p.id, { prepStatus: e.target.value as any })}
-                          >
-                            <option value="Not started">Not started</option>
-                            <option value="Ongoing">Ongoing</option>
-                            <option value="Ready">Ready</option>
-                            <option value="Completed">Completed</option>
-                          </select>
+                          {canEdit ? (
+                            <select
+                              className="pms"
+                              value={p.prepStatus}
+                              onChange={(e) => onUpdatePour(p.id, { prepStatus: e.target.value as any })}
+                            >
+                              <option value="Not started">Not started</option>
+                              <option value="Ongoing">Ongoing</option>
+                              <option value="Ready">Ready</option>
+                              <option value="Completed">Completed</option>
+                            </select>
+                          ) : (
+                            <span className="text-xs text-[#BAC4E2] font-semibold">{p.prepStatus}</span>
+                          )}
                         </div>
                         <div className="pmc" data-l="Pouring">
-                          <select
-                            className="pms"
-                            value={p.pourStatus}
-                            disabled={!canEdit}
-                            onChange={(e) => onUpdatePour(p.id, { pourStatus: e.target.value as any })}
-                          >
-                            <option value="Not poured">Not poured</option>
-                            <option value="Scheduled">Scheduled</option>
-                            <option value="Ongoing">Ongoing</option>
-                            <option value="Completed">Completed</option>
-                          </select>
+                          {canEdit ? (
+                            <select
+                              className="pms"
+                              value={p.pourStatus}
+                              onChange={(e) => onUpdatePour(p.id, { pourStatus: e.target.value as any })}
+                            >
+                              <option value="Not poured">Not poured</option>
+                              <option value="Scheduled">Scheduled</option>
+                              <option value="Ongoing">Ongoing</option>
+                              <option value="Completed">Completed</option>
+                            </select>
+                          ) : (
+                            <span className="text-xs text-[#BAC4E2] font-semibold">{p.pourStatus}</span>
+                          )}
                         </div>
                         <div className="pmc" data-l="Curing">
-                          <select
-                            className="pms"
-                            value={p.cureStatus}
-                            disabled={!canEdit}
-                            onChange={(e) => onUpdatePour(p.id, { cureStatus: e.target.value as any })}
-                          >
-                            <option value="Not started">Not started</option>
-                            <option value="Ongoing">Ongoing</option>
-                            <option value="Completed">Completed</option>
-                          </select>
+                          {canEdit ? (
+                            <select
+                              className="pms"
+                              value={p.cureStatus}
+                              onChange={(e) => onUpdatePour(p.id, { cureStatus: e.target.value as any })}
+                            >
+                              <option value="Not started">Not started</option>
+                              <option value="Ongoing">Ongoing</option>
+                              <option value="Completed">Completed</option>
+                            </select>
+                          ) : (
+                            <span className="text-xs text-[#BAC4E2] font-semibold">{p.cureStatus}</span>
+                          )}
                         </div>
                         <div className="pmc" data-l="Inspection">
-                          <select
-                            className="pms"
-                            value={p.inspStatus}
-                            disabled={!canEdit}
-                            onChange={(e) => onUpdatePour(p.id, { inspStatus: e.target.value as any })}
-                          >
-                            <option value="Pending">Pending</option>
-                            <option value="For inspection">For inspection</option>
-                            <option value="Approved">Approved</option>
-                            <option value="Rejected">Rejected</option>
-                          </select>
+                          {canEdit ? (
+                            <select
+                              className="pms"
+                              value={p.inspStatus}
+                              onChange={(e) => onUpdatePour(p.id, { inspStatus: e.target.value as any })}
+                            >
+                              <option value="Pending">Pending</option>
+                              <option value="For inspection">For inspection</option>
+                              <option value="Approved">Approved</option>
+                              <option value="Rejected">Rejected</option>
+                            </select>
+                          ) : (
+                            <span className="text-xs text-[#BAC4E2] font-semibold">{p.inspStatus}</span>
+                          )}
                         </div>
                         <div className="pmc" data-l="Milestone status">
-                          <select
-                            className="pms"
-                            value={p.milestoneStatus}
-                            disabled={!canEdit}
-                            onChange={(e) => onUpdatePour(p.id, { milestoneStatus: e.target.value as any })}
-                          >
-                            <option value="Not Yet Started">Not Yet Started</option>
-                            <option value="Preparation Ongoing">Preparation Ongoing</option>
-                            <option value="Ready for Pouring">Ready for Pouring</option>
-                            <option value="Scheduled for Pouring">Scheduled for Pouring</option>
-                            <option value="Pouring Ongoing">Pouring Ongoing</option>
-                            <option value="Pouring Completed">Pouring Completed</option>
-                            <option value="Curing Ongoing">Curing Ongoing</option>
-                            <option value="Completed / Approved">Completed / Approved</option>
-                            <option value="Delayed">Delayed</option>
-                          </select>
+                          {canEdit ? (
+                            <select
+                              className="pms"
+                              value={p.milestoneStatus}
+                              onChange={(e) => onUpdatePour(p.id, { milestoneStatus: e.target.value as any })}
+                            >
+                              <option value="Not Yet Started">Not Yet Started</option>
+                              <option value="Preparation Ongoing">Preparation Ongoing</option>
+                              <option value="Ready for Pouring">Ready for Pouring</option>
+                              <option value="Scheduled for Pouring">Scheduled for Pouring</option>
+                              <option value="Pouring Ongoing">Pouring Ongoing</option>
+                              <option value="Pouring Completed">Pouring Completed</option>
+                              <option value="Curing Ongoing">Curing Ongoing</option>
+                              <option value="Completed / Approved">Completed / Approved</option>
+                              <option value="Delayed">Delayed</option>
+                            </select>
+                          ) : (
+                            <span className="font-bold text-xs text-[#F5C518]">{p.milestoneStatus}</span>
+                          )}
                           {isOver && (
                             <span className="pmtag" style={{ background: '#E0213B', color: '#fff', marginLeft: '4px' }}>
                               OVERDUE
@@ -399,13 +437,16 @@ export const ConcretePourSlide: React.FC<ConcretePourSlideProps> = ({
                           )}
                         </div>
                         <div className="pmc" data-l="Remarks">
-                          <input
-                            className="pmi"
-                            value={p.remarks}
-                            disabled={!canEdit}
-                            onChange={(e) => onUpdatePour(p.id, { remarks: e.target.value })}
-                            placeholder="Remarks"
-                          />
+                          {canEdit ? (
+                            <input
+                              className="pmi"
+                              value={p.remarks}
+                              onChange={(e) => onUpdatePour(p.id, { remarks: e.target.value })}
+                              placeholder="Remarks"
+                            />
+                          ) : (
+                            <span className="text-xs text-[#BAC4E2] italic">{p.remarks || '—'}</span>
+                          )}
                         </div>
                         <div className="pmc act">
                           {canEdit && (

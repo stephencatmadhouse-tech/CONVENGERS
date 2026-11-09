@@ -25,6 +25,15 @@ export const INITIAL_USERS: UserWithCredentials[] = [
     createdAt: '2026-10-01T08:00:00.000Z',
   },
   {
+    id: 'usr_stephen',
+    name: 'Stephen (Madhouse Lead)',
+    email: 'stephencat.madhouse@gmail.com',
+    role: 'admin',
+    passwordHash: '475a04021af67a79f12b778e446763363f8862f70e79468247e86e0d563abdc84adaf14589abdffe5dc6ef9b2353421e073620c8b09d347ff4f2b19d160093ba',
+    salt: 'b72c34ef41e055e61170c4eebe06d558',
+    createdAt: '2026-10-01T08:00:00.000Z',
+  },
+  {
     id: 'usr_manager',
     name: 'Site Operations Manager',
     email: 'manager@convengers.ph',

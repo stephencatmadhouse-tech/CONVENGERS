@@ -1,0 +1,179 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common security helpers
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isCurrentUser(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isStephen() {
+      return isSignedIn() && (
+        (request.auth.token.email != null && request.auth.token.email.lower() == 'stephencat.madhouse@gmail.com')
+      );
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function getUserRole() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? getUserData().role
+        : (isStephen() ? 'admin' : 'viewer');
+    }
+
+    function getUserStatus() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? (getUserData().status == null ? 'active' : getUserData().status)
+        : (isStephen() ? 'active' : 'pending');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        isStephen() ||
+        (getUserRole() == 'admin' && getUserStatus() == 'active')
+      );
+    }
+
+    function isManager() {
+      return isSignedIn() && (
+        isAdmin() ||
+        (getUserRole() == 'manager' && getUserStatus() == 'active')
+      );
+    }
+
+    function isStaff() {
+      return isSignedIn() && (
+        isManager() ||
+        (getUserRole() == 'staff' && getUserStatus() == 'active')
+      );
+    }
+
+    // --- USERS COLLECTION ---
+    // Only admin can read or write the users collection and change roles.
+    // Self-registration: bootstrap Stephen as 'admin', anyone else is 'pending'.
+    // User can NEVER change their own role.
+    match /users/{userId} {
+      // Admins can list and read all users. A user can read their own profile to get their role.
+      allow get: if isCurrentUser(userId) || isAdmin();
+      allow list: if isAdmin();
+
+      // Registration: User creates their own document on sign-up.
+      // Stephen gets 'admin'. All other users get 'pending'.
+      allow create: if isCurrentUser(userId) && (
+        (isStephen() && incoming().role == 'admin') ||
+        (!isStephen() && incoming().role == 'pending')
+      ) && incoming().uid == userId;
+
+      // Role changes: Only admin can update users, and a user can NEVER change their own role.
+      allow update: if isAdmin() && request.auth.uid != userId && (
+        (!incoming().diff(existing()).affectedKeys().hasAny(['role']) ||
+         incoming().role in ['admin', 'manager', 'staff', 'viewer', 'pending'])
+      );
+
+      // Deletion: Only admin can delete a user, cannot delete self.
+      allow delete: if isAdmin() && request.auth.uid != userId;
+    }
+
+    // --- MILESTONES ---
+    // Anyone (including unauthenticated viewers) can READ.
+    // Only admin and manager can create/delete or change date/label.
+    // Staff can only update status, updatedAt, updatedBy, and notes.
+    match /milestones/{milestoneId} {
+      allow read: if true;
+      allow create, delete: if isManager();
+      allow update: if isManager() || (
+        isStaff() &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt', 'updatedBy', 'notes'])
+      );
+    }
+
+    // --- SCOPES ---
+    match /scopes/{scopeId} {
+      allow read: if true;
+      allow create, delete: if isManager();
+      allow update: if isManager() || (
+        isStaff() &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['percentComplete', 'subNote', 'updatedAt', 'updatedBy', 'status'])
+      );
+    }
+
+    // --- CONCRETE POURS ---
+    match /pours/{pourId} {
+      allow read: if true;
+      allow create, delete: if isManager();
+      allow update: if isManager() || (
+        isStaff() &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['prepStatus', 'pourStatus', 'cureStatus', 'inspStatus', 'milestoneStatus', 'remarks', 'updatedAt', 'updatedBy'])
+      );
+    }
+
+    // --- PRODUCTION EPISODES ---
+    match /episodes/{episodeId} {
+      allow read: if true;
+      allow create, delete: if isManager();
+      allow update: if isManager() || (
+        isStaff() &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'scopeStatus', 'remarks', 'updatedAt', 'updatedBy'])
+      );
+    }
+
+    // --- ACTIVITIES ---
+    match /activities/{activityId} {
+      allow read: if true;
+      allow create, delete: if isManager();
+      allow update: if isManager() || (
+        isStaff() &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'notes', 'updatedAt', 'updatedBy'])
+      );
+    }
+
+    // --- CHARACTERS ---
+    match /characters/{characterId} {
+      allow read: if true;
+      allow create, update, delete: if isManager();
+    }
+
+    // --- OVERRIDES ---
+    match /overrides/{overrideKey} {
+      allow read: if true;
+      allow write: if isStaff();
+    }
+
+    // --- SETTINGS ---
+    match /settings/{settingsId} {
+      allow read: if true;
+      allow write: if isManager();
+    }
+
+    // --- AUDIT LOGS ---
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+  }
+}

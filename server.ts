@@ -96,15 +96,24 @@ wss.on('connection', (ws: WebSocket) => {
       if (!msg || !msg.type) return;
 
       if (msg.type === 'JOIN') {
-        const { clientId, userId, userName, userRole, userColor, device } = msg;
+        const { clientId, userId, userName, userRole, userColor, device, token } = msg;
         if (!clientId) return;
         boundClientId = clientId;
         wsClientMap.set(ws, clientId);
+
+        let roleToSet: UserRole = 'viewer';
+        if (token) {
+          const authUser = db.getUserByToken(token);
+          if (authUser) roleToSet = authUser.role;
+        } else if (userRole && ['admin', 'manager', 'staff'].includes(userRole)) {
+          roleToSet = userRole;
+        }
+
         activeCollaborators.set(clientId, {
           clientId,
           userId: userId || 'usr_guest',
-          userName: userName || 'Teammate',
-          userRole: userRole || 'viewer',
+          userName: userName || (roleToSet === 'viewer' ? 'Presentation Viewer' : 'Team Member'),
+          userRole: roleToSet,
           userColor: userColor || '#3A9BFF',
           lastActive: Date.now(),
           device: device || 'desktop',
@@ -143,10 +152,21 @@ wss.on('connection', (ws: WebSocket) => {
       } else if (msg.type === 'CELL_EDIT') {
         const { clientId, entityType, entityId, field, value } = msg;
         const col = activeCollaborators.get(clientId);
+
+        // Security check: strictly reject edits from viewers
+        if (!col || col.userRole === 'viewer') {
+          ws.send(JSON.stringify({
+            type: 'ERROR',
+            message: 'Read-only access: Viewers cannot edit timeline data. Madhouse team sign-in required.',
+          }));
+          return;
+        }
+
         const user = db.getDefaultUser();
         if (col) {
           col.lastActive = Date.now();
           user.name = col.userName;
+          user.role = col.userRole;
         }
 
         try {
@@ -215,10 +235,10 @@ function authMiddleware(req: Request, _res: Response, next: NextFunction) {
     const token = authHeader.substring(7);
     req.user = db.getUserByToken(token);
   }
-  // If no active session token is present (e.g. teammate opening shared link on mobile),
-  // assign default project manager / admin so they have immediate collaboration rights.
+  // If no active session token is present or invalid, default to Viewer (Read-only).
+  // All write access is reserved for authenticated Madhouse team members (Admin, Manager, Staff).
   if (!req.user) {
-    req.user = db.getDefaultUser();
+    req.user = db.getViewerUser();
   }
   next();
 }

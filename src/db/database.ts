@@ -88,6 +88,18 @@ export class DatabaseEngine {
             }
             return m;
           });
+
+          // Self-heal: ensure all INITIAL_USERS (e.g. Stephen Catapang) are always available
+          if (!Array.isArray(parsed.users)) {
+            parsed.users = [...INITIAL_USERS];
+          } else {
+            for (const initUser of INITIAL_USERS) {
+              if (!parsed.users.some((u: any) => u.email.toLowerCase() === initUser.email.toLowerCase())) {
+                parsed.users.push({ ...initUser });
+              }
+            }
+          }
+
           return parsed;
         }
       }
@@ -241,10 +253,26 @@ export class DatabaseEngine {
     return safeUser;
   }
 
+  public getViewerUser(): User {
+    const viewer = this.data.users.find(u => u.role === 'viewer');
+    if (viewer) {
+      const { passwordHash, salt, ...safeUser } = viewer;
+      return safeUser;
+    }
+    return {
+      id: 'usr_viewer_guest',
+      name: 'Presentation Viewer',
+      email: 'viewer@convengers.ph',
+      role: 'viewer',
+      createdAt: '2026-10-01T08:00:00.000Z',
+    };
+  }
+
   // --- FULL DATA FETCH ---
   public getFullDashboard(currentUser: User | null): FullDashboardData {
+    const activeUser = currentUser || this.getViewerUser();
     return {
-      user: currentUser,
+      user: activeUser,
       settings: this.data.settings,
       milestones: this.data.milestones,
       scopes: this.data.scopes,

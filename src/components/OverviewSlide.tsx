@@ -28,6 +28,7 @@ interface OverviewSlideProps {
   onUpdateMilestone: (id: string, status: Milestone['status']) => void;
   onUpdateMilestoneField?: (id: string, field: 'label' | 'dateText', value: string) => void;
   remoteFocusMap?: Record<string, RemoteFocus>;
+  onViewerAttemptEdit?: () => void;
 }
 
 export const OverviewSlide: React.FC<OverviewSlideProps> = ({
@@ -40,6 +41,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
   onUpdateMilestone,
   onUpdateMilestoneField,
   remoteFocusMap = {},
+  onViewerAttemptEdit,
 }) => {
   const overallMilestonePct = calculateMilestonesCompletion(milestones);
   const elapsed = calculateScheduleElapsed();
@@ -88,7 +90,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
             className="logo"
             src={LOGO_SVG}
             alt="Convengers Multiverse Logo"
-            style={{ width: '176px', height: '150px', flex: 'none', display: 'block', clipPath: 'polygon(0 0,98% 0,81% 100%,0 100%)', borderRadius: '10px 0 0 10px' }}
+            style={{ width: '176px', height: '150px', flex: 'none', display: 'block', objectFit: 'contain', borderRadius: '12px', filter: 'drop-shadow(0 0 16px rgba(123,77,255,0.65))' }}
           />
           <div className="ttl" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase' }}>
@@ -144,7 +146,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
               01
             </span>
             <span style={{ fontSize: '15px', color: '#BAC4E2' }}>
-              / 11
+              / 12
             </span>
           </div>
         </div>
@@ -247,6 +249,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                         fallbackValue={initial?.dateText}
                         remoteFocus={dateFocus}
                         canEdit={canEdit}
+                        onViewerAttemptEdit={onViewerAttemptEdit}
                         onSave={(val) => {
                           if (onUpdateMilestoneField) {
                             onUpdateMilestoneField(m.id, 'dateText', val);
@@ -262,6 +265,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                         fallbackValue={initial?.label}
                         remoteFocus={labelFocus}
                         canEdit={canEdit}
+                        onViewerAttemptEdit={onViewerAttemptEdit}
                         onSave={(val) => {
                           if (onUpdateMilestoneField) {
                             onUpdateMilestoneField(m.id, 'label', val);
@@ -285,6 +289,11 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                           {safeBadge.text}
                         </span>
                       )}
+                      {m.updatedBy && (
+                        <div className="text-[10px] text-[#BAC4E2]/70 italic mt-0.5 font-sans">
+                          Last updated by {m.updatedBy} {m.updatedAt ? `on ${new Date(m.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
+                        </div>
+                      )}
                     </div>
                     <div
                       style={{
@@ -303,22 +312,30 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                           {statusFocus.userName}
                         </span>
                       )}
-                      <select
-                        className="mst"
-                        value={m.status}
-                        disabled={!canEdit}
-                        onFocus={() => realtime.focusCell(`milestone_${m.id}_status`)}
-                        onBlur={() => realtime.blurCell(`milestone_${m.id}_status`)}
-                        onChange={(e) => onUpdateMilestone(m.id, e.target.value as any)}
-                        style={{ background: colors[0], color: colors[1], borderColor: colors[2] }}
-                        aria-label="Milestone status"
-                      >
-                        <option value="Upcoming">Upcoming</option>
-                        <option value="In progress">In progress</option>
-                        <option value="Complete">Complete</option>
-                        <option value="Delayed">Delayed</option>
-                        <option value="Date passed · confirm">Date passed · confirm</option>
-                      </select>
+                      {canEdit ? (
+                        <select
+                          className="mst"
+                          value={m.status}
+                          onFocus={() => realtime.focusCell(`milestone_${m.id}_status`)}
+                          onBlur={() => realtime.blurCell(`milestone_${m.id}_status`)}
+                          onChange={(e) => onUpdateMilestone(m.id, e.target.value as any)}
+                          style={{ background: colors[0], color: colors[1], borderColor: colors[2] }}
+                          aria-label="Milestone status"
+                        >
+                          <option value="Upcoming">Upcoming</option>
+                          <option value="In progress">In progress</option>
+                          <option value="Complete">Complete</option>
+                          <option value="Delayed">Delayed</option>
+                          <option value="Date passed · confirm">Date passed · confirm</option>
+                        </select>
+                      ) : (
+                        <span
+                          className="mst inline-flex items-center justify-center font-bold px-3 py-1 text-xs rounded-full border shadow-xs"
+                          style={{ background: colors[0], color: colors[1], borderColor: colors[2] }}
+                        >
+                          {m.status}
+                        </span>
+                      )}
                     </div>
                   </div>
                 );

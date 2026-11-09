@@ -33,14 +33,18 @@ class ApiClient {
 
   constructor() {
     if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem(TOKEN_KEY);
-      if (!this.token) {
-        this.token = 'demo_token_admin';
-        try {
-          localStorage.setItem(TOKEN_KEY, this.token);
-        } catch {
-          // ignore
-        }
+      const params = new URLSearchParams(window.location.search);
+      const isPresentationMode =
+        params.get('view') === 'presentation' ||
+        params.get('view') === 'viewer' ||
+        params.get('mode') === 'viewer' ||
+        params.get('readonly') === 'true';
+
+      if (isPresentationMode) {
+        // Enforce viewer presentation mode (read-only)
+        this.token = null;
+      } else {
+        this.token = localStorage.getItem(TOKEN_KEY);
       }
     }
   }
@@ -54,6 +58,10 @@ class ApiClient {
         localStorage.removeItem(TOKEN_KEY);
       }
     }
+  }
+
+  public clearToken() {
+    this.setToken(null);
   }
 
   public getToken(): string | null {
@@ -130,13 +138,21 @@ class ApiClient {
       }
     }
 
+    const viewerUser = INITIAL_USERS.find(u => u.role === 'viewer') || {
+      id: 'usr_viewer',
+      name: 'Presentation Viewer',
+      email: 'viewer@convengers.ph',
+      role: 'viewer' as const,
+      createdAt: '2026-10-01T08:00:00.000Z',
+    };
+
     return {
       user: {
-        id: INITIAL_USERS[0].id,
-        name: INITIAL_USERS[0].name,
-        email: INITIAL_USERS[0].email,
-        role: INITIAL_USERS[0].role,
-        createdAt: INITIAL_USERS[0].createdAt,
+        id: viewerUser.id,
+        name: viewerUser.name,
+        email: viewerUser.email,
+        role: viewerUser.role,
+        createdAt: viewerUser.createdAt,
       },
       settings: { ...INITIAL_SETTINGS },
       milestones: [...INITIAL_MILESTONES],
@@ -230,7 +246,14 @@ class ApiClient {
       // ignore
     } finally {
       this.setToken(null);
-      this.updateCachedDashboard((prev) => ({ ...prev, user: null }));
+      const viewerUser: User = {
+        id: 'usr_viewer_anon',
+        name: 'Presentation Viewer',
+        email: 'viewer@convengers.ph',
+        role: 'viewer',
+        createdAt: new Date().toISOString(),
+      };
+      this.updateCachedDashboard((prev) => ({ ...prev, user: viewerUser }));
     }
   }
 

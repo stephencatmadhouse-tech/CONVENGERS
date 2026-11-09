@@ -181,6 +181,7 @@ export class RealtimeClient {
 
   private sendJoin() {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('convengers_auth_token') : null;
     const payload = {
       type: 'JOIN',
       clientId: this.clientId,
@@ -189,6 +190,7 @@ export class RealtimeClient {
       userRole: this.currentUser?.role || 'viewer',
       userColor: this.userColor,
       device: isMobile ? 'mobile' : 'desktop',
+      token: token || undefined,
     };
 
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -274,6 +276,11 @@ export class RealtimeClient {
   }
 
   public editCell(entityType: string, entityId: string, field: string, value: any) {
+    if (this.currentUser?.role === 'viewer') {
+      console.warn('Realtime edit ignored: Current user is in read-only Viewer mode.');
+      return;
+    }
+
     const payload = {
       type: 'CELL_EDIT',
       clientId: this.clientId,

@@ -353,7 +353,7 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
             className="logo"
             src={LOGO_SVG}
             alt="Logo"
-            style={{ width: '176px', height: '150px', flex: 'none', display: 'block', clipPath: 'polygon(0 0,98% 0,81% 100%,0 100%)', borderRadius: '10px 0 0 10px' }}
+            style={{ width: '176px', height: '150px', flex: 'none', display: 'block', objectFit: 'contain', borderRadius: '12px', filter: 'drop-shadow(0 0 16px rgba(123,77,255,0.65))' }}
           />
           <div className="ttl" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase' }}>
@@ -375,7 +375,7 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
               02
             </span>
             <span style={{ fontSize: '15px', color: '#BAC4E2' }}>
-              / 11
+              / 12
             </span>
           </div>
         </div>

@@ -13,13 +13,15 @@ interface EpisodesTableSlideProps {
   settings: SystemSettings;
   canEdit: boolean;
   onUpdateEpisode: (id: string, updates: Partial<Episode>) => void;
+  onViewerAttemptEdit?: () => void;
 }
 
 export const EpisodesTableSlide: React.FC<EpisodesTableSlideProps> = ({
   episodes,
-  settings,
+  settings: _settings,
   canEdit,
   onUpdateEpisode,
+  onViewerAttemptEdit,
 }) => {
   const elapsed = calculateScheduleElapsed();
   const postedCount = episodes.filter((e) => e.status === 'Completed').length;
@@ -55,7 +57,7 @@ export const EpisodesTableSlide: React.FC<EpisodesTableSlideProps> = ({
             className="logo"
             src={LOGO_SVG}
             alt="Logo"
-            style={{ width: '176px', height: '150px', flex: 'none', display: 'block', clipPath: 'polygon(0 0,98% 0,81% 100%,0 100%)', borderRadius: '10px 0 0 10px' }}
+            style={{ width: '176px', height: '150px', flex: 'none', display: 'block', objectFit: 'contain', borderRadius: '12px', filter: 'drop-shadow(0 0 16px rgba(123,77,255,0.65))' }}
           />
           <div className="ttl" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase' }}>
@@ -103,13 +105,13 @@ export const EpisodesTableSlide: React.FC<EpisodesTableSlideProps> = ({
 
           <div style={{ position: 'absolute', top: '16px', right: '56px', display: 'flex', alignItems: 'baseline', gap: '10px' }}>
             <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: '16px', letterSpacing: '3px', color: '#BAC4E2', textTransform: 'uppercase' }}>
-              Content calendar
+              Production calendar
             </span>
             <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '22px', color: '#F5C518' }}>
-              11
+              08
             </span>
             <span style={{ fontSize: '15px', color: '#BAC4E2' }}>
-              / 11
+              / 12
             </span>
           </div>
         </div>
@@ -122,7 +124,7 @@ export const EpisodesTableSlide: React.FC<EpisodesTableSlideProps> = ({
                 1
               </div>
               <div className="chd" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '6px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '25px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                <span>CONTENT CALENDAR ·</span>
+                <span>PRODUCTION CALENDAR ·</span>
                 <span style={{ color: '#4BE08A' }}>24 EPISODES</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', paddingRight: '10px', fontSize: '13px', color: '#BAC4E2', whiteSpace: 'nowrap' }}>
@@ -168,59 +170,91 @@ export const EpisodesTableSlide: React.FC<EpisodesTableSlideProps> = ({
                     <div className="eti" style={{ flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '13px', lineHeight: '22px' }}>
                       <b>{ep.title}</b> <span style={{ color: '#BAC4E2' }}>· {ep.topic}</span>
                     </div>
-                    <input
-                      className="ed"
-                      style={{ width: '300px' }}
-                      value={ep.scopeOfWork}
-                      disabled={!canEdit}
-                      onChange={(e) => onUpdateEpisode(ep.id, { scopeOfWork: e.target.value })}
-                      aria-label="Scope of work"
-                    />
-                    <input
-                      className="ed"
-                      style={{ width: '150px' }}
-                      value={ep.shootStart ? `${ep.shootStart} ${ep.shootEnd && ep.shootEnd !== ep.shootStart ? `– ${ep.shootEnd}` : ''}` : ''}
-                      disabled={!canEdit}
-                      placeholder="Shoot window"
-                      onChange={(e) => onUpdateEpisode(ep.id, { shootStart: e.target.value })}
-                      aria-label="Shoot window"
-                    />
-                    <input
-                      className="ed"
-                      style={{ width: '108px' }}
-                      value={ep.releaseDate || ''}
-                      disabled={!canEdit}
-                      placeholder="Post date"
-                      onChange={(e) => onUpdateEpisode(ep.id, { releaseDate: e.target.value })}
-                      aria-label="Post date"
-                    />
-                    <select
-                      className="ss"
-                      value={ep.scopeStatus}
-                      disabled={!canEdit}
-                      style={{ background: scopeColors[0], color: scopeColors[1] }}
-                      onChange={(e) => onUpdateEpisode(ep.id, { scopeStatus: e.target.value as any })}
-                      aria-label="Scope of work status"
-                    >
-                      <option value="Not started">Not started</option>
-                      <option value="On-track">On-track</option>
-                      <option value="Delayed">Delayed</option>
-                      <option value="Completed">Completed</option>
-                    </select>
-                    <select
-                      className="est"
-                      value={ep.status}
-                      disabled={!canEdit}
-                      style={{ background: epColors[0], color: epColors[1] }}
-                      onChange={(e) => onUpdateEpisode(ep.id, { status: e.target.value as any })}
-                      aria-label="Episode status"
-                    >
-                      <option value="Planned">Planned</option>
-                      <option value="For Confirmation">For Confirmation</option>
-                      <option value="Scheduled">Scheduled</option>
-                      <option value="Completed">Completed</option>
-                      <option value="Rescheduled">Rescheduled</option>
-                    </select>
+                    {canEdit ? (
+                      <>
+                        <input
+                          className="ed"
+                          style={{ width: '300px' }}
+                          value={ep.scopeOfWork}
+                          onChange={(e) => onUpdateEpisode(ep.id, { scopeOfWork: e.target.value })}
+                          aria-label="Scope of work"
+                        />
+                        <input
+                          className="ed"
+                          style={{ width: '150px' }}
+                          value={ep.shootStart ? `${ep.shootStart} ${ep.shootEnd && ep.shootEnd !== ep.shootStart ? `– ${ep.shootEnd}` : ''}` : ''}
+                          placeholder="Shoot window"
+                          onChange={(e) => onUpdateEpisode(ep.id, { shootStart: e.target.value })}
+                          aria-label="Shoot window"
+                        />
+                        <input
+                          className="ed"
+                          style={{ width: '108px' }}
+                          value={ep.releaseDate || ''}
+                          placeholder="Post date"
+                          onChange={(e) => onUpdateEpisode(ep.id, { releaseDate: e.target.value })}
+                          aria-label="Post date"
+                        />
+                        <select
+                          className="ss"
+                          value={ep.scopeStatus}
+                          style={{ background: scopeColors[0], color: scopeColors[1] }}
+                          onChange={(e) => onUpdateEpisode(ep.id, { scopeStatus: e.target.value as any })}
+                          aria-label="Scope of work status"
+                        >
+                          <option value="Not started">Not started</option>
+                          <option value="On-track">On-track</option>
+                          <option value="Delayed">Delayed</option>
+                          <option value="Completed">Completed</option>
+                        </select>
+                        <select
+                          className="est"
+                          value={ep.status}
+                          style={{ background: epColors[0], color: epColors[1] }}
+                          onChange={(e) => onUpdateEpisode(ep.id, { status: e.target.value as any })}
+                          aria-label="Episode status"
+                        >
+                          <option value="Planned">Planned</option>
+                          <option value="For Confirmation">For Confirmation</option>
+                          <option value="Scheduled">Scheduled</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Rescheduled">Rescheduled</option>
+                        </select>
+                      </>
+                    ) : (
+                      <div
+                        className="flex items-center gap-2.5 cursor-default select-none"
+                        onDoubleClick={onViewerAttemptEdit}
+                        title="Viewer presentation mode: Double click to sign in"
+                      >
+                        <span style={{ width: '300px' }} className="text-xs text-[#BAC4E2] truncate">
+                          {ep.scopeOfWork || '—'}
+                        </span>
+                        <span style={{ width: '150px' }} className="text-xs text-white/90 truncate font-mono">
+                          {ep.shootStart ? `${ep.shootStart} ${ep.shootEnd && ep.shootEnd !== ep.shootStart ? `– ${ep.shootEnd}` : ''}` : '—'}
+                        </span>
+                        <span style={{ width: '108px' }} className="text-xs text-[#F5C518] truncate font-mono">
+                          {ep.releaseDate || '—'}
+                        </span>
+                        <span
+                          className="ss text-[11px] font-semibold px-2 py-0.5 rounded text-center"
+                          style={{ width: '100px', background: scopeColors[0], color: scopeColors[1] }}
+                        >
+                          {ep.scopeStatus}
+                        </span>
+                        <span
+                          className="est text-[11px] font-bold px-2 py-0.5 rounded text-center"
+                          style={{ width: '110px', background: epColors[0], color: epColors[1] }}
+                        >
+                          {ep.status}
+                        </span>
+                        {ep.updatedBy && (
+                          <span className="text-[10px] text-[#BAC4E2]/60 italic whitespace-nowrap ml-1">
+                            Updated by {ep.updatedBy}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}

@@ -22,6 +22,7 @@ interface FloorScopeSlideProps {
   onAddScope: (scope: Omit<ScopeItem, 'id'>) => void;
   onDeleteScope: (id: string) => void;
   remoteFocusMap?: Record<string, RemoteFocus>;
+  onViewerAttemptEdit?: () => void;
 }
 
 export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
@@ -36,6 +37,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
   onAddScope,
   onDeleteScope,
   remoteFocusMap = {},
+  onViewerAttemptEdit,
 }) => {
   const [addingPhase, setAddingPhase] = useState<'Structural' | 'Finishing' | null>(null);
   const [newScopeName, setNewScopeName] = useState('');
@@ -118,7 +120,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
             className="logo"
             src={LOGO_SVG}
             alt="Logo"
-            style={{ width: '176px', height: '150px', flex: 'none', display: 'block', clipPath: 'polygon(0 0,98% 0,81% 100%,0 100%)', borderRadius: '10px 0 0 10px' }}
+            style={{ width: '176px', height: '150px', flex: 'none', display: 'block', objectFit: 'contain', borderRadius: '12px', filter: 'drop-shadow(0 0 16px rgba(123,77,255,0.65))' }}
           />
           <div className="ttl" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase' }}>
@@ -174,7 +176,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
               {slideNumber}
             </span>
             <span style={{ fontSize: '15px', color: '#BAC4E2' }}>
-              / 11
+              / 12
             </span>
           </div>
         </div>
@@ -414,6 +416,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
               fallbackValue={scope.name}
               remoteFocus={remoteFocusMap[`scope_${scope.id}_name`]}
               canEdit={canEdit}
+              onViewerAttemptEdit={onViewerAttemptEdit}
               onSave={(val) => {
                 if (onUpdateScopeField) onUpdateScopeField(scope.id, 'name', val);
               }}
@@ -421,6 +424,11 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
             {scope.subNote && (
               <div style={{ fontSize: '13px', fontWeight: 400, color: '#BAC4E2', lineHeight: '17px' }}>
                 {scope.subNote}
+              </div>
+            )}
+            {scope.updatedBy && (
+              <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#BAC4E2', opacity: 0.75, marginTop: '2px', fontWeight: 400 }}>
+                Last updated by {scope.updatedBy} {scope.updatedAt ? `on ${new Date(scope.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
               </div>
             )}
           </div>
@@ -431,6 +439,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
               fallbackValue={scope.dateText}
               remoteFocus={remoteFocusMap[`scope_${scope.id}_date`]}
               canEdit={canEdit}
+              onViewerAttemptEdit={onViewerAttemptEdit}
               onSave={(val) => {
                 if (onUpdateScopeField) onUpdateScopeField(scope.id, 'dateText', val);
               }}
@@ -457,19 +466,22 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
                   {remoteFocusMap[`scope_${scope.id}_pct`].userName}
                 </span>
               )}
-              <input
-                className="pct"
-                type="number"
-                min="0"
-                max="100"
-                step="5"
-                value={scope.percentComplete}
-                disabled={!canEdit}
-                onFocus={() => realtime.focusCell(`scope_${scope.id}_pct`)}
-                onBlur={() => realtime.blurCell(`scope_${scope.id}_pct`)}
-                onChange={(e) => onUpdateProgress(scope.id, parseFloat(e.target.value) || 0)}
-                aria-label="Percent complete"
-              />
+              {canEdit ? (
+                <input
+                  className="pct"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={scope.percentComplete}
+                  onFocus={() => realtime.focusCell(`scope_${scope.id}_pct`)}
+                  onBlur={() => realtime.blurCell(`scope_${scope.id}_pct`)}
+                  onChange={(e) => onUpdateProgress(scope.id, parseFloat(e.target.value) || 0)}
+                  aria-label="Percent complete"
+                />
+              ) : (
+                <span className="font-mono text-sm font-bold text-white mr-1.5">{scope.percentComplete}%</span>
+              )}
               <span className="chip" style={{ background: statusColor[0], color: statusColor[1] }}>
                 {statusLabel}
               </span>

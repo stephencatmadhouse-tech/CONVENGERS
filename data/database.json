@@ -36,6 +36,15 @@
       "passwordHash": "d4555e759738862794e409c93d083333c4398dcbdaac287f88d701fdc53a0cbef15cd17240d2fc517fc1b04e3d5f4cd89aa102934133c9a1b1461bee4bdad562",
       "salt": "9693e71c790f09d2899af3e7ef2a10c5",
       "createdAt": "2026-10-01T08:00:00.000Z"
+    },
+    {
+      "id": "usr_stephen",
+      "name": "Stephen (Madhouse Lead)",
+      "email": "stephencat.madhouse@gmail.com",
+      "role": "admin",
+      "passwordHash": "475a04021af67a79f12b778e446763363f8862f70e79468247e86e0d563abdc84adaf14589abdffe5dc6ef9b2353421e073620c8b09d347ff4f2b19d160093ba",
+      "salt": "b72c34ef41e055e61170c4eebe06d558",
+      "createdAt": "2026-10-01T08:00:00.000Z"
     }
   ],
   "sessions": [
@@ -43,6 +52,11 @@
       "token": "03a6c190ec3fb35527db42c0722ae4474288c33fd0a0dcbf23ba6473c2e7d15f",
       "userId": "usr_admin",
       "expiresAt": 1794232936118
+    },
+    {
+      "token": "b8d882d60ab1f8b6c3ddfb9f5243dd478af0f80b0ce6d2c0c82dea95fb988206",
+      "userId": "usr_stephen",
+      "expiresAt": 1794788509639
     }
   ],
   "settings": {
@@ -199,11 +213,13 @@
       "name": "Site mobilization / layout",
       "dateText": "October 5–6, 2026",
       "workingDays": 2,
-      "percentComplete": 0,
+      "percentComplete": 100,
       "color": "#3A9BFF",
       "leftPct": 0,
       "widthPct": 1.85,
-      "sortOrder": 0
+      "sortOrder": 0,
+      "updatedAt": "2026-11-09T00:22:13.899Z",
+      "updatedBy": "Stephen (Madhouse Lead)"
     },
     {
       "id": "sc_gf_s_1",
@@ -1810,6 +1826,16 @@
   ],
   "overrides": {},
   "auditLogs": [
+    {
+      "id": "log_1794183733899_3dytg",
+      "userId": "usr_stephen",
+      "userEmail": "stephencat.madhouse@gmail.com",
+      "action": "UPDATE_PROGRESS",
+      "entityType": "ScopeItem",
+      "entityId": "sc_gf_s_0",
+      "details": "Set to 100%",
+      "timestamp": "2026-11-09T00:22:13.899Z"
+    },
     {
       "id": "log_1793765695047_8bxal",
       "userId": "usr_admin",

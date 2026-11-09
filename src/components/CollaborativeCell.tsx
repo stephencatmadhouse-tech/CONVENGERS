@@ -21,6 +21,7 @@ interface CollaborativeCellProps {
   fallbackValue?: string | number;
   min?: number;
   max?: number;
+  onViewerAttemptEdit?: () => void;
 }
 
 export const CollaborativeCell: React.FC<CollaborativeCellProps> = ({
@@ -37,6 +38,7 @@ export const CollaborativeCell: React.FC<CollaborativeCellProps> = ({
   fallbackValue,
   min,
   max,
+  onViewerAttemptEdit,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentVal, setCurrentVal] = useState(String(value ?? ''));
@@ -95,6 +97,20 @@ export const CollaborativeCell: React.FC<CollaborativeCellProps> = ({
     ? currentVal 
     : (fallbackValue !== undefined ? String(fallbackValue) : placeholder);
 
+  // In viewer mode: render as plain text, not as an input. If user double clicks, notify them.
+  if (!canEdit) {
+    return (
+      <span
+        onDoubleClick={onViewerAttemptEdit}
+        className={`inline-block select-text ${className}`}
+        style={style}
+        title="Viewing in read-only presentation mode. Sign in to edit."
+      >
+        {displayRenderer ? displayRenderer(effectiveDisplay) : effectiveDisplay}
+      </span>
+    );
+  }
+
   return (
     <div
       className={`relative inline-flex items-center transition-all ${className}`}
@@ -134,10 +150,8 @@ export const CollaborativeCell: React.FC<CollaborativeCellProps> = ({
       ) : (
         <div
           onClick={handleStartEdit}
-          className={`cursor-pointer w-full select-text transition-colors rounded px-0.5 hover:bg-white/10 ${
-            canEdit ? 'hover:outline-dashed hover:outline-1 hover:outline-[#F5C518]/50' : ''
-          }`}
-          title={canEdit ? 'Click to edit in real time (syncs to all teammates)' : undefined}
+          className="cursor-pointer w-full select-text transition-colors rounded px-0.5 hover:bg-white/10 hover:outline-dashed hover:outline-1 hover:outline-[#F5C518]/50"
+          title="Click to edit in real time (syncs to all teammates)"
         >
           {displayRenderer ? displayRenderer(effectiveDisplay) : effectiveDisplay}
         </div>

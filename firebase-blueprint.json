@@ -1,0 +1,179 @@
+{
+  "entities": {
+    "user": {
+      "title": "UserProfile",
+      "description": "User profile with role-based access control and approval status",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["admin", "manager", "staff", "viewer", "pending"] },
+        "status": { "type": "string", "enum": ["active", "pending", "revoked"] },
+        "createdAt": { "type": "string", "maxLength": 40 },
+        "updatedAt": { "type": "string", "maxLength": 40 }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "milestone": {
+      "title": "Milestone",
+      "description": "Project milestone checkpoint",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "index": { "type": "number" },
+        "dateText": { "type": "string", "maxLength": 128 },
+        "label": { "type": "string", "maxLength": 256 },
+        "status": { "type": "string", "enum": ["Upcoming", "In progress", "Complete", "Delayed", "Date passed · confirm"] },
+        "updatedAt": { "type": "string", "maxLength": 40 },
+        "updatedBy": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["id", "index", "dateText", "label", "status"]
+    },
+    "scopeItem": {
+      "title": "ScopeItem",
+      "description": "Floor scope of work progress tracker",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "floor": { "type": "string", "enum": ["GF", "2F", "3F"] },
+        "phase": { "type": "string", "enum": ["Structural", "Finishing"] },
+        "name": { "type": "string", "maxLength": 256 },
+        "dateText": { "type": "string", "maxLength": 128 },
+        "workingDays": { "type": "number" },
+        "percentComplete": { "type": "number" },
+        "subNote": { "type": "string", "maxLength": 256 },
+        "sortOrder": { "type": "number" },
+        "updatedAt": { "type": "string", "maxLength": 40 },
+        "updatedBy": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["id", "floor", "phase", "name", "percentComplete"]
+    },
+    "concretePour": {
+      "title": "ConcretePour",
+      "description": "Concrete pour schedule and milestone tracking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "floor": { "type": "string", "enum": ["GF", "2F", "3F"] },
+        "component": { "type": "string", "maxLength": 128 },
+        "activity": { "type": "string", "maxLength": 128 },
+        "targetPour": { "type": "string", "maxLength": 32 },
+        "actualPour": { "type": "string", "maxLength": 32 },
+        "targetCompletion": { "type": "string", "maxLength": 32 },
+        "actualCompletion": { "type": "string", "maxLength": 32 },
+        "prepStatus": { "type": "string", "maxLength": 32 },
+        "pourStatus": { "type": "string", "maxLength": 32 },
+        "cureStatus": { "type": "string", "maxLength": 32 },
+        "inspStatus": { "type": "string", "maxLength": 32 },
+        "milestoneStatus": { "type": "string", "maxLength": 64 },
+        "remarks": { "type": "string", "maxLength": 512 },
+        "updatedAt": { "type": "string", "maxLength": 40 },
+        "updatedBy": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["id", "floor", "component", "activity"]
+    },
+    "episode": {
+      "title": "Episode",
+      "description": "Production calendar episode item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "number": { "type": "number" },
+        "title": { "type": "string", "maxLength": 256 },
+        "topic": { "type": "string", "maxLength": 256 },
+        "scopeOfWork": { "type": "string", "maxLength": 256 },
+        "shootStart": { "type": "string", "maxLength": 32 },
+        "shootEnd": { "type": "string", "maxLength": 32 },
+        "releaseDate": { "type": "string", "maxLength": 32 },
+        "location": { "type": "string", "maxLength": 128 },
+        "director": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "maxLength": 64 },
+        "scopeStatus": { "type": "string", "maxLength": 64 },
+        "remarks": { "type": "string", "maxLength": 512 },
+        "updatedAt": { "type": "string", "maxLength": 40 },
+        "updatedBy": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["id", "number", "title"]
+    },
+    "activity": {
+      "title": "Activity",
+      "description": "Upcoming construction or production activity item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "title": { "type": "string", "maxLength": 256 },
+        "description": { "type": "string", "maxLength": 512 },
+        "category": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "maxLength": 64 },
+        "startDate": { "type": "string", "maxLength": 32 },
+        "endDate": { "type": "string", "maxLength": 32 },
+        "owner": { "type": "string", "maxLength": 128 },
+        "notes": { "type": "string", "maxLength": 512 },
+        "updatedAt": { "type": "string", "maxLength": 40 },
+        "updatedBy": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["id", "title"]
+    },
+    "activityOverride": {
+      "title": "ActivityOverride",
+      "description": "Assignment or remark overrides for an activity key",
+      "type": "object",
+      "properties": {
+        "key": { "type": "string", "maxLength": 128 },
+        "owner": { "type": "string", "maxLength": 128 },
+        "remarks": { "type": "string", "maxLength": 512 },
+        "onHold": { "type": "boolean" },
+        "updatedAt": { "type": "string", "maxLength": 40 },
+        "updatedBy": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["key"]
+    },
+    "systemSettings": {
+      "title": "SystemSettings",
+      "description": "Global layout, theme, and version configuration",
+      "type": "object",
+      "properties": {
+        "version": { "type": "number" },
+        "updatedAt": { "type": "string", "maxLength": 40 },
+        "theme": { "type": "string", "enum": ["auto", "dark", "light"] },
+        "paper": { "type": "string", "enum": ["a4", "a3", "letter", "tabloid"] }
+      },
+      "required": ["version"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "user",
+      "description": "Role-based user profile documents"
+    },
+    "/milestones/{milestoneId}": {
+      "schema": "milestone",
+      "description": "Key milestone checkpoints"
+    },
+    "/scopes/{scopeId}": {
+      "schema": "scopeItem",
+      "description": "Floor scopes of work progress"
+    },
+    "/pours/{pourId}": {
+      "schema": "concretePour",
+      "description": "Concrete pour milestones"
+    },
+    "/episodes/{episodeId}": {
+      "schema": "episode",
+      "description": "Production calendar episodes"
+    },
+    "/activities/{activityId}": {
+      "schema": "activity",
+      "description": "Upcoming project activities"
+    },
+    "/overrides/{overrideKey}": {
+      "schema": "activityOverride",
+      "description": "Activity overrides and assignments"
+    },
+    "/settings/{settingsId}": {
+      "schema": "systemSettings",
+      "description": "Application display settings"
+    }
+  }
+}
