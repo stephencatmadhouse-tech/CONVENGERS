@@ -75,8 +75,8 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
           height: '1280px',
           boxSizing: 'border-box',
           background:
-            'radial-gradient(900px 520px at 92% 0%,rgba(123,77,255,.42),transparent 65%),radial-gradient(800px 600px at 0% 45%,rgba(60,40,190,.30),transparent 65%),radial-gradient(900px 600px at 100% 80%,rgba(90,50,220,.24),transparent 65%),repeating-linear-gradient(135deg,rgba(255,255,255,.025) 0 2px,transparent 2px 16px),#060A24',
-          color: '#FFFFFF',
+            'var(--sx-bg-25)',
+          color: 'var(--sx-text-26)',
           fontFamily: "'Barlow', sans-serif",
           padding: '48px 56px 130px',
           display: 'flex',
@@ -94,7 +94,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase' }}>
               Scope of work
             </div>
-            <div className="h1a" style={{ fontFamily: "'Anton','Barlow Condensed',sans-serif", fontSize: '70px', lineHeight: 1.05, color: '#F5C518', textTransform: 'uppercase', textShadow: '0 4px 0 #7a5a00,0 0 30px rgba(245,197,24,.35)' }}>
+            <div className="h1a" style={{ fontFamily: "'Anton','Barlow Condensed',sans-serif", fontSize: '70px', lineHeight: 1.05, color: 'var(--sx-text-3)', textTransform: 'uppercase', textShadow: 'var(--sx-shadow-27)' }}>
               Timeline
             </div>
             <div style={{ fontSize: '16px', letterSpacing: '8px', textTransform: 'uppercase', marginTop: '4px' }}>
@@ -104,26 +104,26 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
 
           {/* Right Top Status Cards */}
           <div className="rb" style={{ width: '540px', flex: 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ background: '#0A1140', border: '2px solid #7B4DFF', borderRadius: '14px', boxShadow: '0 0 16px rgba(123,77,255,.55),inset 0 0 26px rgba(40,30,130,.45)', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--sx-bg-14)', border: 'var(--sx-border-19)', borderRadius: '14px', boxShadow: 'var(--sx-shadow-36)', overflow: 'hidden' }}>
               <div style={{ padding: '8px 14px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '17px', letterSpacing: '1.5px', color: '#F5C518' }}>
+                  <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '17px', letterSpacing: '1.5px', color: 'var(--sx-text-3)' }}>
                     OVERALL STATUS
                   </span>
-                  <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '26px', lineHeight: 1, color: '#F5C518' }}>
+                  <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '26px', lineHeight: 1, color: 'var(--sx-text-3)' }}>
                     {overallMilestonePct}%
                   </span>
                 </div>
-                <div style={{ height: '10px', borderRadius: '5px', background: 'rgba(255,255,255,.14)', position: 'relative' }}>
-                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.max(overallMilestonePct, 2)}%`, borderRadius: '5px', background: 'linear-gradient(90deg,#F5C518,#FF9A1F)' }} />
+                <div style={{ height: '10px', borderRadius: '5px', background: 'var(--sx-bg-35)', position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.max(overallMilestonePct, 2)}%`, borderRadius: '5px', background: 'var(--sx-bg-37)' }} />
                 </div>
-                <div style={{ fontSize: '12px', color: '#BAC4E2', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: '12px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                   Milestones complete (in progress = half) · schedule elapsed {elapsed.elapsedPercent}%
                 </div>
               </div>
             </div>
 
-            <div style={{ background: '#0A1140', border: '2px solid #7B4DFF', borderRadius: '14px', boxShadow: '0 0 16px rgba(123,77,255,.55),inset 0 0 26px rgba(40,30,130,.45)', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--sx-bg-14)', border: 'var(--sx-border-19)', borderRadius: '14px', boxShadow: 'var(--sx-shadow-36)', overflow: 'hidden' }}>
               <div style={{ padding: '8px 14px', display: 'flex', gap: '10px', alignItems: 'center', whiteSpace: 'nowrap' }}>
                 <span style={{ background: '#E0213B', color: '#fff', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '17px', letterSpacing: '1.5px', padding: '2px 10px', borderRadius: '4px' }}>
                   WORK STOPPAGE
@@ -137,13 +137,13 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
 
           {/* Section Indicator */}
           <div style={{ position: 'absolute', top: '16px', right: '56px', display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-            <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: '16px', letterSpacing: '3px', color: '#BAC4E2', textTransform: 'uppercase' }}>
+            <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: '16px', letterSpacing: '3px', color: 'var(--sx-text-2)', textTransform: 'uppercase' }}>
               Overview
             </span>
-            <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '22px', color: '#F5C518' }}>
+            <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '22px', color: 'var(--sx-text-3)' }}>
               01
             </span>
-            <span style={{ fontSize: '15px', color: '#BAC4E2' }}>
+            <span style={{ fontSize: '15px', color: 'var(--sx-text-2)' }}>
               / 12
             </span>
           </div>
@@ -152,37 +152,37 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
         {/* Body */}
         <div className="bodyw" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* Quick Facts */}
-          <div style={{ background: '#0A1140', border: '2px solid #7B4DFF', borderRadius: '14px', boxShadow: '0 0 16px rgba(123,77,255,.55),inset 0 0 26px rgba(40,30,130,.45)', overflow: 'hidden', flex: 'none' }}>
+          <div style={{ background: 'var(--sx-bg-14)', border: 'var(--sx-border-19)', borderRadius: '14px', boxShadow: 'var(--sx-shadow-36)', overflow: 'hidden', flex: 'none' }}>
             <div className="facts" style={{ display: 'flex' }}>
-              <div style={{ flex: 1, padding: '14px 22px', borderRight: '1px solid rgba(123,77,255,.38)' }}>
-                <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '18px', letterSpacing: '1px', color: '#F5C518', textTransform: 'uppercase' }}>
+              <div style={{ flex: 1, padding: '14px 22px', borderRight: 'var(--sx-border-31)' }}>
+                <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '18px', letterSpacing: '1px', color: 'var(--sx-text-3)', textTransform: 'uppercase' }}>
                   Work calendar:
                 </div>
                 <div style={{ fontSize: '25px', fontWeight: 700, lineHeight: 1.2 }}>Monday – Saturday</div>
               </div>
-              <div style={{ flex: 1, padding: '14px 22px', borderRight: '1px solid rgba(123,77,255,.38)' }}>
-                <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '18px', letterSpacing: '1px', color: '#F5C518', textTransform: 'uppercase' }}>
+              <div style={{ flex: 1, padding: '14px 22px', borderRight: 'var(--sx-border-31)' }}>
+                <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '18px', letterSpacing: '1px', color: 'var(--sx-text-3)', textTransform: 'uppercase' }}>
                   Work stoppage:
                 </div>
                 <div style={{ fontSize: '25px', fontWeight: 700, lineHeight: 1.2 }}>Dec 20 – Jan 3 (resume Jan 4)</div>
               </div>
-              <div style={{ flex: 1, padding: '14px 22px', borderRight: '1px solid rgba(123,77,255,.38)' }}>
-                <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '18px', letterSpacing: '1px', color: '#F5C518', textTransform: 'uppercase' }}>
+              <div style={{ flex: 1, padding: '14px 22px', borderRight: 'var(--sx-border-31)' }}>
+                <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '18px', letterSpacing: '1px', color: 'var(--sx-text-3)', textTransform: 'uppercase' }}>
                   Punchlist date:
                 </div>
                 <div style={{ fontSize: '25px', fontWeight: 700, lineHeight: 1.2 }}>Apr 7, 2027</div>
               </div>
-              <div style={{ flex: 1, padding: '14px 22px', borderRight: '1px solid rgba(123,77,255,.38)' }}>
-                <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '18px', letterSpacing: '1px', color: '#F5C518', textTransform: 'uppercase' }}>
+              <div style={{ flex: 1, padding: '14px 22px', borderRight: 'var(--sx-border-31)' }}>
+                <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '18px', letterSpacing: '1px', color: 'var(--sx-text-3)', textTransform: 'uppercase' }}>
                   Turnover ceremony:
                 </div>
                 <div style={{ fontSize: '25px', fontWeight: 700, lineHeight: 1.2 }}>Apr 30, 2027</div>
               </div>
               <div style={{ flex: 1, padding: '14px 22px' }}>
-                <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '18px', letterSpacing: '1px', color: '#F5C518', textTransform: 'uppercase' }}>
+                <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '18px', letterSpacing: '1px', color: 'var(--sx-text-3)', textTransform: 'uppercase' }}>
                   Concrete Milestones:
                 </div>
-                <div style={{ fontSize: '25px', fontWeight: 700, lineHeight: 1.2, color: '#4BE08A' }}>
+                <div style={{ fontSize: '25px', fontWeight: 700, lineHeight: 1.2, color: 'var(--sx-text-8)' }}>
                   {concreteOverall.percent}% ({concreteOverall.completed}/{concreteOverall.total})
                 </div>
               </div>
@@ -190,24 +190,24 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
           </div>
 
           {/* Section 1: Key Milestone Dates */}
-          <div style={{ background: '#0A1140', border: '2px solid #7B4DFF', borderRadius: '14px', boxShadow: '0 0 16px rgba(123,77,255,.55),inset 0 0 26px rgba(40,30,130,.45)', overflow: 'hidden', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'stretch', height: '52px', flex: 'none', background: 'linear-gradient(90deg,#2A1D9C,#0C1448 75%)' }}>
-              <div style={{ width: '66px', flex: 'none', background: '#F5C518', clipPath: 'polygon(0 0,100% 0,74% 100%,0 100%)', display: 'flex', alignItems: 'center', paddingLeft: '16px', color: '#060A24', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px' }}>
+          <div style={{ background: 'var(--sx-bg-14)', border: 'var(--sx-border-19)', borderRadius: '14px', boxShadow: 'var(--sx-shadow-36)', overflow: 'hidden', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'stretch', height: '52px', flex: 'none', background: 'var(--sx-bg-38)' }}>
+              <div style={{ width: '66px', flex: 'none', background: 'var(--sx-bg-12)', clipPath: 'polygon(0 0,100% 0,74% 100%,0 100%)', display: 'flex', alignItems: 'center', paddingLeft: '16px', color: 'var(--sx-text-1)', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px' }}>
                 1
               </div>
               <div className="chd" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '6px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '25px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                 <span>KEY</span>
-                <span style={{ color: '#F5C518' }}>MILESTONE DATES</span>
+                <span style={{ color: 'var(--sx-text-3)' }}>MILESTONE DATES</span>
               </div>
-              <div className="leg" style={{ display: 'flex', gap: '14px', alignItems: 'center', paddingRight: '10px', fontSize: '13px', color: '#BAC4E2', whiteSpace: 'nowrap' }}>
+              <div className="leg" style={{ display: 'flex', gap: '14px', alignItems: 'center', paddingRight: '10px', fontSize: '13px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                 <span>Status:</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#DCE3F7' }} />Upcoming</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: 'var(--sx-bg-63)' }} />Upcoming</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#1F6FE0' }} />In progress</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#4BE08A' }} />Complete</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#E0213B' }} />Delayed</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#FF9A1F' }} />Date passed · confirm</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', paddingRight: '14px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', color: '#F5C518', letterSpacing: '-4px', fontStyle: 'italic' }}>
+              <div style={{ display: 'flex', alignItems: 'center', paddingRight: '14px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', color: 'var(--sx-text-3)', letterSpacing: '-4px', fontStyle: 'italic' }}>
                 //
               </div>
             </div>
@@ -230,8 +230,8 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                     className="mrow"
                     style={{
                       boxSizing: 'border-box',
-                      background: 'rgba(255,255,255,.05)',
-                      border: '1px solid rgba(123,77,255,.38)',
+                      background: 'var(--sx-bg-43)',
+                      border: 'var(--sx-border-31)',
                       borderRadius: '10px',
                       padding: '3px 12px',
                       display: 'flex',
@@ -240,7 +240,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                       minHeight: 0,
                     }}
                   >
-                    <div style={{ width: '215px', flex: 'none', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '28px', lineHeight: 1, color: '#F5C518', whiteSpace: 'nowrap' }}>
+                    <div style={{ width: '215px', flex: 'none', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '28px', lineHeight: 1, color: 'var(--sx-text-3)', whiteSpace: 'nowrap' }}>
                       <CollaborativeCell
                         cellId={`milestone_${m.id}_date`}
                         value={safeDate}
@@ -274,8 +274,8 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                         <span
                           style={{
                             display: 'inline-block',
-                            background: safeBadge.type === 'confirmed' || safeBadge.type === 'provided' ? '#4BE08A' : safeBadge.type === 'planned' ? '#1F6FE0' : '#F5C518',
-                            color: safeBadge.type === 'planned' ? '#fff' : '#060A24',
+                            background: safeBadge.type === 'confirmed' || safeBadge.type === 'provided' ? '#4BE08A' : safeBadge.type === 'planned' ? '#1F6FE0' : 'var(--sx-bg-12)',
+                            color: safeBadge.type === 'planned' ? '#fff' : 'var(--sx-text-1)',
                             fontSize: '11px',
                             fontWeight: 600,
                             padding: '0 7px',
@@ -288,7 +288,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                         </span>
                       )}
                       {m.updatedBy && (
-                        <div className="text-[10px] text-[#BAC4E2]/70 italic mt-0.5 font-sans">
+                        <div className="text-[10px] text-[var(--sx-text-2)]/70 italic mt-0.5 font-sans">
                           Last updated by {m.updatedBy} {m.updatedAt ? `on ${new Date(m.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
                         </div>
                       )}
@@ -305,7 +305,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                       {statusFocus && (
                         <span
                           className="absolute -top-3.5 right-0 z-20 px-1 py-0.2 text-[9px] font-bold rounded shadow pointer-events-none whitespace-nowrap"
-                          style={{ background: statusFocus.userColor, color: '#060A24' }}
+                          style={{ background: statusFocus.userColor, color: 'var(--sx-text-1)' }}
                         >
                           {statusFocus.userName}
                         </span>
@@ -343,16 +343,16 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
           </div>
 
           {/* Section 2: Project Timeline At A Glance (Gantt) */}
-          <div style={{ background: '#0A1140', border: '2px solid #7B4DFF', borderRadius: '14px', boxShadow: '0 0 16px rgba(123,77,255,.55),inset 0 0 26px rgba(40,30,130,.45)', overflow: 'hidden', flex: 'none' }}>
-            <div style={{ display: 'flex', alignItems: 'stretch', height: '52px', flex: 'none', background: 'linear-gradient(90deg,#2A1D9C,#0C1448 75%)' }}>
-              <div style={{ width: '66px', flex: 'none', background: '#F5C518', clipPath: 'polygon(0 0,100% 0,74% 100%,0 100%)', display: 'flex', alignItems: 'center', paddingLeft: '16px', color: '#060A24', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px' }}>
+          <div style={{ background: 'var(--sx-bg-14)', border: 'var(--sx-border-19)', borderRadius: '14px', boxShadow: 'var(--sx-shadow-36)', overflow: 'hidden', flex: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'stretch', height: '52px', flex: 'none', background: 'var(--sx-bg-38)' }}>
+              <div style={{ width: '66px', flex: 'none', background: 'var(--sx-bg-12)', clipPath: 'polygon(0 0,100% 0,74% 100%,0 100%)', display: 'flex', alignItems: 'center', paddingLeft: '16px', color: 'var(--sx-text-1)', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px' }}>
                 2
               </div>
               <div className="chd" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '6px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '25px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                 <span>PROJECT TIMELINE</span>
-                <span style={{ color: '#4BE08A' }}>AT A GLANCE</span>
+                <span style={{ color: 'var(--sx-text-8)' }}>AT A GLANCE</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', paddingRight: '14px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', color: '#F5C518', letterSpacing: '-4px', fontStyle: 'italic' }}>
+              <div style={{ display: 'flex', alignItems: 'center', paddingRight: '14px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', color: 'var(--sx-text-3)', letterSpacing: '-4px', fontStyle: 'italic' }}>
                 //
               </div>
             </div>
@@ -360,39 +360,39 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
             <div className="gpad" style={{ padding: '16px 20px 16px 210px' }}>
               <div className="gantt" style={{ position: 'relative', height: '298px' }}>
                 {/* Month Grid */}
-                <div style={{ position: 'absolute', left: '0.00%', top: '24px', bottom: 0, width: '1px', background: 'rgba(255,255,255,.14)' }} />
-                <div style={{ position: 'absolute', left: 'calc(0.00% + 6px)', top: 0, fontSize: '13px', fontWeight: 600, color: '#BAC4E2' }}>Oct 2026</div>
+                <div style={{ position: 'absolute', left: '0.00%', top: '24px', bottom: 0, width: '1px', background: 'var(--sx-bg-35)' }} />
+                <div style={{ position: 'absolute', left: 'calc(0.00% + 6px)', top: 0, fontSize: '13px', fontWeight: 600, color: 'var(--sx-text-2)' }}>Oct 2026</div>
 
-                <div style={{ position: 'absolute', left: '14.62%', top: '24px', bottom: 0, width: '1px', background: 'rgba(255,255,255,.14)' }} />
-                <div style={{ position: 'absolute', left: 'calc(14.62% + 6px)', top: 0, fontSize: '13px', fontWeight: 600, color: '#BAC4E2' }}>Nov 2026</div>
+                <div style={{ position: 'absolute', left: '14.62%', top: '24px', bottom: 0, width: '1px', background: 'var(--sx-bg-35)' }} />
+                <div style={{ position: 'absolute', left: 'calc(14.62% + 6px)', top: 0, fontSize: '13px', fontWeight: 600, color: 'var(--sx-text-2)' }}>Nov 2026</div>
 
-                <div style={{ position: 'absolute', left: '28.77%', top: '24px', bottom: 0, width: '1px', background: 'rgba(255,255,255,.14)' }} />
-                <div style={{ position: 'absolute', left: 'calc(28.77% + 6px)', top: 0, fontSize: '13px', fontWeight: 600, color: '#BAC4E2' }}>Dec 2026</div>
+                <div style={{ position: 'absolute', left: '28.77%', top: '24px', bottom: 0, width: '1px', background: 'var(--sx-bg-35)' }} />
+                <div style={{ position: 'absolute', left: 'calc(28.77% + 6px)', top: 0, fontSize: '13px', fontWeight: 600, color: 'var(--sx-text-2)' }}>Dec 2026</div>
 
-                <div style={{ position: 'absolute', left: '43.40%', top: '24px', bottom: 0, width: '1px', background: 'rgba(255,255,255,.14)' }} />
-                <div style={{ position: 'absolute', left: 'calc(43.40% + 6px)', top: 0, fontSize: '13px', fontWeight: 600, color: '#BAC4E2' }}>Jan 2027</div>
+                <div style={{ position: 'absolute', left: '43.40%', top: '24px', bottom: 0, width: '1px', background: 'var(--sx-bg-35)' }} />
+                <div style={{ position: 'absolute', left: 'calc(43.40% + 6px)', top: 0, fontSize: '13px', fontWeight: 600, color: 'var(--sx-text-2)' }}>Jan 2027</div>
 
-                <div style={{ position: 'absolute', left: '58.02%', top: '24px', bottom: 0, width: '1px', background: 'rgba(255,255,255,.14)' }} />
-                <div style={{ position: 'absolute', left: 'calc(58.02% + 6px)', top: 0, fontSize: '13px', fontWeight: 600, color: '#BAC4E2' }}>Feb 2027</div>
+                <div style={{ position: 'absolute', left: '58.02%', top: '24px', bottom: 0, width: '1px', background: 'var(--sx-bg-35)' }} />
+                <div style={{ position: 'absolute', left: 'calc(58.02% + 6px)', top: 0, fontSize: '13px', fontWeight: 600, color: 'var(--sx-text-2)' }}>Feb 2027</div>
 
-                <div style={{ position: 'absolute', left: '71.23%', top: '24px', bottom: 0, width: '1px', background: 'rgba(255,255,255,.14)' }} />
-                <div style={{ position: 'absolute', left: 'calc(71.23% + 6px)', top: 0, fontSize: '13px', fontWeight: 600, color: '#BAC4E2' }}>Mar 2027</div>
+                <div style={{ position: 'absolute', left: '71.23%', top: '24px', bottom: 0, width: '1px', background: 'var(--sx-bg-35)' }} />
+                <div style={{ position: 'absolute', left: 'calc(71.23% + 6px)', top: 0, fontSize: '13px', fontWeight: 600, color: 'var(--sx-text-2)' }}>Mar 2027</div>
 
-                <div style={{ position: 'absolute', left: '85.85%', top: '24px', bottom: 0, width: '1px', background: 'rgba(255,255,255,.14)' }} />
-                <div style={{ position: 'absolute', left: 'calc(85.85% + 6px)', top: 0, fontSize: '13px', fontWeight: 600, color: '#BAC4E2' }}>Apr 2027</div>
+                <div style={{ position: 'absolute', left: '85.85%', top: '24px', bottom: 0, width: '1px', background: 'var(--sx-bg-35)' }} />
+                <div style={{ position: 'absolute', left: 'calc(85.85% + 6px)', top: 0, fontSize: '13px', fontWeight: 600, color: 'var(--sx-text-2)' }}>Apr 2027</div>
 
                 {/* Work Stoppage Band */}
-                <div style={{ position: 'absolute', left: '37.74%', width: '7.08%', top: '24px', bottom: 0, background: 'rgba(224,33,59,.3)', zIndex: 1 }} />
+                <div style={{ position: 'absolute', left: '37.74%', width: '7.08%', top: '24px', bottom: 0, background: 'var(--ov-stop-bg)', zIndex: 1 }} />
 
                 {/* Construction Bars */}
                 {/* GF Structural */}
                 <div style={{ position: 'absolute', left: '-190px', width: '180px', top: '28px', height: '30px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 600 }}>
                   <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#3A9BFF', flex: 'none' }} />GF · Structural
                 </div>
-                <div style={{ position: 'absolute', left: 0, right: 0, top: '28px', height: '30px', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+                <div style={{ position: 'absolute', left: 0, right: 0, top: '28px', height: '30px', borderBottom: 'var(--sx-border-29)' }}>
                   <div style={{ position: 'absolute', left: '1.89%', width: '35.85%', top: '5px', height: '20px', borderRadius: '4px', background: '#3A9BFF' }} />
                   <div style={{ position: 'absolute', left: '49.06%', width: '3.77%', top: '5px', height: '20px', borderRadius: '4px', background: '#9CCBFF' }} />
-                  <div style={{ position: 'absolute', left: 'calc(52.76% + 6px)', top: '7px', fontSize: '13px', color: '#BAC4E2', whiteSpace: 'nowrap' }}>
+                  <div style={{ position: 'absolute', left: 'calc(52.76% + 6px)', top: '7px', fontSize: '13px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                     Oct 5 – Dec 19, 2026 · stair framing Jan 13–20, 2027
                   </div>
                 </div>
@@ -401,9 +401,9 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                 <div style={{ position: 'absolute', left: '-190px', width: '180px', top: '58px', height: '30px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 600 }}>
                   <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#FF9A1F', flex: 'none' }} />GF · Finishing
                 </div>
-                <div style={{ position: 'absolute', left: 0, right: 0, top: '58px', height: '30px', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+                <div style={{ position: 'absolute', left: 0, right: 0, top: '58px', height: '30px', borderBottom: 'var(--sx-border-29)' }}>
                   <div style={{ position: 'absolute', left: '46.23%', width: '46.23%', top: '5px', height: '20px', borderRadius: '4px', background: '#FF9A1F' }} />
-                  <div style={{ position: 'absolute', right: 'calc(53.77% + 8px)', top: '7px', fontSize: '13px', color: '#BAC4E2', whiteSpace: 'nowrap' }}>
+                  <div style={{ position: 'absolute', right: 'calc(53.77% + 8px)', top: '7px', fontSize: '13px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                     Jan 7 – Apr 14, 2027
                   </div>
                 </div>
@@ -412,10 +412,10 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                 <div style={{ position: 'absolute', left: '-190px', width: '180px', top: '88px', height: '30px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 600 }}>
                   <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#3A9BFF', flex: 'none' }} />2F · Structural
                 </div>
-                <div style={{ position: 'absolute', left: 0, right: 0, top: '88px', height: '30px', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+                <div style={{ position: 'absolute', left: 0, right: 0, top: '88px', height: '30px', borderBottom: 'var(--sx-border-29)' }}>
                   <div style={{ position: 'absolute', left: '20.75%', width: '7.08%', top: '5px', height: '20px', borderRadius: '4px', background: '#3A9BFF' }} />
                   <div style={{ position: 'absolute', left: '52.83%', width: '3.30%', top: '5px', height: '20px', borderRadius: '4px', background: '#9CCBFF' }} />
-                  <div style={{ position: 'absolute', left: 'calc(56.06% + 6px)', top: '7px', fontSize: '13px', color: '#BAC4E2', whiteSpace: 'nowrap' }}>
+                  <div style={{ position: 'absolute', left: 'calc(56.06% + 6px)', top: '7px', fontSize: '13px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                     Nov 14 – Nov 28, 2026 · stair framing Jan 21–27, 2027
                   </div>
                 </div>
@@ -424,9 +424,9 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                 <div style={{ position: 'absolute', left: '-190px', width: '180px', top: '118px', height: '30px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 600 }}>
                   <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#FF9A1F', flex: 'none' }} />2F · Finishing
                 </div>
-                <div style={{ position: 'absolute', left: 0, right: 0, top: '118px', height: '30px', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+                <div style={{ position: 'absolute', left: 0, right: 0, top: '118px', height: '30px', borderBottom: 'var(--sx-border-29)' }}>
                   <div style={{ position: 'absolute', left: '28.77%', width: '31.60%', top: '5px', height: '20px', borderRadius: '4px', background: '#FF9A1F' }} />
-                  <div style={{ position: 'absolute', left: 'calc(60.31% + 6px)', top: '7px', fontSize: '13px', color: '#BAC4E2', whiteSpace: 'nowrap' }}>
+                  <div style={{ position: 'absolute', left: 'calc(60.31% + 6px)', top: '7px', fontSize: '13px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                     Dec 1, 2026 – Feb 5, 2027
                   </div>
                 </div>
@@ -435,9 +435,9 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                 <div style={{ position: 'absolute', left: '-190px', width: '180px', top: '148px', height: '30px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 600 }}>
                   <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#3A9BFF', flex: 'none' }} />3F · Structural
                 </div>
-                <div style={{ position: 'absolute', left: 0, right: 0, top: '148px', height: '30px', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+                <div style={{ position: 'absolute', left: 0, right: 0, top: '148px', height: '30px', borderBottom: 'var(--sx-border-29)' }}>
                   <div style={{ position: 'absolute', left: '27.36%', width: '32.08%', top: '5px', height: '20px', borderRadius: '4px', background: '#3A9BFF' }} />
-                  <div style={{ position: 'absolute', left: 'calc(59.36% + 6px)', top: '7px', fontSize: '13px', color: '#BAC4E2', whiteSpace: 'nowrap' }}>
+                  <div style={{ position: 'absolute', left: 'calc(59.36% + 6px)', top: '7px', fontSize: '13px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                     Nov 28, 2026 – Feb 3, 2027
                   </div>
                 </div>
@@ -446,9 +446,9 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                 <div style={{ position: 'absolute', left: '-190px', width: '180px', top: '178px', height: '30px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 600 }}>
                   <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#FF9A1F', flex: 'none' }} />3F · Finishing
                 </div>
-                <div style={{ position: 'absolute', left: 0, right: 0, top: '178px', height: '30px', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+                <div style={{ position: 'absolute', left: 0, right: 0, top: '178px', height: '30px', borderBottom: 'var(--sx-border-29)' }}>
                   <div style={{ position: 'absolute', left: '61.32%', width: '27.83%', top: '5px', height: '20px', borderRadius: '4px', background: '#FF9A1F' }} />
-                  <div style={{ position: 'absolute', right: 'calc(38.68% + 8px)', top: '7px', fontSize: '13px', color: '#BAC4E2', whiteSpace: 'nowrap' }}>
+                  <div style={{ position: 'absolute', right: 'calc(38.68% + 8px)', top: '7px', fontSize: '13px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                     Feb 8 – Apr 7, 2027
                   </div>
                 </div>
@@ -457,13 +457,13 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                 <div style={{ position: 'absolute', left: '-190px', width: '180px', top: '208px', height: '30px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 600 }}>
                   <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#4BE08A', flex: 'none' }} />Closeout
                 </div>
-                <div style={{ position: 'absolute', left: 0, right: 0, top: '208px', height: '30px', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
-                  <div style={{ position: 'absolute', left: '88.68%', width: '0.94%', top: '5px', height: '20px', borderRadius: '4px', background: '#F5C518' }} />
+                <div style={{ position: 'absolute', left: 0, right: 0, top: '208px', height: '30px', borderBottom: 'var(--sx-border-29)' }}>
+                  <div style={{ position: 'absolute', left: '88.68%', width: '0.94%', top: '5px', height: '20px', borderRadius: '4px', background: 'var(--sx-bg-12)' }} />
                   <div style={{ position: 'absolute', left: '89.15%', width: '8.02%', top: '5px', height: '20px', borderRadius: '4px', background: '#FF9A1F' }} />
-                  <div style={{ position: 'absolute', left: '97.64%', width: '0.94%', top: '5px', height: '20px', borderRadius: '4px', background: '#B58CFF' }} />
+                  <div style={{ position: 'absolute', left: '97.64%', width: '0.94%', top: '5px', height: '20px', borderRadius: '4px', background: 'var(--sx-bg-33)' }} />
                   <div style={{ position: 'absolute', left: '98.58%', width: '0.94%', top: '5px', height: '20px', borderRadius: '4px', background: '#4BE08A' }} />
                   <div style={{ position: 'absolute', left: '99.53%', width: '0.94%', top: '5px', height: '20px', borderRadius: '4px', background: '#FF5D8F' }} />
-                  <div style={{ position: 'absolute', right: 'calc(11.32% + 8px)', top: '7px', fontSize: '13px', color: '#BAC4E2', whiteSpace: 'nowrap' }}>
+                  <div style={{ position: 'absolute', right: 'calc(11.32% + 8px)', top: '7px', fontSize: '13px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                     Punchlist Apr 7 · Rectification Apr 8–24 · Interior styling Apr 26–27 · Move-in Apr 28–29 · Turnover Apr 30
                   </div>
                 </div>
@@ -472,7 +472,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                 <div style={{ position: 'absolute', left: '-190px', width: '180px', top: '238px', height: '30px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 600 }}>
                   <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#FF5D8F', flex: 'none' }} />Content shoots
                 </div>
-                <div style={{ position: 'absolute', left: 0, right: 0, top: '238px', height: '30px', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+                <div style={{ position: 'absolute', left: 0, right: 0, top: '238px', height: '30px', borderBottom: 'var(--sx-border-29)' }}>
                   {episodes.map((ep) => {
                     const start = parseIsoDate(ep.shootStart);
                     if (!start) return null;
@@ -489,9 +489,9 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                             width: `${Math.max(r - l, 0.4)}%`,
                             top: '-214px',
                             height: '214px',
-                            background: 'rgba(255,93,143,0.18)',
-                            borderLeft: '1px solid rgba(255,93,143,0.5)',
-                            borderRight: '1px solid rgba(255,93,143,0.5)',
+                            background: 'var(--ov-shoot-bg)',
+                            borderLeft: 'var(--ov-shoot-bd)',
+                            borderRight: 'var(--ov-shoot-bd)',
                             pointerEvents: 'none',
                           }}
                         />
@@ -506,7 +506,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                             height: '13px',
                             borderRadius: '7px',
                             background: '#FF5D8F',
-                            color: '#060A24',
+                            color: 'var(--sx-text-1)',
                             fontSize: '10px',
                             fontWeight: 700,
                             lineHeight: '13px',
@@ -526,7 +526,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                 <div style={{ position: 'absolute', left: '-190px', width: '180px', top: '268px', height: '30px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 600 }}>
                   <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#FF9A1F', flex: 'none' }} />Pours &amp; Milestones
                 </div>
-                <div style={{ position: 'absolute', left: 0, right: 0, top: '268px', height: '30px', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+                <div style={{ position: 'absolute', left: 0, right: 0, top: '268px', height: '30px', borderBottom: 'var(--sx-border-29)' }}>
                   {pours.map((p) => {
                     const d = parseIsoDate(p.actualPour) || parseIsoDate(p.targetPour);
                     if (!d) return null;
@@ -544,7 +544,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                           marginLeft: '-6px',
                           transform: 'rotate(45deg)',
                           background: col,
-                          border: '1px solid #fff',
+                          border: 'var(--sx-border-64)',
                         }}
                       />
                     );
@@ -564,7 +564,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                           height: '8px',
                           marginLeft: '-4px',
                           borderRadius: '50%',
-                          background: '#F5C518',
+                          background: 'var(--sx-bg-12)',
                         }}
                       />
                     );
@@ -574,8 +574,8 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                 {/* Live Today Line */}
                 {isTodayVisible && (
                   <>
-                    <div style={{ position: 'absolute', left: `${todayOffset}%`, top: '20px', bottom: 0, width: '2px', background: '#F5C518', zIndex: 10 }} />
-                    <div style={{ position: 'absolute', left: `calc(${todayOffset}% + 6px)`, top: '2px', fontSize: '12px', fontWeight: 700, color: '#F5C518', whiteSpace: 'nowrap', background: '#0A1140', padding: '0 4px', zIndex: 11 }}>
+                    <div style={{ position: 'absolute', left: `${todayOffset}%`, top: '20px', bottom: 0, width: '2px', background: 'var(--sx-bg-12)', zIndex: 10 }} />
+                    <div style={{ position: 'absolute', left: `calc(${todayOffset}% + 6px)`, top: '2px', fontSize: '12px', fontWeight: 700, color: 'var(--sx-text-3)', whiteSpace: 'nowrap', background: 'var(--sx-bg-14)', padding: '0 4px', zIndex: 11 }}>
                       {todayLabel}
                     </div>
                   </>
@@ -588,16 +588,16 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
         {/* Footer */}
         <div className="ftr" style={{ position: 'absolute', left: '340px', right: '340px', bottom: '40px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px', width: '100%' }}>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,.4)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'var(--sx-bg-32)' }} />
             <div className="wm" style={{ fontSize: '22px', letterSpacing: '9px', fontWeight: 500, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
               Convengers Bahay Build
             </div>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,.4)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'var(--sx-bg-32)' }} />
           </div>
-          <div style={{ fontSize: '12px', color: '#BAC4E2', textAlign: 'center' }}>
+          <div style={{ fontSize: '12px', color: 'var(--sx-text-2)', textAlign: 'center' }}>
             Source: project schedule. Schedule assumes Monday–Saturday work; Sundays and listed holidays excluded. Changes sync in real-time to persistent database.
           </div>
-          <div className="ver" style={{ fontSize: '12px', fontWeight: 600, color: '#F5C518', textAlign: 'center' }}>
+          <div className="ver" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--sx-text-3)', textAlign: 'center' }}>
             Version {settings.version} · Updated {new Date(settings.updatedAt).toLocaleString()}
           </div>
         </div>

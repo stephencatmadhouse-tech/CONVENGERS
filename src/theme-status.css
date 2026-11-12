@@ -1,0 +1,101 @@
+/* Convengers status palette — light (default) and dark (original) */
+:root {
+  --st-upcoming-bg: #E9E9F0; --st-upcoming-fg: #4A4A5E; --st-upcoming-bd: #D5D5E0;
+  --st-in-progress-bg: #7041C8; --st-in-progress-fg: #FFFFFF; --st-in-progress-bd: #7041C8;
+  --st-ongoing-bg: #7041C8; --st-ongoing-fg: #FFFFFF; --st-ongoing-bd: #7041C8;
+  --st-complete-bg: #22A05A; --st-complete-fg: #FFFFFF; --st-complete-bd: #22A05A;
+  --st-completed-bg: #22A05A; --st-completed-fg: #FFFFFF; --st-completed-bd: #22A05A;
+  --st-delayed-bg: #D92D3F; --st-delayed-fg: #FFFFFF; --st-delayed-bd: #D92D3F;
+  --st-date-passed-confirm-bg: #FFD43B; --st-date-passed-confirm-fg: #252336; --st-date-passed-confirm-bd: #E8B800;
+  --st-on-hold-bg: #C9C9D6; --st-on-hold-fg: #252336; --st-on-hold-bd: #B5B5C5;
+  --st-not-started-bg: #E9E9F0; --st-not-started-fg: #4A4A5E; --st-not-started-bd: #D5D5E0;
+  --st-on-track-bg: #7041C8; --st-on-track-fg: #FFFFFF; --st-on-track-bd: #7041C8;
+  --st-planned-bg: #E9E9F0; --st-planned-fg: #4A4A5E; --st-planned-bd: #D5D5E0;
+  --st-for-confirmation-bg: #FFD43B; --st-for-confirmation-fg: #252336; --st-for-confirmation-bd: #E8B800;
+  --st-scheduled-bg: #7041C8; --st-scheduled-fg: #FFFFFF; --st-scheduled-bd: #7041C8;
+  --st-rescheduled-bg: #EEE8FA; --st-rescheduled-fg: #5B32AE; --st-rescheduled-bd: #CDBEF0;
+  --st-not-yet-started-bg: #E9E9F0; --st-not-yet-started-fg: #4A4A5E; --st-not-yet-started-bd: #D5D5E0;
+  --st-preparation-ongoing-bg: #7041C8; --st-preparation-ongoing-fg: #FFFFFF; --st-preparation-ongoing-bd: #7041C8;
+  --st-ready-for-pouring-bg: #FFD43B; --st-ready-for-pouring-fg: #252336; --st-ready-for-pouring-bd: #E8B800;
+  --st-scheduled-for-pouring-bg: #7041C8; --st-scheduled-for-pouring-fg: #FFFFFF; --st-scheduled-for-pouring-bd: #7041C8;
+  --st-pouring-ongoing-bg: #7041C8; --st-pouring-ongoing-fg: #FFFFFF; --st-pouring-ongoing-bd: #7041C8;
+  --st-pouring-completed-bg: #22A05A; --st-pouring-completed-fg: #FFFFFF; --st-pouring-completed-bd: #22A05A;
+  --st-curing-ongoing-bg: #7041C8; --st-curing-ongoing-fg: #FFFFFF; --st-curing-ongoing-bd: #7041C8;
+  --st-completed-approved-bg: #22A05A; --st-completed-approved-fg: #FFFFFF; --st-completed-approved-bd: #22A05A;
+}
+html[data-eff='dark'] {
+  --st-upcoming-bg: rgba(255,255,255,.12); --st-upcoming-fg: #DCE3F7; --st-upcoming-bd: rgba(255,255,255,.3);
+  --st-in-progress-bg: #1F6FE0; --st-in-progress-fg: #FFFFFF; --st-in-progress-bd: #1F6FE0;
+  --st-ongoing-bg: #1F6FE0; --st-ongoing-fg: #FFFFFF; --st-ongoing-bd: #1F6FE0;
+  --st-complete-bg: #4BE08A; --st-complete-fg: #060A24; --st-complete-bd: #4BE08A;
+  --st-completed-bg: #4BE08A; --st-completed-fg: #060A24; --st-completed-bd: #4BE08A;
+  --st-delayed-bg: #E0213B; --st-delayed-fg: #FFFFFF; --st-delayed-bd: #E0213B;
+  --st-date-passed-confirm-bg: #FF9A1F; --st-date-passed-confirm-fg: #060A24; --st-date-passed-confirm-bd: #FF9A1F;
+  --st-on-hold-bg: #8A8FA8; --st-on-hold-fg: #060A24; --st-on-hold-bd: #8A8FA8;
+  --st-not-started-bg: rgba(255,255,255,.16); --st-not-started-fg: #DCE3F7; --st-not-started-bd: #F5C518;
+  --st-on-track-bg: #1F6FE0; --st-on-track-fg: #FFFFFF; --st-on-track-bd: #F5C518;
+  --st-planned-bg: #5B6BB5; --st-planned-fg: #FFFFFF; --st-planned-bd: #5B6BB5;
+  --st-for-confirmation-bg: #F5C518; --st-for-confirmation-fg: #060A24; --st-for-confirmation-bd: #F5C518;
+  --st-scheduled-bg: #1F6FE0; --st-scheduled-fg: #FFFFFF; --st-scheduled-bd: #1F6FE0;
+  --st-rescheduled-bg: #B58CFF; --st-rescheduled-fg: #060A24; --st-rescheduled-bd: #B58CFF;
+  --st-not-yet-started-bg: #5B6BB5; --st-not-yet-started-fg: #FFFFFF; --st-not-yet-started-bd: #5B6BB5;
+  --st-preparation-ongoing-bg: #B58CFF; --st-preparation-ongoing-fg: #060A24; --st-preparation-ongoing-bd: #B58CFF;
+  --st-ready-for-pouring-bg: #F5C518; --st-ready-for-pouring-fg: #060A24; --st-ready-for-pouring-bd: #F5C518;
+  --st-scheduled-for-pouring-bg: #1F6FE0; --st-scheduled-for-pouring-fg: #FFFFFF; --st-scheduled-for-pouring-bd: #1F6FE0;
+  --st-pouring-ongoing-bg: #FF9A1F; --st-pouring-ongoing-fg: #060A24; --st-pouring-ongoing-bd: #FF9A1F;
+  --st-pouring-completed-bg: #3AC9C9; --st-pouring-completed-fg: #060A24; --st-pouring-completed-bd: #3AC9C9;
+  --st-curing-ongoing-bg: #6FA8FF; --st-curing-ongoing-fg: #060A24; --st-curing-ongoing-bd: #6FA8FF;
+  --st-completed-approved-bg: #4BE08A; --st-completed-approved-fg: #060A24; --st-completed-approved-bd: #4BE08A;
+}
+
+/* Timeline overlays (shoot windows, work stoppage, holidays) */
+:root {
+  --ov-shoot-bg: rgba(217, 72, 138, 0.07);
+  --ov-shoot-bd: 1px solid rgba(217, 72, 138, 0.28);
+  --ov-stop-bg: rgba(217, 45, 63, 0.1);
+  --ov-stop-strong: rgba(217, 45, 63, 0.3);
+  --ov-stop-hatch: repeating-linear-gradient(45deg, rgba(217, 45, 63, 0.14), rgba(217, 45, 63, 0.14) 4px, rgba(217, 45, 63, 0.04) 4px, rgba(217, 45, 63, 0.04) 8px);
+  --ov-holiday-hatch: repeating-linear-gradient(45deg, rgba(217, 45, 63, 0.08), rgba(217, 45, 63, 0.08) 4px, transparent 4px, transparent 8px);
+}
+html[data-eff='dark'] {
+  --ov-shoot-bg: rgba(255,93,143,0.18);
+  --ov-shoot-bd: 1px solid rgba(255,93,143,0.5);
+  --ov-stop-bg: rgba(224,33,59,.3);
+  --ov-stop-strong: rgba(224,33,59,.6);
+  --ov-stop-hatch: repeating-linear-gradient(45deg, rgba(224,33,59,0.35), rgba(224,33,59,0.35) 4px, rgba(122,10,23,0.45) 4px, rgba(122,10,23,0.45) 8px);
+  --ov-holiday-hatch: repeating-linear-gradient(45deg, rgba(224,33,59,0.18), rgba(224,33,59,0.18) 4px, transparent 4px, transparent 8px);
+}
+
+/* Master timeline bars */
+:root {
+  --tl-c-done: linear-gradient(90deg, #1F9D57, #2FB86C);
+  --tl-c-prog: linear-gradient(90deg, #6236B8, #7F55D6);
+  --tl-c-up: #EEE8FA;
+  --tl-p-done: linear-gradient(90deg, #B8326E, #D9488A);
+  --tl-p-sched: linear-gradient(90deg, #A2489A, #C266B8);
+  --tl-p-up: #FBE9F2;
+  --tl-up-fg: #252336;
+  --tl-up-fg2: #777789;
+}
+html[data-eff='dark'] {
+  --tl-c-done: linear-gradient(90deg, #237A4A, #4BE08A);
+  --tl-c-prog: linear-gradient(90deg, #174E9B, #3A9BFF);
+  --tl-c-up: linear-gradient(90deg, #1C2665, #2F3E9E);
+  --tl-p-done: linear-gradient(90deg, #8A153A, #FF5D8F);
+  --tl-p-sched: linear-gradient(90deg, #7A2870, #B545A8);
+  --tl-p-up: linear-gradient(90deg, #2D143D, #4E1F6B);
+  --tl-up-fg: #FFFFFF;
+  --tl-up-fg2: rgba(255,255,255,0.85);
+}
+
+/* Theme ink for Tailwind text classes in slides & modals */
+:root {
+  --sx-ink: #252336;
+  --sx-ink-90: rgba(37, 35, 54, 0.9);
+  --sx-hover: rgba(112, 65, 200, 0.08);
+}
+html[data-eff='dark'] {
+  --sx-ink: #ffffff;
+  --sx-ink-90: rgba(255, 255, 255, 0.9);
+  --sx-hover: rgba(255, 255, 255, 0.1);
+}

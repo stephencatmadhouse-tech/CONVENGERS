@@ -45,7 +45,7 @@ export const CollaboratorBar: React.FC<CollaboratorBarProps> = ({
         style={{
           background: isLiveConnected ? 'rgba(75, 224, 138, 0.15)' : 'rgba(255, 154, 31, 0.15)',
           border: `1px solid ${isLiveConnected ? '#4BE08A' : '#FF9A1F'}`,
-          color: isLiveConnected ? '#4BE08A' : '#FF9A1F',
+          color: isLiveConnected ? 'var(--sx-text-8)' : 'var(--sx-text-10)',
         }}
         title={
           isLiveConnected
@@ -62,19 +62,19 @@ export const CollaboratorBar: React.FC<CollaboratorBarProps> = ({
 
       {/* Collaborators Avatar Stack (Google Sheets style) */}
       <div
-        className="flex items-center -space-x-1.5 bg-[#060A24] border border-[#7B4DFF]/50 px-2 py-0.5 rounded-full"
+        className="flex items-center -space-x-1.5 bg-[var(--sx-bg-5)] border border-[var(--sx-border-6)]/50 px-2 py-0.5 rounded-full"
         title={`${totalCount} collaborator${totalCount > 1 ? 's' : ''} currently on this timeline sheet`}
       >
         {/* Current User Pill */}
         <button
           type="button"
           onClick={() => setIsEditingName(true)}
-          className="relative group w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] text-[#060A24] shadow transition-transform hover:scale-110 focus:outline-none cursor-pointer"
-          style={{ background: myColor, border: '2px solid #060A24' }}
+          className="relative group w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] text-[var(--sx-text-1)] shadow transition-transform hover:scale-110 focus:outline-none cursor-pointer"
+          style={{ background: myColor, border: 'var(--sx-border-24)' }}
           title={`You (${myName}) · Click to change name`}
         >
           {myName.charAt(0).toUpperCase()}
-          <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover:block bg-[#0A1140] border border-[#7B4DFF] text-white text-[11px] px-2 py-0.5 rounded shadow-lg whitespace-nowrap z-50">
+          <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover:block bg-[var(--sx-bg-14)] border border-[var(--sx-border-6)] text-[var(--sx-ink)] text-[11px] px-2 py-0.5 rounded shadow-lg whitespace-nowrap z-50">
             You: {myName} (Click to edit)
           </span>
         </button>
@@ -85,17 +85,17 @@ export const CollaboratorBar: React.FC<CollaboratorBarProps> = ({
           return (
             <div
               key={col.clientId}
-              className="relative group w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] text-[#060A24] shadow transition-transform hover:scale-110"
-              style={{ background: col.userColor, border: '2px solid #060A24' }}
+              className="relative group w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] text-[var(--sx-text-1)] shadow transition-transform hover:scale-110"
+              style={{ background: col.userColor, border: 'var(--sx-border-24)' }}
             >
               {initials}
-              <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center bg-[#0A1140] border border-[#7B4DFF] text-white text-[11px] px-2.5 py-1 rounded shadow-xl whitespace-nowrap z-50">
+              <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center bg-[var(--sx-bg-14)] border border-[var(--sx-border-6)] text-[var(--sx-ink)] text-[11px] px-2.5 py-1 rounded shadow-xl whitespace-nowrap z-50">
                 <span className="font-semibold">{col.userName}</span>
-                <span className="text-[10px] text-[#BAC4E2]">
+                <span className="text-[10px] text-[var(--sx-text-2)]">
                   {col.device === 'mobile' ? '📱 Mobile' : '💻 Laptop'} · {col.userRole.toUpperCase()}
                 </span>
                 {col.focusedCellId && (
-                  <span className="text-[9px] text-[#F5C518]">Editing cell...</span>
+                  <span className="text-[9px] text-[var(--sx-text-3)]">Editing cell...</span>
                 )}
               </div>
             </div>
@@ -104,7 +104,7 @@ export const CollaboratorBar: React.FC<CollaboratorBarProps> = ({
 
         {others.length > 5 && (
           <div
-            className="w-6 h-6 rounded-full bg-[#121C5A] text-white font-bold text-[10px] flex items-center justify-center border-2 border-[#060A24]"
+            className="w-6 h-6 rounded-full bg-[var(--sx-bg-22)] text-[var(--sx-ink)] font-bold text-[10px] flex items-center justify-center border-2 border-[var(--sx-border-23)]"
             title={`${others.length - 5} more teammates online`}
           >
             +{others.length - 5}
@@ -113,7 +113,7 @@ export const CollaboratorBar: React.FC<CollaboratorBarProps> = ({
       </div>
 
       {/* Online Count Indicator */}
-      <span className="text-xs text-[#BAC4E2] font-medium hidden sm:inline">
+      <span className="text-xs text-[var(--sx-text-2)] font-medium hidden sm:inline">
         {totalCount === 1 ? '1 online' : `${totalCount} teammates live`}
       </span>
 
@@ -122,12 +122,12 @@ export const CollaboratorBar: React.FC<CollaboratorBarProps> = ({
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4">
           <form
             onSubmit={handleSaveName}
-            className="bg-[#0A1140] border-2 border-[#7B4DFF] rounded-xl p-5 w-full max-w-sm shadow-2xl flex flex-col gap-3 font-['Barlow']"
+            className="bg-[var(--sx-bg-14)] border-2 border-[var(--sx-border-6)] rounded-xl p-5 w-full max-w-sm shadow-2xl flex flex-col gap-3 font-['Barlow']"
           >
-            <h3 className="font-extrabold text-lg uppercase tracking-wider text-[#F5C518]">
+            <h3 className="font-extrabold text-lg uppercase tracking-wider text-[var(--sx-text-3)]">
               Your Collaborator Name
             </h3>
-            <p className="text-xs text-[#BAC4E2]">
+            <p className="text-xs text-[var(--sx-text-2)]">
               Teammates on their laptops and phones will see this name tag next to cells you edit.
             </p>
             <input
@@ -137,19 +137,19 @@ export const CollaboratorBar: React.FC<CollaboratorBarProps> = ({
               placeholder="e.g. Stephen, Architect Joy, Engr. Mark"
               maxLength={24}
               autoFocus
-              className="bg-[#060A24] border border-[#7B4DFF] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#F5C518]"
+              className="bg-[var(--sx-bg-5)] border border-[var(--sx-border-6)] rounded-lg px-3 py-2 text-sm text-[var(--sx-ink)] focus:outline-none focus:border-[var(--sx-border-4)]"
             />
             <div className="flex justify-end gap-2 mt-2">
               <button
                 type="button"
                 onClick={() => setIsEditingName(false)}
-                className="px-3 py-1.5 rounded-md text-xs font-semibold bg-transparent border border-[#7B4DFF] text-[#BAC4E2] hover:bg-[#121C5A]"
+                className="px-3 py-1.5 rounded-md text-xs font-semibold bg-transparent border border-[var(--sx-border-6)] text-[var(--sx-text-2)] hover:bg-[var(--sx-bg-22)]"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 rounded-md text-xs font-bold bg-[#F5C518] text-[#060A24] hover:bg-[#ffd233]"
+                className="px-4 py-1.5 rounded-md text-xs font-bold bg-[var(--sx-bg-12)] text-[var(--sx-text-1)] hover:bg-[#ffd233]"
               >
                 Save &amp; Broadcast
               </button>

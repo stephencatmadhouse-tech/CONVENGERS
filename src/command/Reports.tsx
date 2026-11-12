@@ -258,14 +258,14 @@ export const ReportsPage: React.FC<{ type: ReportType }> = ({ type }) => {
 };
 
 export const ReportStatusStamp: React.FC<{ report?: ProjectReport }> = ({ report }) => {
-  if (!report) return <span className="cv-stamp" style={{ color: '#8A93B8', borderColor: '#8A93B8' }}>Not generated</span>;
+  if (!report) return <span className="cv-stamp" style={{ color: '#9A9AAD', borderColor: '#9A9AAD' }}>Not generated</span>;
   if (report.status === 'approved')
     return (
-      <span className="cv-stamp" style={{ color: '#4BE08A', borderColor: '#4BE08A' }}>
+      <span className="cv-stamp" style={{ color: '#22A05A', borderColor: '#22A05A' }}>
         🔒 Approved
       </span>
     );
-  return <span className="cv-stamp" style={{ color: '#F5C518', borderColor: '#F5C518' }}>Draft</span>;
+  return <span className="cv-stamp" style={{ color: '#7A5C00', borderColor: '#FFD43B', background: '#FFF6D1' }}>Draft</span>;
 };
 
 // ---------- Report document (screen & print) ----------
@@ -348,7 +348,7 @@ const ProgressStrip: React.FC<{ c: ReportContent }> = ({ c }) => (
   <div className="cv-kpis">
     <Kpi label="Actual accomplishment" value={pct(c.metrics.actualPct)} accent sub="Weighted physical progress" />
     <Kpi label="Planned accomplishment" value={pct(c.metrics.plannedPct)} sub="Baseline plan" />
-    <Kpi label="Variance" value={fmtVar(c.metrics.variancePct)} color={c.metrics.variancePct < 0 ? '#FF7A8A' : '#4BE08A'} sub={c.metrics.spi ? `SPI ${c.metrics.spi}` : ''} />
+    <Kpi label="Variance" value={fmtVar(c.metrics.variancePct)} color={c.metrics.variancePct < 0 ? '#D92D3F' : '#22A05A'} sub={c.metrics.spi ? `SPI ${c.metrics.spi}` : ''} />
     <Kpi
       label={c.kind === 'weekly' ? 'Gained this week' : 'Gained this month'}
       value={c.progressGain === null ? 'n/a' : `${c.progressGain >= 0 ? '+' : ''}${c.progressGain} pts`}
@@ -477,11 +477,11 @@ const MonthlyBody: React.FC<{ c: MonthlyContent; n: ReportNarrative }> = ({ c, n
     <h2>4. Production performance</h2>
     <Narr text={n.production} />
     <div className="cv-row" style={{ marginBottom: 6 }}>
-      <Pill label={`Shoot windows: ${c.production.shoots.length}`} color="#7B4DFF" />
-      <Pill label={`Completed: ${c.production.completed}`} color="#4BE08A" />
-      <Pill label={`Scheduled: ${c.production.scheduled}`} color="#3A9BFF" />
-      <Pill label={`Tentative: ${c.production.tentative}`} color="#F5C518" />
-      <Pill label={`Rescheduled: ${c.production.rescheduled}`} color="#B58CFF" />
+      <Pill label={`Shoot windows: ${c.production.shoots.length}`} color="#7041C8" />
+      <Pill label={`Completed: ${c.production.completed}`} color="#22A05A" />
+      <Pill label={`Scheduled: ${c.production.scheduled}`} color="#3A7BEF" />
+      <Pill label={`Tentative: ${c.production.tentative}`} color="#FFC21A" />
+      <Pill label={`Rescheduled: ${c.production.rescheduled}`} color="#9B7BE0" />
     </div>
     <RowsTable rows={c.production.shoots} empty="No shoots this month." showPlanned={false} />
     <h2>5. Weekly accomplishment summary</h2>
@@ -571,7 +571,7 @@ const MonthlyBody: React.FC<{ c: MonthlyContent; n: ReportNarrative }> = ({ c, n
                 <td className="nowrap">{r.workstream}</td>
                 <td className="nowrap">{fmtRange(r.start, r.finish)}</td>
                 <td>
-                  <Pill label={r.outlook} color={r.outlook === 'At risk' ? '#E0213B' : r.outlook === 'Confirmed' ? '#4BE08A' : r.outlook === 'Tentative' ? '#F5C518' : '#3A9BFF'} />
+                  <Pill label={r.outlook} color={r.outlook === 'At risk' ? '#D92D3F' : r.outlook === 'Confirmed' ? '#22A05A' : r.outlook === 'Tentative' ? '#FFC21A' : '#3A7BEF'} />
                 </td>
                 <td>{r.owner}</td>
                 <td className="cv-dim">{r.reasons.join('; ') || '—'}</td>

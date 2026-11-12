@@ -127,7 +127,7 @@ export const CollaborativeCell: React.FC<CollaborativeCellProps> = ({
           className="absolute -top-3.5 right-0 z-20 px-1.5 py-0.2 text-[10px] font-bold rounded shadow-md pointer-events-none whitespace-nowrap animate-in fade-in zoom-in-90"
           style={{
             background: remoteFocus.userColor,
-            color: '#060A24',
+            color: 'var(--sx-text-1)',
             lineHeight: '14px',
           }}
         >
@@ -145,12 +145,12 @@ export const CollaborativeCell: React.FC<CollaborativeCellProps> = ({
           onChange={(e) => setCurrentVal(e.target.value)}
           onBlur={handleFinishEdit}
           onKeyDown={handleKeyDown}
-          className="w-full bg-[#060A24] text-[#F5C518] border-2 border-[#F5C518] rounded px-1.5 py-0.5 font-inherit text-inherit outline-none shadow-inner"
+          className="w-full bg-[var(--sx-bg-5)] text-[var(--sx-text-3)] border-2 border-[var(--sx-border-4)] rounded px-1.5 py-0.5 font-inherit text-inherit outline-none shadow-inner"
         />
       ) : (
         <div
           onClick={handleStartEdit}
-          className="cursor-pointer w-full select-text transition-colors rounded px-0.5 hover:bg-white/10 hover:outline-dashed hover:outline-1 hover:outline-[#F5C518]/50"
+          className="cursor-pointer w-full select-text transition-colors rounded px-0.5 hover:bg-[var(--sx-hover)] hover:outline-dashed hover:outline-1 hover:outline-[var(--sx-border-4)]/50"
           title="Click to edit in real time (syncs to all teammates)"
         >
           {displayRenderer ? displayRenderer(effectiveDisplay) : effectiveDisplay}

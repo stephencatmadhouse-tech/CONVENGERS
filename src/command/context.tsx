@@ -78,6 +78,7 @@ export interface CommandState {
   snapshots: ProgressSnapshot[];
   sharedStorage: { reports: boolean; issues: boolean; snapshots: boolean };
   today: string;
+  uiTheme: 'light' | 'dark';
   user: User;
   canEdit: boolean;
   isManager: boolean;

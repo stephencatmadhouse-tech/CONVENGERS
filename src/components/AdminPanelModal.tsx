@@ -79,11 +79,11 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   };
 
   const roleColors: Record<string, { bg: string; text: string; border: string }> = {
-    admin: { bg: 'rgba(224, 33, 59, 0.2)', text: '#FF7A8A', border: '#E0213B' },
-    manager: { bg: 'rgba(245, 197, 24, 0.2)', text: '#F5C518', border: '#F5C518' },
-    staff: { bg: 'rgba(58, 155, 255, 0.2)', text: '#3A9BFF', border: '#3A9BFF' },
-    viewer: { bg: 'rgba(186, 196, 226, 0.2)', text: '#BAC4E2', border: '#BAC4E2' },
-    pending: { bg: 'rgba(255, 154, 31, 0.2)', text: '#FF9A1F', border: '#FF9A1F' },
+    admin: { bg: 'rgba(224, 33, 59, 0.2)', text: 'var(--sx-text-13)', border: '#E0213B' },
+    manager: { bg: 'var(--sx-bg-15)', text: 'var(--sx-text-3)', border: 'var(--sx-border-4)' },
+    staff: { bg: 'rgba(58, 155, 255, 0.2)', text: 'var(--sx-text-11)', border: '#3A9BFF' },
+    viewer: { bg: 'var(--sx-bg-16)', text: 'var(--sx-text-2)', border: 'var(--sx-border-17)' },
+    pending: { bg: 'rgba(255, 154, 31, 0.2)', text: 'var(--sx-text-10)', border: '#FF9A1F' },
   };
 
   const pendingCount = users.filter((u) => u.role === 'pending' || u.status === 'pending').length;
@@ -96,14 +96,14 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xl">🛡️</span>
-              <h2 className="text-lg font-bold text-white tracking-wide">Madhouse Admin Panel — Team Roles &amp; Access</h2>
+              <h2 className="text-lg font-bold text-[var(--sx-ink)] tracking-wide">Madhouse Admin Panel — Team Roles &amp; Access</h2>
               {pendingCount > 0 && (
-                <span className="bg-[#FF9A1F] text-[#060A24] font-bold text-xs px-2 py-0.5 rounded-full animate-pulse">
+                <span className="bg-[#FF9A1F] text-[var(--sx-text-1)] font-bold text-xs px-2 py-0.5 rounded-full animate-pulse">
                   {pendingCount} Pending Approval
                 </span>
               )}
             </div>
-            <p className="text-xs text-[#BAC4E2] mt-0.5">
+            <p className="text-xs text-[var(--sx-text-2)] mt-0.5">
               Manage team members, approve pending registrations, and set role-based access for Convengers Bahay Build.
             </p>
           </div>
@@ -122,12 +122,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto pmscroll pr-1 mt-2">
           {loading ? (
-            <div className="flex items-center justify-center p-12 text-[#F5C518] gap-3">
-              <div className="w-6 h-6 border-2 border-[#F5C518] border-t-transparent rounded-full animate-spin" />
+            <div className="flex items-center justify-center p-12 text-[var(--sx-text-3)] gap-3">
+              <div className="w-6 h-6 border-2 border-[var(--sx-border-4)] border-t-transparent rounded-full animate-spin" />
               <span className="text-sm font-semibold">Loading team roster from Firestore...</span>
             </div>
           ) : users.length === 0 ? (
-            <div className="p-8 text-center text-[#BAC4E2] text-sm bg-[#060A24] rounded-lg border border-[#7B4DFF]/40">
+            <div className="p-8 text-center text-[var(--sx-text-2)] text-sm bg-[var(--sx-bg-5)] rounded-lg border border-[var(--sx-border-6)]/40">
               No registered team members found in Firestore yet.
             </div>
           ) : (
@@ -146,16 +146,16 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         ? 'bg-[#181105] border-[#FF9A1F]/80 shadow-[0_0_12px_rgba(255,154,31,0.2)]'
                         : isRevoked
                         ? 'bg-[#150a0f] border-red-900/60 opacity-60'
-                        : 'bg-[#060A24] border-[#7B4DFF]/50 hover:border-[#7B4DFF]'
+                        : 'bg-[var(--sx-bg-5)] border-[var(--sx-border-6)]/50 hover:border-[var(--sx-border-6)]'
                     }`}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       {/* User Info */}
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-white text-sm">{u.name}</span>
+                          <span className="font-bold text-[var(--sx-ink)] text-sm">{u.name}</span>
                           {isSelf && (
-                            <span className="text-[10px] bg-[#7B4DFF]/40 text-[#BAC4E2] px-1.5 py-0.5 rounded font-mono">
+                            <span className="text-[10px] bg-[var(--sx-bg-7)]/40 text-[var(--sx-text-2)] px-1.5 py-0.5 rounded font-mono">
                               You (Current Admin)
                             </span>
                           )}
@@ -173,23 +173,23 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                             <span
                               className={`text-[10px] font-semibold px-1.5 py-0.2 rounded uppercase ${
                                 u.status === 'active'
-                                  ? 'text-[#4BE08A]'
+                                  ? 'text-[var(--sx-text-8)]'
                                   : u.status === 'revoked'
-                                  ? 'text-[#E0213B]'
-                                  : 'text-[#FF9A1F]'
+                                  ? 'text-[var(--sx-text-9)]'
+                                  : 'text-[var(--sx-text-10)]'
                               }`}
                             >
                               ● {u.status}
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-[#BAC4E2] font-mono mt-0.5 truncate">{u.email}</div>
+                        <div className="text-xs text-[var(--sx-text-2)] font-mono mt-0.5 truncate">{u.email}</div>
                       </div>
 
                       {/* Action Controls */}
                       <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                         {isSelf ? (
-                          <span className="text-xs text-[#BAC4E2]/70 italic px-2 py-1">
+                          <span className="text-xs text-[var(--sx-text-2)]/70 italic px-2 py-1">
                             Role locked (cannot change own role)
                           </span>
                         ) : isPending ? (
@@ -205,7 +205,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                   newStatus: 'active',
                                 })
                               }
-                              className="px-2.5 py-1 rounded bg-[#3A9BFF]/20 hover:bg-[#3A9BFF]/40 border border-[#3A9BFF] text-[#3A9BFF] text-xs font-bold transition-all"
+                              className="px-2.5 py-1 rounded bg-[#3A9BFF]/20 hover:bg-[#3A9BFF]/40 border border-[#3A9BFF] text-[var(--sx-text-11)] text-xs font-bold transition-all"
                             >
                               Approve as Staff
                             </button>
@@ -220,14 +220,14 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                   newStatus: 'active',
                                 })
                               }
-                              className="px-2.5 py-1 rounded bg-[#F5C518]/20 hover:bg-[#F5C518]/40 border border-[#F5C518] text-[#F5C518] text-xs font-bold transition-all"
+                              className="px-2.5 py-1 rounded bg-[var(--sx-bg-12)]/20 hover:bg-[var(--sx-bg-12)]/40 border border-[var(--sx-border-4)] text-[#F5C518] text-xs font-bold transition-all"
                             >
                               Approve as Manager
                             </button>
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <label className="text-xs text-[#BAC4E2] flex items-center gap-1">
+                            <label className="text-xs text-[var(--sx-text-2)] flex items-center gap-1">
                               <span>Role:</span>
                               <select
                                 className="pms text-xs py-1 px-2 font-semibold"
@@ -263,7 +263,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                     actionType: 'revoke',
                                   })
                                 }
-                                className="px-2.5 py-1 rounded border border-[#E0213B]/60 hover:border-[#E0213B] bg-[#E0213B]/10 hover:bg-[#E0213B]/30 text-[#FF7A8A] text-xs font-semibold transition-all"
+                                className="px-2.5 py-1 rounded border border-[#E0213B]/60 hover:border-[#E0213B] bg-[#E0213B]/10 hover:bg-[#E0213B]/30 text-[var(--sx-text-13)] text-xs font-semibold transition-all"
                               >
                                 Revoke
                               </button>
@@ -279,7 +279,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                     newStatus: 'active',
                                   })
                                 }
-                                className="px-2.5 py-1 rounded border border-[#4BE08A]/60 bg-[#4BE08A]/10 text-[#4BE08A] text-xs font-semibold"
+                                className="px-2.5 py-1 rounded border border-[#4BE08A]/60 bg-[#4BE08A]/10 text-[var(--sx-text-8)] text-xs font-semibold"
                               >
                                 Restore
                               </button>
@@ -298,22 +298,22 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         {/* Confirmation Modal Overlay */}
         {confirmDialog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
-            <div className="p-5 bg-[#0A1140] border-2 border-[#F5C518] rounded-xl shadow-[0_0_24px_rgba(245,197,24,0.3)] max-w-md w-full">
-              <h3 className="text-base font-bold text-white mb-2 flex items-center gap-2">
+            <div className="p-5 bg-[var(--sx-bg-14)] border-2 border-[var(--sx-border-4)] rounded-xl shadow-[0_0_24px_rgba(245,197,24,0.3)] max-w-md w-full">
+              <h3 className="text-base font-bold text-[var(--sx-ink)] mb-2 flex items-center gap-2">
                 <span>⚠️</span> Confirm Role &amp; Access Change
               </h3>
 
-              <div className="text-xs text-[#BAC4E2] leading-relaxed mb-4">
+              <div className="text-xs text-[var(--sx-text-2)] leading-relaxed mb-4">
                 {confirmDialog.actionType === 'revoke' ? (
                   <span>
-                    Are you sure you want to <b className="text-[#FF7A8A]">revoke access</b> for{' '}
-                    <b className="text-white">{confirmDialog.targetUser.name}</b> ({confirmDialog.targetUser.email})?
+                    Are you sure you want to <b className="text-[var(--sx-text-13)]">revoke access</b> for{' '}
+                    <b className="text-[var(--sx-ink)]">{confirmDialog.targetUser.name}</b> ({confirmDialog.targetUser.email})?
                     Their permissions will be immediately set to read-only viewer.
                   </span>
                 ) : (
                   <span>
-                    Are you sure you want to change <b className="text-white">{confirmDialog.targetUser.name}</b>'s role to{' '}
-                    <b className="text-[#F5C518] uppercase">{confirmDialog.newRole}</b>?
+                    Are you sure you want to change <b className="text-[var(--sx-ink)]">{confirmDialog.targetUser.name}</b>'s role to{' '}
+                    <b className="text-[var(--sx-text-3)] uppercase">{confirmDialog.newRole}</b>?
                   </span>
                 )}
               </div>
@@ -344,7 +344,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         )}
 
         {/* Footer */}
-        <div className="shrow justify-between pt-3 mt-3 border-t border-[#7B4DFF]/40 flex-none">
+        <div className="shrow justify-between pt-3 mt-3 border-t border-[var(--sx-border-6)]/40 flex-none">
           <button
             type="button"
             className="shbtn text-xs"

@@ -7,29 +7,35 @@ import logoUrl from '../assets/images/convengers_emblem_1794278755119.jpg';
 
 export const LOGO_SVG = logoUrl;
 
+/**
+ * Status colours. Values are CSS variables defined in src/theme.css so the
+ * light theme (default) and the optional dark theme share one source.
+ * Light: green = completed, purple = in progress, yellow = attention,
+ * red = delayed, gray = pending / not started.
+ */
 export const STATUS_COLORS: Record<string, [string, string, string]> = {
-  'Upcoming': ['rgba(255,255,255,.12)', '#DCE3F7', 'rgba(255,255,255,.3)'],
-  'In progress': ['#1F6FE0', '#FFFFFF', '#1F6FE0'],
-  'Ongoing': ['#1F6FE0', '#FFFFFF', '#1F6FE0'],
-  'Complete': ['#4BE08A', '#060A24', '#4BE08A'],
-  'Completed': ['#4BE08A', '#060A24', '#4BE08A'],
-  'Delayed': ['#E0213B', '#FFFFFF', '#E0213B'],
-  'Date passed · confirm': ['#FF9A1F', '#060A24', '#FF9A1F'],
-  'On Hold': ['#8A8FA8', '#060A24', '#8A8FA8'],
-  'Not started': ['rgba(255,255,255,.16)', '#DCE3F7', '#F5C518'],
-  'On-track': ['#1F6FE0', '#FFFFFF', '#F5C518'],
-  'Planned': ['#5B6BB5', '#FFFFFF', '#5B6BB5'],
-  'For Confirmation': ['#F5C518', '#060A24', '#F5C518'],
-  'Scheduled': ['#1F6FE0', '#FFFFFF', '#1F6FE0'],
-  'Rescheduled': ['#B58CFF', '#060A24', '#B58CFF'],
-  'Not Yet Started': ['#5B6BB5', '#FFFFFF', '#5B6BB5'],
-  'Preparation Ongoing': ['#B58CFF', '#060A24', '#B58CFF'],
-  'Ready for Pouring': ['#F5C518', '#060A24', '#F5C518'],
-  'Scheduled for Pouring': ['#1F6FE0', '#FFFFFF', '#1F6FE0'],
-  'Pouring Ongoing': ['#FF9A1F', '#060A24', '#FF9A1F'],
-  'Pouring Completed': ['#3AC9C9', '#060A24', '#3AC9C9'],
-  'Curing Ongoing': ['#6FA8FF', '#060A24', '#6FA8FF'],
-  'Completed / Approved': ['#4BE08A', '#060A24', '#4BE08A'],
+  'Upcoming': ['var(--st-upcoming-bg)', 'var(--st-upcoming-fg)', 'var(--st-upcoming-bd)'],
+  'In progress': ['var(--st-in-progress-bg)', 'var(--st-in-progress-fg)', 'var(--st-in-progress-bd)'],
+  'Ongoing': ['var(--st-ongoing-bg)', 'var(--st-ongoing-fg)', 'var(--st-ongoing-bd)'],
+  'Complete': ['var(--st-complete-bg)', 'var(--st-complete-fg)', 'var(--st-complete-bd)'],
+  'Completed': ['var(--st-completed-bg)', 'var(--st-completed-fg)', 'var(--st-completed-bd)'],
+  'Delayed': ['var(--st-delayed-bg)', 'var(--st-delayed-fg)', 'var(--st-delayed-bd)'],
+  'Date passed · confirm': ['var(--st-date-passed-confirm-bg)', 'var(--st-date-passed-confirm-fg)', 'var(--st-date-passed-confirm-bd)'],
+  'On Hold': ['var(--st-on-hold-bg)', 'var(--st-on-hold-fg)', 'var(--st-on-hold-bd)'],
+  'Not started': ['var(--st-not-started-bg)', 'var(--st-not-started-fg)', 'var(--st-not-started-bd)'],
+  'On-track': ['var(--st-on-track-bg)', 'var(--st-on-track-fg)', 'var(--st-on-track-bd)'],
+  'Planned': ['var(--st-planned-bg)', 'var(--st-planned-fg)', 'var(--st-planned-bd)'],
+  'For Confirmation': ['var(--st-for-confirmation-bg)', 'var(--st-for-confirmation-fg)', 'var(--st-for-confirmation-bd)'],
+  'Scheduled': ['var(--st-scheduled-bg)', 'var(--st-scheduled-fg)', 'var(--st-scheduled-bd)'],
+  'Rescheduled': ['var(--st-rescheduled-bg)', 'var(--st-rescheduled-fg)', 'var(--st-rescheduled-bd)'],
+  'Not Yet Started': ['var(--st-not-yet-started-bg)', 'var(--st-not-yet-started-fg)', 'var(--st-not-yet-started-bd)'],
+  'Preparation Ongoing': ['var(--st-preparation-ongoing-bg)', 'var(--st-preparation-ongoing-fg)', 'var(--st-preparation-ongoing-bd)'],
+  'Ready for Pouring': ['var(--st-ready-for-pouring-bg)', 'var(--st-ready-for-pouring-fg)', 'var(--st-ready-for-pouring-bd)'],
+  'Scheduled for Pouring': ['var(--st-scheduled-for-pouring-bg)', 'var(--st-scheduled-for-pouring-fg)', 'var(--st-scheduled-for-pouring-bd)'],
+  'Pouring Ongoing': ['var(--st-pouring-ongoing-bg)', 'var(--st-pouring-ongoing-fg)', 'var(--st-pouring-ongoing-bd)'],
+  'Pouring Completed': ['var(--st-pouring-completed-bg)', 'var(--st-pouring-completed-fg)', 'var(--st-pouring-completed-bd)'],
+  'Curing Ongoing': ['var(--st-curing-ongoing-bg)', 'var(--st-curing-ongoing-fg)', 'var(--st-curing-ongoing-bd)'],
+  'Completed / Approved': ['var(--st-completed-approved-bg)', 'var(--st-completed-approved-fg)', 'var(--st-completed-approved-bd)'],
 };
 
 export const TYPE_COLORS: Record<string, { label: string; color: string }> = {

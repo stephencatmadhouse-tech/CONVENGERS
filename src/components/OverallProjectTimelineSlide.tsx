@@ -363,8 +363,8 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
           height: '1280px',
           boxSizing: 'border-box',
         background:
-          'radial-gradient(900px 520px at 92% 0%,rgba(123,77,255,.42),transparent 65%),radial-gradient(800px 600px at 0% 45%,rgba(60,40,190,.30),transparent 65%),radial-gradient(900px 600px at 100% 80%,rgba(90,50,220,.24),transparent 65%),repeating-linear-gradient(135deg,rgba(255,255,255,.025) 0 2px,transparent 2px 16px),#060A24',
-        color: '#FFFFFF',
+          'var(--sx-bg-25)',
+        color: 'var(--sx-text-26)',
         fontFamily: "'Barlow', sans-serif",
         padding: '48px 56px 130px',
         display: 'flex',
@@ -379,25 +379,25 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
       <div className="hdr" style={{ display: 'flex', alignItems: 'center', gap: '30px', height: '150px', flex: 'none' }}>
         <BrandLogo variant="slide" />
         <div className="ttl" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '28px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase', color: '#BAC4E2' }}>
+          <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '28px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase', color: 'var(--sx-text-2)' }}>
             Master Integrated Calendar
           </div>
-          <div className="h1a" style={{ fontFamily: "'Anton','Barlow Condensed',sans-serif", fontSize: '66px', lineHeight: 1.05, color: '#F5C518', textTransform: 'uppercase', textShadow: '0 4px 0 #7a5a00,0 0 30px rgba(245,197,24,.35)' }}>
+          <div className="h1a" style={{ fontFamily: "'Anton','Barlow Condensed',sans-serif", fontSize: '66px', lineHeight: 1.05, color: 'var(--sx-text-3)', textTransform: 'uppercase', textShadow: 'var(--sx-shadow-27)' }}>
             Overall Project Timeline
           </div>
-          <div style={{ fontSize: '15px', letterSpacing: '6px', textTransform: 'uppercase', marginTop: '4px', color: '#3A9BFF', fontWeight: 600 }}>
+          <div style={{ fontSize: '15px', letterSpacing: '6px', textTransform: 'uppercase', marginTop: '4px', color: 'var(--sx-text-11)', fontWeight: 600 }}>
             Dual-Track Construction &amp; Production Calendar · 2026 – 2027
           </div>
         </div>
 
         <div style={{ position: 'absolute', top: '16px', right: '56px', display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-          <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: '16px', letterSpacing: '3px', color: '#BAC4E2', textTransform: 'uppercase' }}>
+          <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: '16px', letterSpacing: '3px', color: 'var(--sx-text-2)', textTransform: 'uppercase' }}>
             Overall timeline
           </span>
-          <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '22px', color: '#F5C518' }}>
+          <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '22px', color: 'var(--sx-text-3)' }}>
             09
           </span>
-          <span style={{ fontSize: '15px', color: '#BAC4E2' }}>
+          <span style={{ fontSize: '15px', color: 'var(--sx-text-2)' }}>
             / 12
           </span>
         </div>
@@ -405,46 +405,46 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
         {/* Top KPI Summary Cards */}
         <div style={{ display: 'flex', gap: '12px', flex: 'none' }}>
           {/* Construction KPI */}
-          <div style={{ background: '#0A1140', border: '2px solid #3A9BFF', borderRadius: '12px', padding: '10px 18px', minWidth: '170px', boxShadow: '0 0 16px rgba(58,155,255,0.35)' }}>
-            <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: '12px', fontWeight: 800, letterSpacing: '1px', color: '#3A9BFF', textTransform: 'uppercase' }}>
+          <div style={{ background: 'var(--sx-bg-14)', border: '2px solid #3A9BFF', borderRadius: '12px', padding: '10px 18px', minWidth: '170px', boxShadow: 'var(--sx-shadow-46)' }}>
+            <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: '12px', fontWeight: 800, letterSpacing: '1px', color: 'var(--sx-text-11)', textTransform: 'uppercase' }}>
               Construction Track
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '2px' }}>
-              <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '32px', color: '#FFFFFF', lineHeight: 1 }}>
+              <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '32px', color: 'var(--sx-text-26)', lineHeight: 1 }}>
                 {constructionStats.avgPct}%
               </span>
-              <span style={{ fontSize: '12px', color: '#BAC4E2' }}>overall</span>
+              <span style={{ fontSize: '12px', color: 'var(--sx-text-2)' }}>overall</span>
             </div>
-            <div style={{ fontSize: '11px', color: '#8A8FA8', marginTop: '2px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--sx-text-47)', marginTop: '2px' }}>
               {constructionStats.completedCount}/{constructionStats.totalCount} scopes complete
             </div>
           </div>
 
           {/* Production KPI */}
-          <div style={{ background: '#0A1140', border: '2px solid #FF5D8F', borderRadius: '12px', padding: '10px 18px', minWidth: '170px', boxShadow: '0 0 16px rgba(255,93,143,0.35)' }}>
-            <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: '12px', fontWeight: 800, letterSpacing: '1px', color: '#FF5D8F', textTransform: 'uppercase' }}>
+          <div style={{ background: 'var(--sx-bg-14)', border: '2px solid #FF5D8F', borderRadius: '12px', padding: '10px 18px', minWidth: '170px', boxShadow: 'var(--sx-shadow-48)' }}>
+            <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: '12px', fontWeight: 800, letterSpacing: '1px', color: 'var(--sx-text-34)', textTransform: 'uppercase' }}>
               Production Track
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '2px' }}>
-              <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '32px', color: '#FFFFFF', lineHeight: 1 }}>
+              <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '32px', color: 'var(--sx-text-26)', lineHeight: 1 }}>
                 {productionStats.progressPct}%
               </span>
-              <span style={{ fontSize: '12px', color: '#BAC4E2' }}>content</span>
+              <span style={{ fontSize: '12px', color: 'var(--sx-text-2)' }}>content</span>
             </div>
-            <div style={{ fontSize: '11px', color: '#8A8FA8', marginTop: '2px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--sx-text-47)', marginTop: '2px' }}>
               {productionStats.completedCount}/{productionStats.totalCount} episodes delivered
             </div>
           </div>
 
           {/* Target Milestone */}
-          <div style={{ background: '#0A1140', border: '2px solid #F5C518', borderRadius: '12px', padding: '10px 18px', minWidth: '200px', boxShadow: '0 0 16px rgba(245,197,24,0.35)' }}>
-            <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: '12px', fontWeight: 800, letterSpacing: '1px', color: '#F5C518', textTransform: 'uppercase' }}>
+          <div style={{ background: 'var(--sx-bg-14)', border: 'var(--sx-border-49)', borderRadius: '12px', padding: '10px 18px', minWidth: '200px', boxShadow: 'var(--sx-shadow-50)' }}>
+            <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: '12px', fontWeight: 800, letterSpacing: '1px', color: 'var(--sx-text-3)', textTransform: 'uppercase' }}>
               Final Turnover Target
             </div>
-            <div style={{ fontFamily: "'Anton',sans-serif", fontSize: '24px', color: '#F5C518', lineHeight: 1.2, marginTop: '2px' }}>
+            <div style={{ fontFamily: "'Anton',sans-serif", fontSize: '24px', color: 'var(--sx-text-3)', lineHeight: 1.2, marginTop: '2px' }}>
               Apr 28 – 30, 2027
             </div>
-            <div style={{ fontSize: '11px', color: '#BAC4E2', marginTop: '2px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--sx-text-2)', marginTop: '2px' }}>
               Ep 24 Grand Turnover &amp; Move-in
             </div>
           </div>
@@ -457,15 +457,15 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: 'rgba(10,17,64,0.85)',
-          border: '1px solid #7B4DFF',
+          background: 'var(--sx-bg-51)',
+          border: 'var(--sx-border-52)',
           borderRadius: '10px',
           padding: '8px 16px',
           gap: '16px',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '13px', fontWeight: 700, color: '#F5C518', textTransform: 'uppercase', letterSpacing: '1px' }}>
+          <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--sx-text-3)', textTransform: 'uppercase', letterSpacing: '1px' }}>
             Filter Tracks:
           </span>
           <button
@@ -476,10 +476,10 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
               borderRadius: '6px',
               fontSize: '12px',
               fontWeight: 700,
-              background: viewFilter === 'all' ? '#7B4DFF' : 'rgba(255,255,255,0.06)',
-              color: '#FFFFFF',
+              background: viewFilter === 'all' ? 'var(--sx-bg-7)' : 'var(--sx-bg-53)',
+              color: viewFilter === 'all' ? '#FFFFFF' : 'var(--sx-text-26)',
               border: '1px solid',
-              borderColor: viewFilter === 'all' ? '#9E75FF' : 'rgba(123,77,255,0.4)',
+              borderColor: viewFilter === 'all' ? '#9E75FF' : 'var(--sx-border-54)',
               cursor: 'pointer',
             }}
           >
@@ -493,8 +493,8 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
               borderRadius: '6px',
               fontSize: '12px',
               fontWeight: 700,
-              background: viewFilter === 'construction' ? '#3A9BFF' : 'rgba(255,255,255,0.06)',
-              color: '#FFFFFF',
+              background: viewFilter === 'construction' ? '#3A9BFF' : 'var(--sx-bg-53)',
+              color: viewFilter === 'construction' ? '#FFFFFF' : 'var(--sx-text-26)',
               border: '1px solid',
               borderColor: viewFilter === 'construction' ? '#6FA8FF' : 'rgba(58,155,255,0.4)',
               cursor: 'pointer',
@@ -510,8 +510,8 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
               borderRadius: '6px',
               fontSize: '12px',
               fontWeight: 700,
-              background: viewFilter === 'production' ? '#FF5D8F' : 'rgba(255,255,255,0.06)',
-              color: '#FFFFFF',
+              background: viewFilter === 'production' ? '#FF5D8F' : 'var(--sx-bg-53)',
+              color: viewFilter === 'production' ? '#FFFFFF' : 'var(--sx-text-26)',
               border: '1px solid',
               borderColor: viewFilter === 'production' ? '#FF8FB3' : 'rgba(255,93,143,0.4)',
               cursor: 'pointer',
@@ -523,14 +523,14 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '12px', color: '#BAC4E2' }}>Floor / Scope:</span>
+            <span style={{ fontSize: '12px', color: 'var(--sx-text-2)' }}>Floor / Scope:</span>
             <select
               value={phaseFilter}
               onChange={(e) => setPhaseFilter(e.target.value)}
               style={{
-                background: '#060A24',
-                color: '#FFFFFF',
-                border: '1px solid #7B4DFF',
+                background: 'var(--sx-bg-5)',
+                color: 'var(--sx-text-26)',
+                border: 'var(--sx-border-52)',
                 borderRadius: '6px',
                 padding: '4px 8px',
                 fontSize: '12px',
@@ -550,9 +550,9 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
-              background: '#060A24',
-              color: '#FFFFFF',
-              border: '1px solid #7B4DFF',
+              background: 'var(--sx-bg-5)',
+              color: 'var(--sx-text-26)',
+              border: 'var(--sx-border-52)',
               borderRadius: '6px',
               padding: '4px 10px',
               fontSize: '12px',
@@ -565,10 +565,10 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
       {/* Main Dual-Track Visual Timeline & Gantt Axis */}
       <div
         style={{
-          background: '#0A1140',
-          border: '2px solid #7B4DFF',
+          background: 'var(--sx-bg-14)',
+          border: 'var(--sx-border-19)',
           borderRadius: '14px',
-          boxShadow: '0 0 16px rgba(123,77,255,.55),inset 0 0 26px rgba(40,30,130,.45)',
+          boxShadow: 'var(--sx-shadow-36)',
           padding: '16px 20px',
           display: 'flex',
           flexDirection: 'column',
@@ -578,9 +578,9 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '18px', letterSpacing: '1px', textTransform: 'uppercase' }}>
-              Synchronized Dual-Track Timeline <span style={{ color: '#F5C518' }}>at a glance</span>
+              Synchronized Dual-Track Timeline <span style={{ color: 'var(--sx-text-3)' }}>at a glance</span>
             </span>
-            <span style={{ fontSize: '12px', color: '#BAC4E2' }}>
+            <span style={{ fontSize: '12px', color: 'var(--sx-text-2)' }}>
               Oct 2026 – May 2027 · Bars = Activity Duration · Red Hatching = Holiday Stoppage (Dec 20 – Jan 3)
             </span>
           </div>
@@ -595,7 +595,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
               <span>Production / Episode Shoot</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ color: '#F5C518', fontSize: '14px' }}>◆</span>
+              <span style={{ color: 'var(--sx-text-3)', fontSize: '14px' }}>◆</span>
               <span>YouTube Post Date</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -610,7 +610,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
           style={{
             position: 'relative',
             height: '28px',
-            background: 'rgba(255,255,255,0.06)',
+            background: 'var(--sx-bg-53)',
             borderRadius: '6px',
             display: 'grid',
             gridTemplateColumns: 'repeat(8, 1fr)',
@@ -618,17 +618,17 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
             textAlign: 'center',
             fontSize: '12px',
             fontWeight: 700,
-            color: '#BAC4E2',
-            border: '1px solid rgba(123,77,255,0.3)',
+            color: 'var(--sx-text-2)',
+            border: 'var(--sx-border-55)',
           }}
         >
           <div>OCT 2026</div>
           <div>NOV 2026</div>
-          <div style={{ color: '#FF7A8A' }}>DEC 2026</div>
+          <div style={{ color: 'var(--sx-text-13)' }}>DEC 2026</div>
           <div>JAN 2027</div>
           <div>FEB 2027</div>
           <div>MAR 2027</div>
-          <div style={{ color: '#F5C518' }}>APR 2027</div>
+          <div style={{ color: 'var(--sx-text-3)' }}>APR 2027</div>
           <div>MAY 2027</div>
 
           {/* Holiday Work Stoppage Band Marker */}
@@ -640,7 +640,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
               bottom: 0,
               left: '33%',
               width: '5.5%',
-              background: 'repeating-linear-gradient(45deg, rgba(224,33,59,0.35), rgba(224,33,59,0.35) 4px, rgba(122,10,23,0.45) 4px, rgba(122,10,23,0.45) 8px)',
+              background: 'var(--ov-stop-hatch)',
               borderLeft: '1px dashed #E0213B',
               borderRight: '1px dashed #E0213B',
               pointerEvents: 'none',
@@ -653,10 +653,10 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
           style={{
             position: 'relative',
             minHeight: '220px',
-            background: 'rgba(6,10,36,0.6)',
+            background: 'var(--sx-bg-56)',
             borderRadius: '8px',
             padding: '12px 10px',
-            border: '1px solid rgba(123,77,255,0.25)',
+            border: 'var(--sx-border-45)',
             display: 'flex',
             flexDirection: 'column',
             gap: '10px',
@@ -670,7 +670,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
               bottom: 0,
               left: '33%',
               width: '5.5%',
-              background: 'repeating-linear-gradient(45deg, rgba(224,33,59,0.18), rgba(224,33,59,0.18) 4px, transparent 4px, transparent 8px)',
+              background: 'var(--ov-holiday-hatch)',
               borderLeft: '1px dashed rgba(224,33,59,0.6)',
               borderRight: '1px dashed rgba(224,33,59,0.6)',
               zIndex: 1,
@@ -698,15 +698,15 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
           {(viewFilter === 'all' || viewFilter === 'construction') && (
             <div style={{ position: 'relative', zIndex: 2 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 800, color: '#3A9BFF', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--sx-text-11)', textTransform: 'uppercase', letterSpacing: '1px' }}>
                   Track 1: Construction &amp; Structural Execution
                 </span>
-                <span style={{ fontSize: '10px', color: '#BAC4E2' }}>
+                <span style={{ fontSize: '10px', color: 'var(--sx-text-2)' }}>
                   (Footings → Columns → Suspended Slabs → Finishing → Turnover)
                 </span>
               </div>
 
-              <div style={{ position: 'relative', height: '64px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px' }}>
+              <div style={{ position: 'relative', height: '64px', background: 'var(--sx-bg-57)', borderRadius: '6px' }}>
                 {syncMilestones.map((m) => (
                   <div
                     key={`c_${m.id}`}
@@ -720,23 +720,23 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
                       height: '48px',
                       background:
                         m.constructionStatus === 'Complete'
-                          ? 'linear-gradient(90deg, #237A4A, #4BE08A)'
+                          ? 'var(--tl-c-done)'
                           : m.constructionStatus === 'In progress'
-                          ? 'linear-gradient(90deg, #174E9B, #3A9BFF)'
-                          : 'linear-gradient(90deg, #1C2665, #2F3E9E)',
-                      border: m.id === selectedSyncId ? '2px solid #F5C518' : '1px solid rgba(255,255,255,0.3)',
+                          ? 'var(--tl-c-prog)'
+                          : 'var(--tl-c-up)',
+                      border: m.id === selectedSyncId ? 'var(--sx-border-49)' : 'var(--sx-border-58)',
                       borderRadius: '5px',
                       padding: '4px 6px',
                       cursor: 'pointer',
-                      boxShadow: m.id === selectedSyncId ? '0 0 12px rgba(245,197,24,0.8)' : 'none',
+                      boxShadow: m.id === selectedSyncId ? 'var(--sx-shadow-59)' : 'none',
                       transition: 'all 0.15s ease',
                       overflow: 'hidden',
                     }}
                   >
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 800, color: m.constructionStatus === 'Complete' || m.constructionStatus === 'In progress' ? '#FFFFFF' : 'var(--tl-up-fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {m.phase}
                     </div>
-                    <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.85)', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: '9px', color: m.constructionStatus === 'Complete' || m.constructionStatus === 'In progress' ? 'rgba(255,255,255,0.85)' : 'var(--tl-up-fg2)', whiteSpace: 'nowrap' }}>
                       {m.constructionProgress}% · {m.constructionFloor}
                     </div>
                   </div>
@@ -749,15 +749,15 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
           {(viewFilter === 'all' || viewFilter === 'production') && (
             <div style={{ position: 'relative', zIndex: 2, marginTop: viewFilter === 'all' ? '12px' : '0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 800, color: '#FF5D8F', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--sx-text-34)', textTransform: 'uppercase', letterSpacing: '1px' }}>
                   Track 2: Production Calendar
                 </span>
-                <span style={{ fontSize: '10px', color: '#BAC4E2' }}>
+                <span style={{ fontSize: '10px', color: 'var(--sx-text-2)' }}>
                   (24 YouTube Episodes · Shoot Windows &amp; Post Milestones ◆)
                 </span>
               </div>
 
-              <div style={{ position: 'relative', height: '64px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px' }}>
+              <div style={{ position: 'relative', height: '64px', background: 'var(--sx-bg-57)', borderRadius: '6px' }}>
                 {syncMilestones.map((m) => (
                   <div
                     key={`p_${m.id}`}
@@ -771,23 +771,23 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
                       height: '48px',
                       background:
                         m.productionStatus === 'Completed'
-                          ? 'linear-gradient(90deg, #8A153A, #FF5D8F)'
+                          ? 'var(--tl-p-done)'
                           : m.productionStatus === 'Scheduled'
-                          ? 'linear-gradient(90deg, #7A2870, #B545A8)'
-                          : 'linear-gradient(90deg, #2D143D, #4E1F6B)',
-                      border: m.id === selectedSyncId ? '2px solid #F5C518' : '1px solid rgba(255,93,143,0.4)',
+                          ? 'var(--tl-p-sched)'
+                          : 'var(--tl-p-up)',
+                      border: m.id === selectedSyncId ? 'var(--sx-border-49)' : '1px solid rgba(255,93,143,0.4)',
                       borderRadius: '5px',
                       padding: '4px 6px',
                       cursor: 'pointer',
-                      boxShadow: m.id === selectedSyncId ? '0 0 12px rgba(245,197,24,0.8)' : 'none',
+                      boxShadow: m.id === selectedSyncId ? 'var(--sx-shadow-59)' : 'none',
                       transition: 'all 0.15s ease',
                       overflow: 'hidden',
                     }}
                   >
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 800, color: m.productionStatus === 'Completed' || m.productionStatus === 'Scheduled' ? '#FFFFFF' : 'var(--tl-up-fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       Ep {m.productionEpisodeNum}
                     </div>
-                    <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.85)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontSize: '9px', color: m.productionStatus === 'Completed' || m.productionStatus === 'Scheduled' ? 'rgba(255,255,255,0.85)' : 'var(--tl-up-fg2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       ◆ {m.productionPostDate.replace(', 2026', '').replace(', 2027', '')}
                     </div>
                   </div>
@@ -801,10 +801,10 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
       {/* Synchronized Master Table */}
       <div
         style={{
-          background: '#0A1140',
-          border: '2px solid #7B4DFF',
+          background: 'var(--sx-bg-14)',
+          border: 'var(--sx-border-19)',
           borderRadius: '14px',
-          boxShadow: '0 0 16px rgba(123,77,255,.55),inset 0 0 26px rgba(40,30,130,.45)',
+          boxShadow: 'var(--sx-shadow-36)',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
@@ -818,14 +818,14 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
             justifyContent: 'space-between',
             height: '36px',
             padding: '0 16px',
-            background: 'linear-gradient(90deg,#2A1D9C,#0C1448 75%)',
-            borderBottom: '1px solid #7B4DFF',
+            background: 'var(--sx-bg-38)',
+            borderBottom: 'var(--sx-border-52)',
           }}
         >
           <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '16px', letterSpacing: '1px', textTransform: 'uppercase' }}>
-            Synchronized Milestones Matrix <span style={{ color: '#F5C518' }}>({filteredMilestones.length} Key Checkpoints)</span>
+            Synchronized Milestones Matrix <span style={{ color: 'var(--sx-text-3)' }}>({filteredMilestones.length} Key Checkpoints)</span>
           </span>
-          <span style={{ fontSize: '11px', color: '#BAC4E2' }}>
+          <span style={{ fontSize: '11px', color: 'var(--sx-text-2)' }}>
             Click any row to highlight on timeline · Real-time sync across both departments
           </span>
         </div>
@@ -837,12 +837,12 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
             gridTemplateColumns: '120px 240px 180px 100px 300px 150px 1fr',
             gap: '8px',
             padding: '8px 16px',
-            background: 'rgba(6,10,36,0.9)',
-            borderBottom: '1px solid rgba(123,77,255,0.4)',
+            background: 'var(--sx-bg-61)',
+            borderBottom: 'var(--sx-border-62)',
             fontSize: '11px',
             fontWeight: 800,
             textTransform: 'uppercase',
-            color: '#BAC4E2',
+            color: 'var(--sx-text-2)',
             letterSpacing: '1px',
           }}
         >
@@ -872,7 +872,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
                   gap: '8px',
                   alignItems: 'center',
                   padding: '7px 16px',
-                  borderBottom: '1px solid rgba(123,77,255,0.25)',
+                  borderBottom: 'var(--sx-border-45)',
                   background: isSelected
                     ? 'rgba(123,77,255,0.30)'
                     : m.id === 'sync_holiday'
@@ -885,17 +885,17 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
               >
                 {/* Phase */}
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontWeight: 700, color: '#F5C518' }}>{m.phase}</span>
-                  <span style={{ fontSize: '10px', color: '#BAC4E2' }}>{m.monthRange}</span>
+                  <span style={{ fontWeight: 700, color: 'var(--sx-text-3)' }}>{m.phase}</span>
+                  <span style={{ fontSize: '10px', color: 'var(--sx-text-2)' }}>{m.monthRange}</span>
                 </div>
 
                 {/* Construction Activity */}
-                <div style={{ color: '#FFFFFF', fontWeight: 600 }}>
+                <div style={{ color: 'var(--sx-text-26)', fontWeight: 600 }}>
                   {m.constructionItem}
                 </div>
 
                 {/* Construction Dates */}
-                <div style={{ fontSize: '11px', color: '#BAC4E2' }}>
+                <div style={{ fontSize: '11px', color: 'var(--sx-text-2)' }}>
                   {m.constructionDate}
                 </div>
 
@@ -923,7 +923,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
                     <span
                       style={{
                         background: '#FF5D8F',
-                        color: '#060A24',
+                        color: 'var(--sx-text-1)',
                         fontWeight: 800,
                         fontSize: '10px',
                         padding: '1px 6px',
@@ -932,22 +932,22 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
                     >
                       EP {m.productionEpisodeNum}
                     </span>
-                    <span style={{ fontWeight: 600, color: '#FFFFFF', fontSize: '12px' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--sx-text-26)', fontSize: '12px' }}>
                       {m.productionEpisodeTitle}
                     </span>
                   </div>
-                  <div style={{ fontSize: '10px', color: '#F5C518', marginTop: '2px' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--sx-text-3)', marginTop: '2px' }}>
                     YouTube Post: {m.productionPostDate}
                   </div>
                 </div>
 
                 {/* Shoot Window */}
-                <div style={{ fontSize: '11px', color: '#BAC4E2' }}>
+                <div style={{ fontSize: '11px', color: 'var(--sx-text-2)' }}>
                   {m.productionShootDate}
                 </div>
 
                 {/* Sync Note */}
-                <div style={{ fontSize: '11px', color: '#3A9BFF', fontStyle: 'italic' }}>
+                <div style={{ fontSize: '11px', color: 'var(--sx-text-11)', fontStyle: 'italic' }}>
                   {m.syncNote}
                 </div>
               </div>
@@ -971,17 +971,17 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px', width: '100%' }}>
-          <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,.4)' }} />
+          <div style={{ flex: 1, height: '1px', background: 'var(--sx-bg-32)' }} />
           <div className="wm" style={{ fontSize: '20px', letterSpacing: '8px', fontWeight: 500, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
             Convengers Assemble · Master Integrated Calendar
           </div>
-          <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,.4)' }} />
+          <div style={{ flex: 1, height: '1px', background: 'var(--sx-bg-32)' }} />
         </div>
-        <div style={{ fontSize: '11px', color: '#BAC4E2', textAlign: 'center' }}>
+        <div style={{ fontSize: '11px', color: 'var(--sx-text-2)', textAlign: 'center' }}>
           Official synchronized schedule: Construction site execution (Mon–Sat) + Multiverse Content Production (Episodes 1–24).
-          Visit official portal at <b className="text-[#F5C518]">www.ConvengersAssemble.com</b>.
+          Visit official portal at <b className="text-[var(--sx-text-3)]">www.ConvengersAssemble.com</b>.
         </div>
-        <div className="ver" style={{ fontSize: '11px', fontWeight: 600, color: '#F5C518', textAlign: 'center' }}>
+        <div className="ver" style={{ fontSize: '11px', fontWeight: 600, color: 'var(--sx-text-3)', textAlign: 'center' }}>
           Slide 09 · Overall Project Timeline (Master Schedule)
         </div>
       </div>

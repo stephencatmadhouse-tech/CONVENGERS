@@ -126,8 +126,8 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
           height: '1280px',
           boxSizing: 'border-box',
           background:
-            'radial-gradient(900px 520px at 92% 0%,rgba(123,77,255,.42),transparent 65%),radial-gradient(800px 600px at 0% 45%,rgba(60,40,190,.30),transparent 65%),radial-gradient(900px 600px at 100% 80%,rgba(90,50,220,.24),transparent 65%),repeating-linear-gradient(135deg,rgba(255,255,255,.025) 0 2px,transparent 2px 16px),#060A24',
-          color: '#FFFFFF',
+            'var(--sx-bg-25)',
+          color: 'var(--sx-text-26)',
           fontFamily: "'Barlow', sans-serif",
           padding: '48px 56px 130px',
           display: 'flex',
@@ -145,7 +145,7 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase' }}>
               Convengers
             </div>
-            <div className="h1a" style={{ fontFamily: "'Anton','Barlow Condensed',sans-serif", fontSize: '70px', lineHeight: 1.05, color: '#F5C518', textTransform: 'uppercase', textShadow: '0 4px 0 #7a5a00,0 0 30px rgba(245,197,24,.35)' }}>
+            <div className="h1a" style={{ fontFamily: "'Anton','Barlow Condensed',sans-serif", fontSize: '70px', lineHeight: 1.05, color: 'var(--sx-text-3)', textTransform: 'uppercase', textShadow: 'var(--sx-shadow-27)' }}>
               Production Calendar
             </div>
             <div style={{ fontSize: '16px', letterSpacing: '8px', textTransform: 'uppercase', marginTop: '4px' }}>
@@ -154,13 +154,13 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
           </div>
 
           <div style={{ position: 'absolute', top: '16px', right: '56px', display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-            <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: '16px', letterSpacing: '3px', color: '#BAC4E2', textTransform: 'uppercase' }}>
+            <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: '16px', letterSpacing: '3px', color: 'var(--sx-text-2)', textTransform: 'uppercase' }}>
               Production calendar
             </span>
-            <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '22px', color: '#F5C518' }}>
+            <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '22px', color: 'var(--sx-text-3)' }}>
               07
             </span>
-            <span style={{ fontSize: '15px', color: '#BAC4E2' }}>
+            <span style={{ fontSize: '15px', color: 'var(--sx-text-2)' }}>
               / 12
             </span>
           </div>
@@ -258,12 +258,12 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
           </div>
 
           {/* Legend */}
-          <div className="pmbar" style={{ paddingTop: 0, gap: '14px', fontSize: '12px', color: '#BAC4E2' }}>
+          <div className="pmbar" style={{ paddingTop: 0, gap: '14px', fontSize: '12px', color: 'var(--sx-text-2)' }}>
             <span><i className="pmdot" style={{ background: '#5B6BB5' }} />Planned</span>
-            <span><i className="pmdot" style={{ background: '#F5C518' }} />For Confirmation</span>
+            <span><i className="pmdot" style={{ background: 'var(--sx-bg-12)' }} />For Confirmation</span>
             <span><i className="pmdot" style={{ background: '#1F6FE0' }} />Scheduled</span>
             <span><i className="pmdot" style={{ background: '#4BE08A' }} />Completed</span>
-            <span><i className="pmdot" style={{ background: '#B58CFF' }} />Rescheduled</span>
+            <span><i className="pmdot" style={{ background: 'var(--sx-bg-33)' }} />Rescheduled</span>
             <span>● shoot · ▶ release</span>
           </div>
         </div>
@@ -274,7 +274,7 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
             <div className="n">1</div>
             <div className="t">
               <span>Production</span>
-              <span style={{ color: '#FF5D8F' }}>CALENDAR</span>
+              <span style={{ color: 'var(--sx-text-34)' }}>CALENDAR</span>
             </div>
             <div className="sl">//</div>
           </div>
@@ -292,10 +292,10 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
             <div className="n">2</div>
             <div className="t">
               <span>Content timeline</span>
-              <span style={{ color: '#FF9A1F' }}>AT A GLANCE</span>
+              <span style={{ color: 'var(--sx-text-10)' }}>AT A GLANCE</span>
             </div>
             <div className="x">
-              <span style={{ fontSize: '12px', color: '#BAC4E2' }}>
+              <span style={{ fontSize: '12px', color: 'var(--sx-text-2)' }}>
                 bars = shoot windows · ◆ = release · bar outline: red = scope delayed, green = completed
               </span>
             </div>
@@ -309,8 +309,8 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
               const x = calcLanePct(d);
               return (
                 <React.Fragment key={idx}>
-                  <div style={{ position: 'absolute', left: `${x}%`, top: '18px', bottom: 0, width: '1px', background: 'rgba(255,255,255,.14)' }} />
-                  <div style={{ position: 'absolute', left: `calc(${x}% + 5px)`, top: 0, fontSize: '12px', fontWeight: 600, color: '#BAC4E2' }}>
+                  <div style={{ position: 'absolute', left: `${x}%`, top: '18px', bottom: 0, width: '1px', background: 'var(--sx-bg-35)' }} />
+                  <div style={{ position: 'absolute', left: `calc(${x}% + 5px)`, top: 0, fontSize: '12px', fontWeight: 600, color: 'var(--sx-text-2)' }}>
                     {d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                   </div>
                 </React.Fragment>
@@ -325,7 +325,7 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
                 width: `${stoppageEndPct - stoppageStartPct}%`,
                 top: '18px',
                 bottom: 0,
-                background: 'rgba(224,33,59,.3)',
+                background: 'var(--ov-stop-bg)',
               }}
             />
 
@@ -391,7 +391,7 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
                         transform: 'translateX(-50%)',
                         fontSize: '10px',
                         fontWeight: 700,
-                        color: '#F5C518',
+                        color: 'var(--sx-text-3)',
                         whiteSpace: 'nowrap',
                         cursor: canEdit ? 'pointer' : 'default',
                       }}
@@ -415,13 +415,13 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
         {/* Footer */}
         <div className="ftr" style={{ position: 'absolute', left: '340px', right: '340px', bottom: '40px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px', width: '100%' }}>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,.4)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'var(--sx-bg-32)' }} />
             <div className="wm" style={{ fontSize: '22px', letterSpacing: '9px', fontWeight: 500, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
               Convengers Bahay Build
             </div>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,.4)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'var(--sx-bg-32)' }} />
           </div>
-          <div style={{ fontSize: '12px', color: '#BAC4E2', textAlign: 'center' }}>
+          <div style={{ fontSize: '12px', color: 'var(--sx-text-2)', textAlign: 'center' }}>
             Version {settings.version} · Connected to full-stack database
           </div>
         </div>
@@ -533,7 +533,7 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
                 key={ep.id}
                 type="button"
                 className="pmit"
-                style={{ borderLeftColor: '#F5C518', fontSize: '11px', padding: '2px 5px' }}
+                style={{ borderLeftColor: 'var(--sx-border-4)', fontSize: '11px', padding: '2px 5px' }}
                 onClick={() => {
                   if (!canEdit) {
                     onViewerAttemptEdit?.();
@@ -657,7 +657,7 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
                 <b>{ep.title}</b>
                 <small>{ep.topic}</small>
                 {ep.updatedBy && (
-                  <small className="text-[10px] text-[#BAC4E2]/70 italic block">
+                  <small className="text-[10px] text-[var(--sx-text-2)]/70 italic block">
                     Last updated by {ep.updatedBy} {ep.updatedAt ? `on ${new Date(ep.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
                   </small>
                 )}
@@ -669,7 +669,7 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
                 {ep.releaseDate || '—'}
               </div>
               <div className="pmc" data-l="Characters">
-                {charNames || <i style={{ color: '#BAC4E2' }}>none</i>}
+                {charNames || <i style={{ color: 'var(--sx-text-2)' }}>none</i>}
               </div>
               <div className="pmc" data-l="Location">
                 {ep.location || '—'}
@@ -725,7 +725,7 @@ const CharacterManagerModal: React.FC<{
             ×
           </button>
         </div>
-        <p style={{ fontSize: '13px', color: '#BAC4E2', margin: '0 0 10px' }}>
+        <p style={{ fontSize: '13px', color: 'var(--sx-text-2)', margin: '0 0 10px' }}>
           Add, rename or remove Multiverse characters. Characters sync automatically with episodes.
         </p>
 
@@ -740,7 +740,7 @@ const CharacterManagerModal: React.FC<{
                   defaultValue={c.name}
                   onBlur={(e) => onUpdate(c.id, e.target.value)}
                 />
-                <span style={{ fontSize: '12px', color: '#BAC4E2', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: '12px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                   {count} episode{count === 1 ? '' : 's'}
                 </span>
                 <button
@@ -918,7 +918,7 @@ const EpisodeModal: React.FC<{
             <button
               type="button"
               className="shbtn"
-              style={{ marginRight: 'auto', borderColor: '#E0213B', color: '#FF7A8A' }}
+              style={{ marginRight: 'auto', borderColor: '#E0213B', color: 'var(--sx-text-13)' }}
               onClick={onDelete}
             >
               Delete episode

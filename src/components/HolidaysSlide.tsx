@@ -41,8 +41,8 @@ export const HolidaysSlide: React.FC<{ settings: SystemSettings }> = ({ settings
           height: '1280px',
           boxSizing: 'border-box',
           background:
-            'radial-gradient(900px 520px at 92% 0%,rgba(123,77,255,.42),transparent 65%),radial-gradient(800px 600px at 0% 45%,rgba(60,40,190,.30),transparent 65%),radial-gradient(900px 600px at 100% 80%,rgba(90,50,220,.24),transparent 65%),repeating-linear-gradient(135deg,rgba(255,255,255,.025) 0 2px,transparent 2px 16px),#060A24',
-          color: '#FFFFFF',
+            'var(--sx-bg-25)',
+          color: 'var(--sx-text-26)',
           fontFamily: "'Barlow', sans-serif",
           padding: '48px 56px 130px',
           display: 'flex',
@@ -60,7 +60,7 @@ export const HolidaysSlide: React.FC<{ settings: SystemSettings }> = ({ settings
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase' }}>
               Watch items &amp;
             </div>
-            <div className="h1a" style={{ fontFamily: "'Anton','Barlow Condensed',sans-serif", fontSize: '70px', lineHeight: 1.05, color: '#F5C518', textTransform: 'uppercase', textShadow: '0 4px 0 #7a5a00,0 0 30px rgba(245,197,24,.35)' }}>
+            <div className="h1a" style={{ fontFamily: "'Anton','Barlow Condensed',sans-serif", fontSize: '70px', lineHeight: 1.05, color: 'var(--sx-text-3)', textTransform: 'uppercase', textShadow: 'var(--sx-shadow-27)' }}>
               Holidays
             </div>
             <div style={{ fontSize: '16px', letterSpacing: '8px', textTransform: 'uppercase', marginTop: '4px' }}>
@@ -69,26 +69,26 @@ export const HolidaysSlide: React.FC<{ settings: SystemSettings }> = ({ settings
           </div>
 
           <div className="rb" style={{ width: '540px', flex: 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ background: '#0A1140', border: '2px solid #7B4DFF', borderRadius: '14px', boxShadow: '0 0 16px rgba(123,77,255,.55),inset 0 0 26px rgba(40,30,130,.45)', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--sx-bg-14)', border: 'var(--sx-border-19)', borderRadius: '14px', boxShadow: 'var(--sx-shadow-36)', overflow: 'hidden' }}>
               <div style={{ padding: '8px 14px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '17px', letterSpacing: '1.5px', color: '#F5C518' }}>
+                  <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '17px', letterSpacing: '1.5px', color: 'var(--sx-text-3)' }}>
                     SCHEDULE ELAPSED
                   </span>
-                  <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '26px', lineHeight: 1, color: '#F5C518' }}>
+                  <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '26px', lineHeight: 1, color: 'var(--sx-text-3)' }}>
                     {elapsed.elapsedPercent}%
                   </span>
                 </div>
-                <div style={{ height: '10px', borderRadius: '5px', background: 'rgba(255,255,255,.14)', position: 'relative' }}>
-                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.max(elapsed.elapsedPercent, 2)}%`, borderRadius: '5px', background: 'linear-gradient(90deg,#F5C518,#FF9A1F)' }} />
+                <div style={{ height: '10px', borderRadius: '5px', background: 'var(--sx-bg-35)', position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.max(elapsed.elapsedPercent, 2)}%`, borderRadius: '5px', background: 'var(--sx-bg-37)' }} />
                 </div>
-                <div style={{ fontSize: '12px', color: '#BAC4E2', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: '12px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                   Working days: {elapsed.elapsedWorkingDays} of {elapsed.totalWorkingDays} elapsed
                 </div>
               </div>
             </div>
 
-            <div style={{ background: '#0A1140', border: '2px solid #7B4DFF', borderRadius: '14px', boxShadow: '0 0 16px rgba(123,77,255,.55),inset 0 0 26px rgba(40,30,130,.45)', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--sx-bg-14)', border: 'var(--sx-border-19)', borderRadius: '14px', boxShadow: 'var(--sx-shadow-36)', overflow: 'hidden' }}>
               <div style={{ padding: '8px 14px', display: 'flex', gap: '10px', alignItems: 'center', whiteSpace: 'nowrap' }}>
                 <span style={{ background: '#E0213B', color: '#fff', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '17px', letterSpacing: '1.5px', padding: '2px 10px', borderRadius: '4px' }}>
                   WORK STOPPAGE
@@ -101,13 +101,13 @@ export const HolidaysSlide: React.FC<{ settings: SystemSettings }> = ({ settings
           </div>
 
           <div style={{ position: 'absolute', top: '16px', right: '56px', display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-            <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: '16px', letterSpacing: '3px', color: '#BAC4E2', textTransform: 'uppercase' }}>
+            <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: '16px', letterSpacing: '3px', color: 'var(--sx-text-2)', textTransform: 'uppercase' }}>
               Watch items
             </span>
-            <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '22px', color: '#F5C518' }}>
+            <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '22px', color: 'var(--sx-text-3)' }}>
               11
             </span>
-            <span style={{ fontSize: '15px', color: '#BAC4E2' }}>
+            <span style={{ fontSize: '15px', color: 'var(--sx-text-2)' }}>
               / 12
             </span>
           </div>
@@ -116,22 +116,22 @@ export const HolidaysSlide: React.FC<{ settings: SystemSettings }> = ({ settings
         {/* Content Body */}
         <div className="bodyw" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* Panel 1: Watch Items */}
-          <div style={{ background: '#0A1140', border: '2px solid #7B4DFF', borderRadius: '14px', boxShadow: '0 0 16px rgba(123,77,255,.55),inset 0 0 26px rgba(40,30,130,.45)', overflow: 'hidden', flex: 'none' }}>
-            <div style={{ display: 'flex', alignItems: 'stretch', height: '52px', flex: 'none', background: 'linear-gradient(90deg,#2A1D9C,#0C1448 75%)' }}>
-              <div style={{ width: '66px', flex: 'none', background: '#F5C518', clipPath: 'polygon(0 0,100% 0,74% 100%,0 100%)', display: 'flex', alignItems: 'center', paddingLeft: '16px', color: '#060A24', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px' }}>
+          <div style={{ background: 'var(--sx-bg-14)', border: 'var(--sx-border-19)', borderRadius: '14px', boxShadow: 'var(--sx-shadow-36)', overflow: 'hidden', flex: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'stretch', height: '52px', flex: 'none', background: 'var(--sx-bg-38)' }}>
+              <div style={{ width: '66px', flex: 'none', background: 'var(--sx-bg-12)', clipPath: 'polygon(0 0,100% 0,74% 100%,0 100%)', display: 'flex', alignItems: 'center', paddingLeft: '16px', color: 'var(--sx-text-1)', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px' }}>
                 1
               </div>
               <div className="chd" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '6px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '25px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                 <span>WATCH</span>
-                <span style={{ color: '#FF9A1F' }}>ITEMS</span>
+                <span style={{ color: 'var(--sx-text-10)' }}>ITEMS</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', paddingRight: '14px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', color: '#F5C518', letterSpacing: '-4px', fontStyle: 'italic' }}>
+              <div style={{ display: 'flex', alignItems: 'center', paddingRight: '14px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', color: 'var(--sx-text-3)', letterSpacing: '-4px', fontStyle: 'italic' }}>
                 //
               </div>
             </div>
 
             <div style={{ padding: '16px' }}>
-              <div style={{ background: '#FFE4E9', color: '#1A1030', borderRadius: '10px', padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '17px', lineHeight: '22px' }}>
+              <div style={{ background: '#FFE4E9', color: 'var(--sx-text-42)', borderRadius: '10px', padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '17px', lineHeight: '22px' }}>
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#E0213B', flex: 'none', marginTop: '7px' }} />
                   <span>
@@ -167,22 +167,22 @@ export const HolidaysSlide: React.FC<{ settings: SystemSettings }> = ({ settings
           </div>
 
           {/* Panel 2: Philippine Holidays */}
-          <div style={{ background: '#0A1140', border: '2px solid #7B4DFF', borderRadius: '14px', boxShadow: '0 0 16px rgba(123,77,255,.55),inset 0 0 26px rgba(40,30,130,.45)', overflow: 'hidden', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'stretch', height: '52px', flex: 'none', background: 'linear-gradient(90deg,#2A1D9C,#0C1448 75%)' }}>
-              <div style={{ width: '66px', flex: 'none', background: '#F5C518', clipPath: 'polygon(0 0,100% 0,74% 100%,0 100%)', display: 'flex', alignItems: 'center', paddingLeft: '16px', color: '#060A24', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px' }}>
+          <div style={{ background: 'var(--sx-bg-14)', border: 'var(--sx-border-19)', borderRadius: '14px', boxShadow: 'var(--sx-shadow-36)', overflow: 'hidden', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'stretch', height: '52px', flex: 'none', background: 'var(--sx-bg-38)' }}>
+              <div style={{ width: '66px', flex: 'none', background: 'var(--sx-bg-12)', clipPath: 'polygon(0 0,100% 0,74% 100%,0 100%)', display: 'flex', alignItems: 'center', paddingLeft: '16px', color: 'var(--sx-text-1)', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px' }}>
                 2
               </div>
               <div className="chd" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '6px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '25px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                 <span>PHILIPPINE</span>
-                <span style={{ color: '#4BE08A' }}>HOLIDAYS APPLIED</span>
+                <span style={{ color: 'var(--sx-text-8)' }}>HOLIDAYS APPLIED</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', paddingRight: '14px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', color: '#F5C518', letterSpacing: '-4px', fontStyle: 'italic' }}>
+              <div style={{ display: 'flex', alignItems: 'center', paddingRight: '14px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', color: 'var(--sx-text-3)', letterSpacing: '-4px', fontStyle: 'italic' }}>
                 //
               </div>
             </div>
 
             <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '14px 16px 16px', gap: '10px' }}>
-              <div style={{ fontSize: '14px', color: '#BAC4E2', lineHeight: '19px' }}>
+              <div style={{ fontSize: '14px', color: 'var(--sx-text-2)', lineHeight: '19px' }}>
                 Includes nationwide 2026/2027 holidays and the NCR-only Nov 16–18, 2026 non-working days. Eid dates are excluded pending separate proclamation; confirm any site/local shutdowns.
               </div>
 
@@ -191,8 +191,8 @@ export const HolidaysSlide: React.FC<{ settings: SystemSettings }> = ({ settings
                   <div
                     key={idx}
                     style={{
-                      background: 'rgba(255,255,255,.05)',
-                      border: '1px solid rgba(123,77,255,.38)',
+                      background: 'var(--sx-bg-43)',
+                      border: 'var(--sx-border-31)',
                       borderRadius: '10px',
                       padding: '10px 14px',
                       display: 'flex',
@@ -201,8 +201,8 @@ export const HolidaysSlide: React.FC<{ settings: SystemSettings }> = ({ settings
                       gap: '2px',
                     }}
                   >
-                    <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '26px', color: '#F5C518', lineHeight: 1.1 }}>
-                      {h.date} <span style={{ fontSize: '16px', fontWeight: 600, color: '#BAC4E2' }}>· {h.day}</span>
+                    <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '26px', color: 'var(--sx-text-3)', lineHeight: 1.1 }}>
+                      {h.date} <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--sx-text-2)' }}>· {h.day}</span>
                     </div>
                     <div style={{ fontSize: '15px', lineHeight: '19px' }}>{h.title}</div>
                   </div>
@@ -215,13 +215,13 @@ export const HolidaysSlide: React.FC<{ settings: SystemSettings }> = ({ settings
         {/* Footer */}
         <div className="ftr" style={{ position: 'absolute', left: '340px', right: '340px', bottom: '40px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px', width: '100%' }}>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,.4)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'var(--sx-bg-32)' }} />
             <div className="wm" style={{ fontSize: '22px', letterSpacing: '9px', fontWeight: 500, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
               Convengers Bahay Build
             </div>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,.4)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'var(--sx-bg-32)' }} />
           </div>
-          <div className="ver" style={{ fontSize: '12px', fontWeight: 600, color: '#F5C518', textAlign: 'center' }}>
+          <div className="ver" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--sx-text-3)', textAlign: 'center' }}>
             Version {settings.version} · Updated {new Date(settings.updatedAt).toLocaleString()}
           </div>
         </div>

@@ -185,3 +185,31 @@ reports, issues, snapshots ──────────────├─► b
 4. Review the data-health findings in *Settings & Data*. One example is a
    concrete pour target date that falls outside its matching scope's dates;
    this occurs in the repository's seed data for the GF tie-beam pour.
+
+## 7. Visual identity — light theme (standard)
+
+The dashboard now uses a bright, white-dominant Convengers light theme:
+
+| Role | Colour |
+|---|---|
+| Primary background | `#FFFFFF` |
+| Secondary background (sidebar, inner panels) | `#F7F8FC` |
+| Brand accent (headings, active navigation, actual progress) | Convengers Purple `#7041C8` |
+| Secondary accent (active nav background, planned progress) | Light Purple `#EEE8FA` |
+| Highlight (priority items, milestones, today marker) | Yellow `#FFD43B` |
+| Primary / secondary text | `#252336` / `#777789` |
+| Borders & dividers | `#E8E8EF` |
+
+Status language: green = completed / on track, purple = in progress, yellow =
+attention, red = delayed / critical, gray = pending / not started.
+
+How it is built (no data, calculation or reporting logic was changed):
+
+* `src/command/command.css` — Command Center tokens (light default, dark under `html[data-eff='dark']`).
+* `src/theme-palette.css` — generated variables for every theme colour used by
+  the presentation slides, toolbar and modals. The light value is the new
+  palette; the dark value is the exact original colour.
+* `src/theme-status.css` — status pill colours, timeline overlays and bars.
+* The original dark look is still available as a **per-device** preference
+  (toolbar *Theme* button or Settings & Data). It is stored in the browser, not in the
+  shared database, so it never changes what other team members see.

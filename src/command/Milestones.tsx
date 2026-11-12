@@ -107,7 +107,7 @@ export const Milestones: React.FC = () => {
       <div className="cv-kpis">
         <Kpi label="Milestones complete" value={`${ms.filter((r) => r.status === 'Completed').length} / ${ms.length}`} accent />
         <Kpi label="Concrete pours approved" value={`${pours.filter((r) => r.status === 'Completed').length} / ${pours.length}`} />
-        <Kpi label="Delayed milestones / pours" value={delayed} color={delayed ? '#FF7A8A' : '#4BE08A'} />
+        <Kpi label="Delayed milestones / pours" value={delayed} color={delayed ? '#D92D3F' : '#22A05A'} />
         <Kpi label="Completed on time / late" value={`${onTime} / ${late}`} sub="Needs actual dates recorded" />
         <Kpi label="Next milestone" value={next ? fmtDate(next.finish) : '—'} sub={next ? `${next.name.slice(0, 48)} · ${diffDays(today, next.finish!)} day(s)` : ''} />
       </div>

@@ -126,7 +126,7 @@ export const Analytics: React.FC = () => {
       <div className="cv-kpis">
         <Kpi label="Overall physical accomplishment" value={pct(m.actualPct)} accent />
         <Kpi label="Planned to date" value={pct(m.plannedPct)} />
-        <Kpi label="Schedule variance" value={`${m.variancePct >= 0 ? '+' : ''}${m.variancePct.toFixed(1)} pts`} color={m.variancePct < 0 ? '#FF7A8A' : '#4BE08A'} />
+        <Kpi label="Schedule variance" value={`${m.variancePct >= 0 ? '+' : ''}${m.variancePct.toFixed(1)} pts`} color={m.variancePct < 0 ? '#D92D3F' : '#22A05A'} />
         <Kpi label="SPI" value={m.spi === null ? '—' : m.spi.toFixed(2)} sub="1.00 = on plan" />
         <Kpi label="Completed / delayed" value={`${m.counts.completed} / ${m.counts.delayed}`} sub={`${m.counts.total} activities in register`} />
       </div>
@@ -134,17 +134,17 @@ export const Analytics: React.FC = () => {
       <Card title="1–2. Planned vs actual progress (S-curve)" note="Planned = baseline, weekly · Actual = recorded snapshots + today (live)">
         <LineChart
           series={[
-            { name: 'Planned', color: '#BAC4E2', points: plannedSeries, dashed: true },
-            { name: 'Actual', color: '#F5C518', points: actualPoints },
+            { name: 'Planned', color: '#C9B8F0', points: plannedSeries, dashed: true },
+            { name: 'Actual', color: '#7041C8', points: actualPoints },
           ]}
           markX={today}
         />
         <div className="cv-legend">
           <span>
-            <span className="cv-sw" style={{ background: '#BAC4E2' }} /> Planned (baseline)
+            <span className="cv-sw" style={{ background: '#C9B8F0' }} /> Planned (baseline)
           </span>
           <span>
-            <span className="cv-sw" style={{ background: '#F5C518' }} /> Actual (recorded)
+            <span className="cv-sw" style={{ background: '#7041C8' }} /> Actual (recorded)
           </span>
         </div>
       </Card>
@@ -243,7 +243,7 @@ export const Analytics: React.FC = () => {
         <Card title="7. Milestone performance">
           <div className="cv-kpis" style={{ gridTemplateColumns: 'repeat(2,minmax(0,1fr))' }}>
             <Kpi label="Achieved" value={`${msDone.length}/${ms.length}`} />
-            <Kpi label="Overdue" value={msOverdue} color={msOverdue ? '#FF7A8A' : undefined} />
+            <Kpi label="Overdue" value={msOverdue} color={msOverdue ? '#D92D3F' : undefined} />
             <Kpi label="Achieved late" value={msLate} sub="Actual vs baseline" />
             <Kpi label="Upcoming (30 d)" value={ms.filter((r) => r.status !== 'Completed' && r.finish && r.finish >= today && r.finish <= addDays(today, 30)).length} />
           </div>
@@ -253,7 +253,7 @@ export const Analytics: React.FC = () => {
             <Kpi label="Scopes complete" value={`${scopes.filter((s) => s.status === 'Completed').length}/${scopes.length}`} />
             <Kpi label="Finished late" value={finished.length ? `${finishedLate.length}/${finished.length}` : 'n/a'} sub="Needs actual finish dates" />
             <Kpi label="Re-scheduled scopes" value={scopes.filter((s) => s.revisionCount > 0).length} />
-            <Kpi label="Overdue now" value={scopes.filter((s) => s.status === 'Delayed').length} color="#FF7A8A" />
+            <Kpi label="Overdue now" value={scopes.filter((s) => s.status === 'Delayed').length} color="#D92D3F" />
           </div>
           {pourVar.length > 0 && (
             <div style={{ marginTop: 10 }}>
@@ -269,11 +269,11 @@ export const Analytics: React.FC = () => {
         <Card title="9. Production schedule performance">
           <div className="cv-kpis" style={{ gridTemplateColumns: 'repeat(2,minmax(0,1fr))' }}>
             <Kpi label="Shoots due to date" value={epDue.length} />
-            <Kpi label="Completed of due" value={epDue.length ? `${epDoneDue}/${epDue.length}` : 'n/a'} color={epDoneDue < epDue.length ? '#FF7A8A' : undefined} />
+            <Kpi label="Completed of due" value={epDue.length ? `${epDoneDue}/${epDue.length}` : 'n/a'} color={epDoneDue < epDue.length ? '#D92D3F' : undefined} />
             <Kpi label="Re-scheduled" value={eps.filter((e) => e.revisionCount > 0 || e.episodeStatus === 'Rescheduled').length} />
             <Kpi label="Tentative" value={eps.filter((e) => e.commitment === 'Tentative' && e.status !== 'Completed').length} />
           </div>
-          <BarChart bars={epStatus.map((s) => ({ ...s, color: s.label === 'Completed' ? '#4BE08A' : s.label === 'Scheduled' ? '#3A9BFF' : s.label === 'Rescheduled' ? '#B58CFF' : '#F5C518' }))} height={170} />
+          <BarChart bars={epStatus.map((s) => ({ ...s, color: s.label === 'Completed' ? '#22A05A' : s.label === 'Scheduled' ? '#3A7BEF' : s.label === 'Rescheduled' ? '#9B7BE0' : '#FFC21A' }))} height={170} />
         </Card>
       </div>
     </div>
@@ -287,10 +287,10 @@ function plannedAtFromCurve(register: ReturnType<typeof useCommand>['register'],
 
 // ---------- Forecast & next-month planning ----------
 const OUTLOOK_HEX: Record<OutlookClass, string> = {
-  Confirmed: '#4BE08A',
-  Tentative: '#F5C518',
-  'Management target': '#3A9BFF',
-  'At risk': '#E0213B',
+  Confirmed: '#22A05A',
+  Tentative: '#FFC21A',
+  'Management target': '#3A7BEF',
+  'At risk': '#D92D3F',
 };
 
 export const Forecast: React.FC = () => {
@@ -363,7 +363,7 @@ export const Forecast: React.FC = () => {
       </div>
       <div className="cv-kpis">
         <Kpi label="Activities in window" value={items.length} sub={fmtRange(from, to)} />
-        <Kpi label="At risk" value={items.filter((i) => i.outlook === 'At risk').length} color="#FF7A8A" />
+        <Kpi label="At risk" value={items.filter((i) => i.outlook === 'At risk').length} color="#D92D3F" />
         <Kpi label="Concrete pours" value={pours.length} />
         <Kpi label="Inspections / testing" value={inspections.length} />
         <Kpi label="Shoots" value={shoots.length} sub={`${chars.length} character(s) required`} />
@@ -394,7 +394,7 @@ export const Forecast: React.FC = () => {
             <div className="cv-list">
               {conflicts.map((c) => (
                 <div key={c.episode.id} className="cv-li">
-                  <span className="cv-sev" style={{ background: '#E0213B' }} />
+                  <span className="cv-sev" style={{ background: '#D92D3F' }} />
                   <div className="cv-li-main">
                     <div className="cv-li-t">{c.episode.name}</div>
                     <div className="cv-li-s">{c.alerts.find((a) => a.severity === 'critical')?.message}</div>
@@ -405,7 +405,7 @@ export const Forecast: React.FC = () => {
                 .filter((i) => i.reasons.some((r) => r.startsWith('Depends on')))
                 .map((i) => (
                   <div key={`d-${i.activity.id}`} className="cv-li">
-                    <span className="cv-sev" style={{ background: '#FF9A1F' }} />
+                    <span className="cv-sev" style={{ background: '#E8862A' }} />
                     <div className="cv-li-main">
                       <div className="cv-li-t">{i.activity.name}</div>
                       <div className="cv-li-s">{i.reasons.filter((r) => r.startsWith('Depends on')).join(' · ')}</div>

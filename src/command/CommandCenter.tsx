@@ -54,7 +54,7 @@ export const CommandCenter: React.FC = () => {
         actions={
           <>
             <span className="cv-chip" title={isLive ? 'Connected to the shared Firestore project database' : 'Realtime presence server not connected'}>
-              <span className="cv-dot" style={{ background: isLive ? '#4BE08A' : '#FF9A1F' }} /> {isLive ? 'Live collaboration' : 'Shared database (presence offline)'}
+              <span className="cv-dot" style={{ background: isLive ? '#22A05A' : '#E8862A' }} /> {isLive ? 'Live collaboration' : 'Shared database (presence offline)'}
             </span>
             <HealthBadge level={m.health} big />
           </>
@@ -66,14 +66,14 @@ export const CommandCenter: React.FC = () => {
           <Kpi
             label="Schedule variance"
             value={fmtVar(m.variancePct)}
-            color={m.variancePct < -3 ? '#FF7A8A' : m.variancePct < 0 ? '#FF9A1F' : '#4BE08A'}
+            color={m.variancePct < -3 ? '#D92D3F' : m.variancePct < 0 ? '#E8862A' : '#22A05A'}
             sub={m.spi !== null ? `SPI ${m.spi.toFixed(2)} (actual ÷ planned)` : 'SPI available once planned > 0'}
           />
           <Kpi label="Target completion" value={fmtDate(m.targetCompletion)} sub="Turnover ceremony milestone" />
           <Kpi
             label="Projected completion"
             value={fmtDate(m.projectedCompletion)}
-            color={m.completionVarianceDays > 0 ? '#FF7A8A' : undefined}
+            color={m.completionVarianceDays > 0 ? '#D92D3F' : undefined}
             sub={
               m.completionVarianceDays > 0
                 ? `${m.completionVarianceDays} day(s) late · from current schedule`
@@ -106,12 +106,12 @@ export const CommandCenter: React.FC = () => {
       {/* Current operations */}
       <div className="cv-kpis">
         {[
-          { label: 'Completed', v: m.counts.completed, c: '#4BE08A', f: 'Completed' },
-          { label: 'Ongoing', v: m.counts.ongoing, c: '#3A9BFF', f: 'Ongoing' },
-          { label: 'Delayed', v: m.counts.delayed, c: '#E0213B', f: 'Delayed' },
-          { label: 'Upcoming (next 14 days)', v: ops.upcoming.length, c: '#F5C518', f: 'Upcoming' },
-          { label: 'Open issues & risks', v: openIssues.length, c: '#B58CFF', f: '' },
-          { label: 'Critical pending actions', v: attention.filter((a) => a.severity === 'critical').length, c: '#FF7A8A', f: '' },
+          { label: 'Completed', v: m.counts.completed, c: '#22A05A', f: 'Completed' },
+          { label: 'Ongoing', v: m.counts.ongoing, c: '#3A7BEF', f: 'Ongoing' },
+          { label: 'Delayed', v: m.counts.delayed, c: '#D92D3F', f: 'Delayed' },
+          { label: 'Upcoming (next 14 days)', v: ops.upcoming.length, c: 'var(--cv-text)', f: 'Upcoming' },
+          { label: 'Open issues & risks', v: openIssues.length, c: '#9B7BE0', f: '' },
+          { label: 'Critical pending actions', v: attention.filter((a) => a.severity === 'critical').length, c: '#D92D3F', f: '' },
         ].map((k) => (
           <button
             type="button"
@@ -151,7 +151,7 @@ export const CommandCenter: React.FC = () => {
                   style={{ textAlign: 'left', color: 'inherit' }}
                   onClick={() => (a.activityId ? actions.openActivity(a.activityId) : actions.navigate('issues/log'))}
                 >
-                  <span className="cv-sev" style={{ background: a.severity === 'critical' ? '#E0213B' : '#FF9A1F' }} />
+                  <span className="cv-sev" style={{ background: a.severity === 'critical' ? '#D92D3F' : '#E8862A' }} />
                   <div className="cv-li-main">
                     <div className="cv-li-t">
                       <span className="cv-chip" style={{ marginRight: 6 }}>

@@ -142,29 +142,29 @@ export const Gantt: React.FC = () => {
       )}
       <div className="cv-legend">
         <span>
-          <span className="cv-sw" style={{ background: '#3A9BFF' }} /> Ongoing
+          <span className="cv-sw" style={{ background: '#7041C8' }} /> Ongoing
         </span>
         <span>
-          <span className="cv-sw" style={{ background: '#4BE08A' }} /> Completed
+          <span className="cv-sw" style={{ background: '#22A05A' }} /> Completed
         </span>
         <span>
-          <span className="cv-sw" style={{ background: '#E0213B' }} /> Delayed
+          <span className="cv-sw" style={{ background: '#D92D3F' }} /> Delayed
         </span>
         <span>
-          <span className="cv-sw" style={{ background: '#5B6BB5' }} /> Upcoming
+          <span className="cv-sw" style={{ background: '#C9C9D6' }} /> Upcoming
         </span>
         <span>
-          <span className="cv-sw" style={{ height: 4, background: 'rgba(186,196,226,.7)' }} /> Baseline (original plan)
+          <span className="cv-sw" style={{ height: 4, background: 'var(--cv-baseline)' }} /> Baseline (original plan)
         </span>
         <span>
-          <span className="cv-sw" style={{ height: 3, background: '#4BE08A' }} /> Actual
+          <span className="cv-sw" style={{ height: 3, background: '#22A05A' }} /> Actual
         </span>
         <span>◆ Milestone / pour</span>
         <span>
-          <span className="cv-sw" style={{ outline: '2px solid #F5C518' }} /> Critical path
+          <span className="cv-sw" style={{ outline: '2px solid #FFC21A' }} /> Critical path
         </span>
         <span>
-          <span className="cv-sw" style={{ width: 2, background: '#F5C518' }} /> Today
+          <span className="cv-sw" style={{ width: 2, background: '#FFC21A' }} /> Today
         </span>
       </div>
       {rows.length === 0 ? (
@@ -178,7 +178,7 @@ export const Gantt: React.FC = () => {
               </div>
               <div className="cv-g-scale" style={{ width }}>
                 {ticks.map((t) => (
-                  <div key={t.left} className="cv-g-tick" style={{ left: t.left, width: zoom === 'day' ? px : undefined, color: t.major ? '#F5C518' : undefined }}>
+                  <div key={t.left} className="cv-g-tick" style={{ left: t.left, width: zoom === 'day' ? px : undefined, color: t.major ? 'var(--cv-accent)' : undefined }}>
                     {t.label}
                   </div>
                 ))}
@@ -221,7 +221,7 @@ const GanttRow: React.FC<{ r: RegisterActivity; x: (iso: string) => number; widt
   const isPoint = r.kind === 'milestone' || r.kind === 'pour';
   const s = r.start || r.plannedStart!;
   const f = r.finish || r.start || r.plannedFinish || s;
-  const color = r.status === 'Completed' ? STATUS_HEX.Completed : r.status === 'Delayed' ? STATUS_HEX.Delayed : r.status === 'Ongoing' ? STATUS_HEX.Ongoing : r.status === 'On Hold' ? '#8A8FA8' : '#5B6BB5';
+  const color = r.status === 'Completed' ? STATUS_HEX.Completed : r.status === 'Delayed' ? STATUS_HEX.Delayed : r.status === 'Ongoing' ? STATUS_HEX.Ongoing : r.status === 'On Hold' ? '#B5B5C5' : '#C9C9D6';
   const tip = `${r.name}\n${r.workstream} · ${r.status}\nBaseline: ${fmtRange(r.plannedStart, r.plannedFinish)}\nCurrent: ${fmtRange(r.start, r.finish)}\nActual: ${fmtRange(r.actualStart, r.actualFinish || (r.actualStart ? todayIso() : undefined))}\nProgress ${r.progress}% (planned ${r.plannedProgress}%)\nOwner: ${r.owner || 'Unassigned'}`;
   return (
     <div className="cv-g-row">
@@ -237,7 +237,7 @@ const GanttRow: React.FC<{ r: RegisterActivity; x: (iso: string) => number; widt
         {isPoint ? (
           <>
             {f !== s && <div className="cv-g-bar" style={{ left: x(s), width: (diffDays(s, f) + 1) * px, background: `${color}66`, top: 12, height: 6 }} />}
-            <div className={`cv-g-diamond ${crit ? 'cv-g-crit' : ''}`} style={{ left: x(f) + px / 2, background: r.kind === 'pour' ? '#FF9A1F' : r.status === 'Completed' ? '#4BE08A' : r.status === 'Delayed' ? '#E0213B' : '#F5C518' }} title={tip} onClick={onOpen} />
+            <div className={`cv-g-diamond ${crit ? 'cv-g-crit' : ''}`} style={{ left: x(f) + px / 2, background: r.kind === 'pour' ? '#E8862A' : r.status === 'Completed' ? '#22A05A' : r.status === 'Delayed' ? '#D92D3F' : '#FFC21A' }} title={tip} onClick={onOpen} />
           </>
         ) : (
           <div className={`cv-g-bar ${crit ? 'cv-g-crit' : ''}`} style={{ left: x(s), width: Math.max(4, (diffDays(s, f) + 1) * px), background: color }} title={tip} onClick={onOpen}>

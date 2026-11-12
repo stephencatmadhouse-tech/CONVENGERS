@@ -19,10 +19,10 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 
   const dims =
     variant === 'toolbar'
-      ? { width: 32, height: 32, radius: 7, scale: 1.14, border: '1.5px solid rgba(245, 197, 24, 0.55)' }
+      ? { width: 32, height: 32, radius: 7, scale: 1.14, border: 'var(--sx-border-18)' }
       : variant === 'report'
-      ? { width: 84, height: 84, radius: 12, scale: 1.14, border: '2px solid #7B4DFF' }
-      : { width: 156, height: 150, radius: 14, scale: 1.14, border: '2px solid rgba(245, 197, 24, 0.45)' };
+      ? { width: 84, height: 84, radius: 12, scale: 1.14, border: 'var(--sx-border-19)' }
+      : { width: 156, height: 150, radius: 14, scale: 1.14, border: 'var(--sx-border-20)' };
 
   return (
     <div
@@ -36,7 +36,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
         overflow: 'hidden',
         border: dims.border,
         background:
-          'radial-gradient(circle at 50% 45%, #3B1DB8 0%, #12174D 58%, #060A24 100%)',
+          'var(--sx-bg-21)',
         boxShadow:
           variant === 'report'
             ? '0 4px 12px rgba(10, 17, 64, 0.25)'

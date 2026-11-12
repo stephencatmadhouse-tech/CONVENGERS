@@ -72,6 +72,8 @@ function windowOf(text: string | undefined): [string, string] | [undefined, unde
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const nextFrames = () => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 
+const THEME_KEY = 'convengers_ui_theme';
+
 const PAPER_SIZES: Record<string, { size: string; width: number; height: number }> = {
   a4: { size: '297mm 210mm', width: 1122.5, height: 793.7 },
   a3: { size: '420mm 297mm', width: 1587.4, height: 1122.5 },
@@ -98,6 +100,13 @@ export default function App() {
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [isAdminPresentationMode, setIsAdminPresentationMode] = useState(false);
   const [isPrintingReport, setIsPrintingReport] = useState(false);
+  const [uiTheme, setUiTheme] = useState<'light' | 'dark'>(() => {
+    try {
+      return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light';
+    } catch {
+      return 'light';
+    }
+  });
 
   // Command Center state
   const route = useHashRoute();
@@ -234,16 +243,16 @@ export default function App() {
     };
   }, []);
 
-  // Theme application
+  // Theme: the Convengers light theme is the standard look for everyone.
+  // The original dark look remains available as a per-device preference.
   useEffect(() => {
-    if (!data?.settings) return;
-    const theme = data.settings.theme;
-    if (theme === 'light') {
-      document.documentElement.setAttribute('data-eff', 'light');
-    } else {
-      document.documentElement.setAttribute('data-eff', 'dark');
+    document.documentElement.setAttribute('data-eff', uiTheme);
+    try {
+      localStorage.setItem(THEME_KEY, uiTheme);
+    } catch {
+      // storage unavailable — preference applies to this session only
     }
-  }, [data?.settings?.theme]);
+  }, [uiTheme]);
 
   // Dual-mode print style injection: Formal A4 Portrait Report vs Landscape Slide PDF
   useEffect(() => {
@@ -269,7 +278,7 @@ export default function App() {
     const k = Math.min(paper.width / 1920, paper.height / 1280);
     const offsetX = Math.max(0, Math.floor((paper.width - 1920 * k) / 2));
     const offsetY = Math.max(0, Math.floor((paper.height - 1280 * k) / 2));
-    const pageBg = data?.settings?.theme === 'light' ? '#eceef8' : '#03051a';
+    const pageBg = uiTheme === 'light' ? '#FFFFFF' : '#03051a';
 
     styleEl.textContent = `
       @page { size: ${paper.size}; margin: 0; }
@@ -283,7 +292,7 @@ export default function App() {
         .slide { position: absolute !important; left: ${offsetX}px !important; top: ${offsetY}px !important; transform: scale(${k}) !important; transform-origin: 0 0 !important; margin: 0 !important; }
       }
     `;
-  }, [data?.settings?.paper, data?.settings?.theme, isPrintingReport, printNode]);
+  }, [data?.settings?.paper, uiTheme, isPrintingReport, printNode]);
 
   // Real-Time Firebase Auth and Firestore Subscriptions
   useEffect(() => {
@@ -438,22 +447,10 @@ export default function App() {
   }, [canEdit, isEditingText]);
 
   // Action Handlers
-  const handleToggleTheme = async () => {
-    const nextTheme: SystemSettings['theme'] =
-      data.settings.theme === 'auto'
-        ? 'light'
-        : data.settings.theme === 'light'
-        ? 'dark'
-        : 'auto';
-    setData((prev) => (prev ? { ...prev, settings: { ...prev.settings, theme: nextTheme } } : prev));
-    if (isManager) {
-      try {
-        await firestoreData.updateSettings({ theme: nextTheme });
-      } catch {
-        // non-blocking
-      }
-    }
-    showToast(`Theme changed to ${nextTheme}`);
+  const handleToggleTheme = () => {
+    const next = uiTheme === 'light' ? 'dark' : 'light';
+    setUiTheme(next);
+    showToast(next === 'light' ? 'Light theme (standard)' : 'Dark theme on this device');
   };
 
   const handleChangePaper = async (paper: SystemSettings['paper']) => {
@@ -1405,6 +1402,7 @@ export default function App() {
     snapshots: control.snapshots,
     sharedStorage: control.shared,
     today,
+    uiTheme,
     user,
     canEdit,
     isManager,
@@ -1621,6 +1619,7 @@ export default function App() {
         onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
         isAdminPresentationMode={isAdminPresentationMode}
         compact
+        themeLabel={uiTheme}
         onOpenSettings={() => navigate('settings')}
         onToggleAdminPresentationMode={() => {
           setIsAdminPresentationMode((prev) => {

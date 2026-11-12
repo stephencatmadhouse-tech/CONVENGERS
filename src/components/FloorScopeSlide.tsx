@@ -81,7 +81,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
       dateText: newDateText.trim() || 'Date to be scheduled',
       workingDays: newWorkingDays > 0 ? newWorkingDays : 1,
       percentComplete: 0,
-      color: phase === 'Structural' ? '#3A9BFF' : '#FF9A1F',
+      color: phase === 'Structural' ? 'var(--sx-text-11)' : 'var(--sx-text-10)',
       sortOrder: floorScopes.length + 1,
     });
     setAddingPhase(null);
@@ -109,8 +109,8 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
           height: '1280px',
           boxSizing: 'border-box',
           background:
-            'radial-gradient(900px 520px at 92% 0%,rgba(123,77,255,.42),transparent 65%),radial-gradient(800px 600px at 0% 45%,rgba(60,40,190,.30),transparent 65%),radial-gradient(900px 600px at 100% 80%,rgba(90,50,220,.24),transparent 65%),repeating-linear-gradient(135deg,rgba(255,255,255,.025) 0 2px,transparent 2px 16px),#060A24',
-          color: '#FFFFFF',
+            'var(--sx-bg-25)',
+          color: 'var(--sx-text-26)',
           fontFamily: "'Barlow', sans-serif",
           padding: '48px 56px 130px',
           display: 'flex',
@@ -128,7 +128,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase' }}>
               Scope of work timeline
             </div>
-            <div className="h1a" style={{ fontFamily: "'Anton','Barlow Condensed',sans-serif", fontSize: '70px', lineHeight: 1.05, color: '#F5C518', textTransform: 'uppercase', textShadow: '0 4px 0 #7a5a00,0 0 30px rgba(245,197,24,.35)' }}>
+            <div className="h1a" style={{ fontFamily: "'Anton','Barlow Condensed',sans-serif", fontSize: '70px', lineHeight: 1.05, color: 'var(--sx-text-3)', textTransform: 'uppercase', textShadow: 'var(--sx-shadow-27)' }}>
               {floorTitle}
             </div>
             <div style={{ fontSize: '16px', letterSpacing: '8px', textTransform: 'uppercase', marginTop: '4px' }}>
@@ -138,26 +138,26 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
 
           {/* Right Top Floor Progress */}
           <div className="rb" style={{ width: '540px', flex: 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ background: '#0A1140', border: '2px solid #7B4DFF', borderRadius: '14px', boxShadow: '0 0 16px rgba(123,77,255,.55),inset 0 0 26px rgba(40,30,130,.45)', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--sx-bg-14)', border: 'var(--sx-border-19)', borderRadius: '14px', boxShadow: 'var(--sx-shadow-36)', overflow: 'hidden' }}>
               <div style={{ padding: '8px 14px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '17px', letterSpacing: '1.5px', color: '#F5C518' }}>
+                  <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '17px', letterSpacing: '1.5px', color: 'var(--sx-text-3)' }}>
                     FLOOR PROGRESS
                   </span>
-                  <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '26px', lineHeight: 1, color: '#F5C518' }}>
+                  <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '26px', lineHeight: 1, color: 'var(--sx-text-3)' }}>
                     {floorProgress}%
                   </span>
                 </div>
-                <div style={{ height: '10px', borderRadius: '5px', background: 'rgba(255,255,255,.14)', position: 'relative' }}>
-                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.max(floorProgress, 2)}%`, borderRadius: '5px', background: 'linear-gradient(90deg,#F5C518,#FF9A1F)' }} />
+                <div style={{ height: '10px', borderRadius: '5px', background: 'var(--sx-bg-35)', position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.max(floorProgress, 2)}%`, borderRadius: '5px', background: 'var(--sx-bg-37)' }} />
                 </div>
-                <div style={{ fontSize: '12px', color: '#BAC4E2', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: '12px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                   Scope % complete, weighted by working days
                 </div>
               </div>
             </div>
 
-            <div style={{ background: '#0A1140', border: '2px solid #7B4DFF', borderRadius: '14px', boxShadow: '0 0 16px rgba(123,77,255,.55),inset 0 0 26px rgba(40,30,130,.45)', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--sx-bg-14)', border: 'var(--sx-border-19)', borderRadius: '14px', boxShadow: 'var(--sx-shadow-36)', overflow: 'hidden' }}>
               <div style={{ padding: '8px 14px', display: 'flex', gap: '10px', alignItems: 'center', whiteSpace: 'nowrap' }}>
                 <span style={{ background: '#E0213B', color: '#fff', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '17px', letterSpacing: '1.5px', padding: '2px 10px', borderRadius: '4px' }}>
                   WORK STOPPAGE
@@ -171,13 +171,13 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
 
           {/* Section Indicator */}
           <div style={{ position: 'absolute', top: '16px', right: '56px', display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-            <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: '16px', letterSpacing: '3px', color: '#BAC4E2', textTransform: 'uppercase' }}>
+            <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: '16px', letterSpacing: '3px', color: 'var(--sx-text-2)', textTransform: 'uppercase' }}>
               {floorName}
             </span>
-            <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '22px', color: '#F5C518' }}>
+            <span style={{ fontFamily: "'Anton',sans-serif", fontSize: '22px', color: 'var(--sx-text-3)' }}>
               {slideNumber}
             </span>
-            <span style={{ fontSize: '15px', color: '#BAC4E2' }}>
+            <span style={{ fontSize: '15px', color: 'var(--sx-text-2)' }}>
               / 12
             </span>
           </div>
@@ -187,16 +187,16 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
         <div className="bodyw" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="cols2" style={{ display: 'flex', gap: '24px', flex: 1, minHeight: 0, alignItems: 'stretch' }}>
             {/* Panel 1: Structural Phase */}
-            <div className="colpanel" style={{ background: '#0A1140', border: '2px solid #7B4DFF', borderRadius: '14px', boxShadow: '0 0 16px rgba(123,77,255,.55),inset 0 0 26px rgba(40,30,130,.45)', overflow: 'hidden', flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', alignItems: 'stretch', height: '52px', flex: 'none', background: 'linear-gradient(90deg,#2A1D9C,#0C1448 75%)' }}>
-                <div style={{ width: '66px', flex: 'none', background: '#F5C518', clipPath: 'polygon(0 0,100% 0,74% 100%,0 100%)', display: 'flex', alignItems: 'center', paddingLeft: '16px', color: '#060A24', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px' }}>
+            <div className="colpanel" style={{ background: 'var(--sx-bg-14)', border: 'var(--sx-border-19)', borderRadius: '14px', boxShadow: 'var(--sx-shadow-36)', overflow: 'hidden', flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'stretch', height: '52px', flex: 'none', background: 'var(--sx-bg-38)' }}>
+                <div style={{ width: '66px', flex: 'none', background: 'var(--sx-bg-12)', clipPath: 'polygon(0 0,100% 0,74% 100%,0 100%)', display: 'flex', alignItems: 'center', paddingLeft: '16px', color: 'var(--sx-text-1)', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px' }}>
                   1
                 </div>
                 <div className="chd" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '6px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '25px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                   <span>STRUCTURAL</span>
-                  <span style={{ color: '#F5C518' }}>PHASE</span>
+                  <span style={{ color: 'var(--sx-text-3)' }}>PHASE</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', paddingRight: '14px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', color: '#F5C518', letterSpacing: '-4px', fontStyle: 'italic' }}>
+                <div style={{ display: 'flex', alignItems: 'center', paddingRight: '14px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', color: 'var(--sx-text-3)', letterSpacing: '-4px', fontStyle: 'italic' }}>
                   //
                 </div>
               </div>
@@ -208,7 +208,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
                 {canDelete && (
                   <div className="addbar">
                     {addingPhase === 'Structural' ? (
-                      <div className="flex flex-col gap-2 p-2 bg-[#060A24] rounded-lg border border-[#F5C518]">
+                      <div className="flex flex-col gap-2 p-2 bg-[var(--sx-bg-5)] rounded-lg border border-[var(--sx-border-4)]">
                         <input
                           className="pmi"
                           placeholder="Scope of work title"
@@ -258,16 +258,16 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
             </div>
 
             {/* Panel 2: Architectural / Finishing Phase */}
-            <div className="colpanel" style={{ background: '#0A1140', border: '2px solid #7B4DFF', borderRadius: '14px', boxShadow: '0 0 16px rgba(123,77,255,.55),inset 0 0 26px rgba(40,30,130,.45)', overflow: 'hidden', flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', alignItems: 'stretch', height: '52px', flex: 'none', background: 'linear-gradient(90deg,#2A1D9C,#0C1448 75%)' }}>
-                <div style={{ width: '66px', flex: 'none', background: '#F5C518', clipPath: 'polygon(0 0,100% 0,74% 100%,0 100%)', display: 'flex', alignItems: 'center', paddingLeft: '16px', color: '#060A24', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px' }}>
+            <div className="colpanel" style={{ background: 'var(--sx-bg-14)', border: 'var(--sx-border-19)', borderRadius: '14px', boxShadow: 'var(--sx-shadow-36)', overflow: 'hidden', flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'stretch', height: '52px', flex: 'none', background: 'var(--sx-bg-38)' }}>
+                <div style={{ width: '66px', flex: 'none', background: 'var(--sx-bg-12)', clipPath: 'polygon(0 0,100% 0,74% 100%,0 100%)', display: 'flex', alignItems: 'center', paddingLeft: '16px', color: 'var(--sx-text-1)', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px' }}>
                   2
                 </div>
                 <div className="chd" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '6px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '25px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                   <span>ARCHITECTURAL /</span>
-                  <span style={{ color: '#FF9A1F' }}>FINISHING</span>
+                  <span style={{ color: 'var(--sx-text-10)' }}>FINISHING</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', paddingRight: '14px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', color: '#F5C518', letterSpacing: '-4px', fontStyle: 'italic' }}>
+                <div style={{ display: 'flex', alignItems: 'center', paddingRight: '14px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', color: 'var(--sx-text-3)', letterSpacing: '-4px', fontStyle: 'italic' }}>
                   //
                 </div>
               </div>
@@ -279,7 +279,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
                 {canDelete && (
                   <div className="addbar">
                     {addingPhase === 'Finishing' ? (
-                      <div className="flex flex-col gap-2 p-2 bg-[#060A24] rounded-lg border border-[#F5C518]">
+                      <div className="flex flex-col gap-2 p-2 bg-[var(--sx-bg-5)] rounded-lg border border-[var(--sx-border-4)]">
                         <input
                           className="pmi"
                           placeholder="Scope of work title"
@@ -330,7 +330,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
           </div>
 
           {/* Bottom Notes */}
-          <div style={{ background: '#0A1140', border: '2px solid #7B4DFF', borderRadius: '14px', boxShadow: '0 0 16px rgba(123,77,255,.55),inset 0 0 26px rgba(40,30,130,.45)', overflow: 'hidden', flex: 'none' }}>
+          <div style={{ background: 'var(--sx-bg-14)', border: 'var(--sx-border-19)', borderRadius: '14px', boxShadow: 'var(--sx-shadow-36)', overflow: 'hidden', flex: 'none' }}>
             <div style={{ padding: '12px 18px', fontSize: '15px', lineHeight: '21px', color: '#E3E8F7' }}>
               {bottomNote}
             </div>
@@ -340,16 +340,16 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
         {/* Footer */}
         <div className="ftr" style={{ position: 'absolute', left: '340px', right: '340px', bottom: '40px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px', width: '100%' }}>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,.4)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'var(--sx-bg-32)' }} />
             <div className="wm" style={{ fontSize: '22px', letterSpacing: '9px', fontWeight: 500, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
               Convengers Bahay Build
             </div>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,.4)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'var(--sx-bg-32)' }} />
           </div>
-          <div style={{ fontSize: '12px', color: '#BAC4E2', textAlign: 'center' }}>
+          <div style={{ fontSize: '12px', color: 'var(--sx-text-2)', textAlign: 'center' }}>
             Source: project schedule. Schedule assumes Monday–Saturday work; Sundays and listed holidays excluded.
           </div>
-          <div className="ver" style={{ fontSize: '12px', fontWeight: 600, color: '#F5C518', textAlign: 'center' }}>
+          <div className="ver" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--sx-text-3)', textAlign: 'center' }}>
             Version {settings.version} · Updated {new Date(settings.updatedAt).toLocaleString()}
           </div>
         </div>
@@ -383,7 +383,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
         onDoubleClick={!canEdit ? onViewerAttemptEdit : undefined}
         style={{
           padding: '6px 0',
-          borderBottom: '1px solid rgba(123,77,255,.38)',
+          borderBottom: 'var(--sx-border-31)',
           position: 'relative',
           background: hasHits ? `${hitColor}1F` : undefined,
         }}
@@ -412,7 +412,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
               boxShadow: hasHits ? `0 0 0 3px ${hitColor}` : undefined,
             }}
           />
-          <div style={{ flex: 1, fontSize: '16px', fontWeight: 600, lineHeight: '20px', color: '#F5C518' }}>
+          <div style={{ flex: 1, fontSize: '16px', fontWeight: 600, lineHeight: '20px', color: 'var(--sx-text-3)' }}>
             <CollaborativeCell
               cellId={`scope_${scope.id}_name`}
               value={scope.name}
@@ -425,12 +425,12 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
               }}
             />
             {scope.subNote && (
-              <div style={{ fontSize: '13px', fontWeight: 400, color: '#BAC4E2', lineHeight: '17px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 400, color: 'var(--sx-text-2)', lineHeight: '17px' }}>
                 {scope.subNote}
               </div>
             )}
             {scope.updatedBy && (
-              <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#BAC4E2', opacity: 0.75, marginTop: '2px', fontWeight: 400 }}>
+              <div style={{ fontSize: '11px', fontStyle: 'italic', color: 'var(--sx-text-2)', opacity: 0.75, marginTop: '2px', fontWeight: 400 }}>
                 Last updated by {scope.updatedBy} {scope.updatedAt ? `on ${new Date(scope.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
               </div>
             )}
@@ -448,7 +448,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
               }}
             />
           </div>
-          <div className="dur" style={{ width: '92px', flex: 'none', textAlign: 'right', fontSize: '12px', color: '#BAC4E2', lineHeight: '20px' }}>
+          <div className="dur" style={{ width: '92px', flex: 'none', textAlign: 'right', fontSize: '12px', color: 'var(--sx-text-2)', lineHeight: '20px' }}>
             <CollaborativeCell
               cellId={`scope_${scope.id}_days`}
               value={`${scope.workingDays}`}
@@ -478,7 +478,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
               {remoteFocusMap[`scope_${scope.id}_pct`] && (
                 <span
                   className="absolute -top-3.5 right-0 z-20 px-1 py-0.2 text-[9px] font-bold rounded shadow pointer-events-none whitespace-nowrap"
-                  style={{ background: remoteFocusMap[`scope_${scope.id}_pct`].userColor, color: '#060A24' }}
+                  style={{ background: remoteFocusMap[`scope_${scope.id}_pct`].userColor, color: 'var(--sx-text-1)' }}
                 >
                   {remoteFocusMap[`scope_${scope.id}_pct`].userName}
                 </span>
@@ -497,7 +497,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
                   aria-label="Percent complete"
                 />
               ) : (
-                <span className="font-mono text-sm font-bold text-white mr-1.5">{scope.percentComplete}%</span>
+                <span className="font-mono text-sm font-bold text-[var(--sx-ink)] mr-1.5">{scope.percentComplete}%</span>
               )}
               <span className="chip" style={{ background: statusColor[0], color: statusColor[1] }}>
                 {statusLabel}
@@ -507,10 +507,10 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
         </div>
 
         {/* Sub-bar */}
-        <div style={{ position: 'relative', height: '5px', borderRadius: '3px', background: 'rgba(255,255,255,.09)', margin: '6px 0 0 22px' }}>
+        <div style={{ position: 'relative', height: '5px', borderRadius: '3px', background: 'var(--sx-bg-40)', margin: '6px 0 0 22px' }}>
           {/* Stoppage overlap for December scopes */}
           {scope.phase === 'Structural' && (
-            <div style={{ position: 'absolute', left: '70.37%', width: '13.89%', top: 0, bottom: 0, background: 'rgba(224,33,59,.6)' }} />
+            <div style={{ position: 'absolute', left: '70.37%', width: '13.89%', top: 0, bottom: 0, background: 'var(--ov-stop-strong)' }} />
           )}
           <div
             style={{
@@ -529,7 +529,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
               style={{
                 height: '100%',
                 width: `${scope.percentComplete}%`,
-                background: 'rgba(255,255,255,.72)',
+                background: 'var(--sx-bg-41)',
               }}
             />
           </div>

@@ -9,33 +9,42 @@ import React, { useEffect } from 'react';
 import { HealthLevel } from '../domain/metrics.ts';
 import { STATUS_COLORS } from '../constants/assets.ts';
 
+/**
+ * Convengers status language (light theme):
+ * green = completed / on track · purple = in progress · yellow = attention ·
+ * red = delayed / critical · gray = pending / not started.
+ */
 export const STATUS_HEX: Record<string, string> = {
-  Completed: '#4BE08A',
-  Ongoing: '#3A9BFF',
-  Delayed: '#E0213B',
-  Upcoming: '#8A93B8',
-  'On Hold': '#8A8FA8',
+  Completed: '#22A05A',
+  Ongoing: '#7041C8',
+  Delayed: '#D92D3F',
+  Upcoming: '#9A9AAD',
+  'On Hold': '#B5B5C5',
 };
 
 export const HEALTH_HEX: Record<HealthLevel, string> = {
-  'On Track': '#4BE08A',
-  'At Risk': '#FF9A1F',
-  Critical: '#E0213B',
+  'On Track': '#22A05A',
+  'At Risk': '#E8B800',
+  Critical: '#D92D3F',
 };
 
 export const STREAM_HEX: Record<string, string> = {
-  Construction: '#3A9BFF',
-  Production: '#FF5D8F',
-  Milestone: '#F5C518',
-  Concrete: '#FF9A1F',
+  Construction: '#3A7BEF',
+  Production: '#D9488A',
+  Milestone: '#FFC21A',
+  Concrete: '#E8862A',
 };
 
 export const PRIORITY_HEX: Record<string, string> = {
-  Critical: '#E0213B',
-  High: '#FF9A1F',
-  Medium: '#3A9BFF',
-  Low: '#8A93B8',
+  Critical: '#D92D3F',
+  High: '#E8862A',
+  Medium: '#7041C8',
+  Low: '#9A9AAD',
 };
+
+/** Readable text colour for a status/category colour (mixes toward the ink colour). */
+export const tintText = (c: string) => `color-mix(in srgb, ${c} 72%, var(--cv-ink))`;
+export const tintBg = (c: string) => `color-mix(in srgb, ${c} 13%, transparent)`;
 
 export function kindColor(kind: string, stream?: string): string {
   if (kind === 'pour') return STREAM_HEX.Concrete;
@@ -45,27 +54,40 @@ export function kindColor(kind: string, stream?: string): string {
 }
 
 export const Pill: React.FC<{ label: string; color?: string; title?: string }> = ({ label, color, title }) => {
-  const pal = STATUS_COLORS[label];
-  const bg = color ? `${color}26` : pal ? pal[0] : 'rgba(255,255,255,.12)';
-  const fg = color || (pal ? (pal[0].startsWith('rgba') ? pal[1] : pal[0]) : '#DCE3F7');
-  const border = color || (pal ? pal[2] : 'rgba(255,255,255,.3)');
+  const pal = !color ? STATUS_COLORS[label] : undefined;
+  if (pal) {
+    return (
+      <span className="cv-pill" style={{ background: pal[0], color: pal[1], borderColor: pal[2] }} title={title}>
+        {label}
+      </span>
+    );
+  }
+  const c = color || '#9A9AAD';
   return (
-    <span className="cv-pill" style={{ background: bg, color: fg, borderColor: border }} title={title}>
+    <span className="cv-pill" style={{ background: tintBg(c), color: tintText(c), borderColor: `color-mix(in srgb, ${c} 45%, transparent)` }} title={title}>
       {label}
     </span>
   );
 };
 
-export const StatusPill: React.FC<{ status: string }> = ({ status }) => <Pill label={status} color={STATUS_HEX[status]} />;
+export const StatusPill: React.FC<{ status: string }> = ({ status }) => {
+  const c = STATUS_HEX[status] || '#9A9AAD';
+  const solid = status === 'Delayed' || status === 'Completed' || status === 'Ongoing';
+  return (
+    <span className="cv-pill" style={solid ? { background: c, color: '#fff', borderColor: c } : { background: tintBg(c), color: tintText(c), borderColor: `color-mix(in srgb, ${c} 45%, transparent)` }}>
+      {status}
+    </span>
+  );
+};
 
 export const HealthBadge: React.FC<{ level: HealthLevel; big?: boolean }> = ({ level, big }) => (
   <span
     className="cv-health"
     style={{
-      color: HEALTH_HEX[level],
-      border: `2px solid ${HEALTH_HEX[level]}`,
-      background: `${HEALTH_HEX[level]}1f`,
-      fontSize: big ? 18 : undefined,
+      color: level === 'At Risk' ? '#252336' : '#FFFFFF',
+      border: `1px solid ${level === 'At Risk' ? '#FFD43B' : HEALTH_HEX[level]}`,
+      background: level === 'At Risk' ? '#FFD43B' : HEALTH_HEX[level],
+      fontSize: big ? 16 : undefined,
     }}
     aria-label={`Project health: ${level}`}
   >
@@ -279,8 +301,8 @@ export const LineChart: React.FC<{ series: Series[]; height?: number; yMax?: num
       )}
       {markIdx >= 0 && (
         <g>
-          <line x1={xPos(xs[markIdx])} x2={xPos(xs[markIdx])} y1={T} y2={H - B} stroke="#F5C518" strokeWidth={2} strokeDasharray="4 3" />
-          <text x={xPos(xs[markIdx]) + 4} y={T + 10} style={{ fill: '#F5C518' }}>
+          <line x1={xPos(xs[markIdx])} x2={xPos(xs[markIdx])} y1={T} y2={H - B} stroke="#FFC21A" strokeWidth={2} strokeDasharray="4 3" />
+          <text x={xPos(xs[markIdx]) + 4} y={T + 10} style={{ fill: 'var(--cv-accent)' }}>
             Today
           </text>
         </g>
@@ -331,7 +353,7 @@ export const BarChart: React.FC<{ bars: { label: string; value: number; color?: 
         const y = b.value >= 0 ? zeroY - h : zeroY;
         return (
           <g key={b.label + i}>
-            <rect x={x} y={y} width={bw} height={Math.max(1, h)} rx={3} fill={b.color || (b.value < 0 ? '#E0213B' : '#F5C518')}>
+            <rect x={x} y={y} width={bw} height={Math.max(1, h)} rx={3} fill={b.color || (b.value < 0 ? '#D92D3F' : '#7041C8')}>
               <title>{b.title || `${b.label}: ${b.value}${unit}`}</title>
             </rect>
             <text x={x + bw / 2} y={b.value >= 0 ? y - 4 : y + h + 12} textAnchor="middle" style={{ fill: 'currentColor' }}>

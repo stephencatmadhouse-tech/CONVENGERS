@@ -12,7 +12,7 @@ import { fmtDate } from '../domain/dates.ts';
 import { Card, Banner, Empty, ConfirmDialog, Pill } from './ui.tsx';
 
 export const Settings: React.FC = () => {
-  const { data, register, actions, isManager, isAdmin, canEdit, sharedStorage, snapshots, reports, issues, today, isLive, user } = useCommand();
+  const { data, register, actions, isManager, isAdmin, canEdit, sharedStorage, snapshots, reports, issues, today, isLive, user, uiTheme } = useCommand();
   const fileRef = useRef<HTMLInputElement>(null);
   const [confirmFreeze, setConfirmFreeze] = useState(false);
   const findings = useMemo(
@@ -36,7 +36,7 @@ export const Settings: React.FC = () => {
                   have read-only access. Writes are enforced by Firestore security rules by role (Admin / Manager / Staff).
                 </div>
               </div>
-              <Pill label="Shared" color="#4BE08A" />
+              <Pill label="Shared" color="#22A05A" />
             </div>
             {(['reports', 'issues', 'snapshots'] as const).map((k) => (
               <div className="cv-li" key={k}>
@@ -48,7 +48,7 @@ export const Settings: React.FC = () => {
                       : 'Shared collection not reachable (the updated firestore.rules have not been deployed, or the device is offline). New records are kept in this browser only and are flagged “this device only”.'}
                   </div>
                 </div>
-                <Pill label={sharedStorage[k] ? 'Shared' : 'This device only'} color={sharedStorage[k] ? '#4BE08A' : '#FF9A1F'} />
+                <Pill label={sharedStorage[k] ? 'Shared' : 'This device only'} color={sharedStorage[k] ? '#22A05A' : '#E8862A'} />
               </div>
             ))}
             <div className="cv-li">
@@ -56,7 +56,7 @@ export const Settings: React.FC = () => {
                 <div className="cv-li-t">Live presence & typing indicators</div>
                 <div className="cv-li-s">WebSocket presence server (server.ts). Only available when the app is served by the Node server, not on static hosting.</div>
               </div>
-              <Pill label={isLive ? 'Connected' : 'Not connected'} color={isLive ? '#4BE08A' : '#8A93B8'} />
+              <Pill label={isLive ? 'Connected' : 'Not connected'} color={isLive ? '#22A05A' : '#9A9AAD'} />
             </div>
           </div>
           {localCount > 0 && (
@@ -97,7 +97,7 @@ export const Settings: React.FC = () => {
                 Theme
               </span>
               <button type="button" className="cv-btn sm" onClick={actions.toggleTheme}>
-                {data.settings.theme.charAt(0).toUpperCase() + data.settings.theme.slice(1)} — change
+                {uiTheme === 'light' ? 'Light (standard)' : 'Dark (this device)'} — switch
               </button>
             </div>
             <label className="cv-row">
@@ -199,7 +199,7 @@ export const Settings: React.FC = () => {
                 {findings.map((f, i) => (
                   <tr key={i} className={f.refId ? 'clickable' : ''} onClick={() => f.refId && actions.openActivity(f.refId)}>
                     <td>
-                      <Pill label={f.severity} color={f.severity === 'error' ? '#E0213B' : f.severity === 'warning' ? '#FF9A1F' : '#3A9BFF'} />
+                      <Pill label={f.severity} color={f.severity === 'error' ? '#D92D3F' : f.severity === 'warning' ? '#E8862A' : '#3A7BEF'} />
                     </td>
                     <td className="nowrap">{f.area}</td>
                     <td>{f.message}</td>
