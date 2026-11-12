@@ -43,6 +43,7 @@ export class FirebaseAuthService {
   private unsubscribeUserDoc: (() => void) | null = null;
   private pendingDisplayName: string | null = null;
   private ensureUserDocPromises = new Map<string, Promise<User>>();
+  private ready = false;
 
   constructor() {
     this.initAuth();
@@ -135,6 +136,7 @@ export class FirebaseAuthService {
 
       if (!fbUser) {
         this.currentUser = getViewerUser();
+        this.ready = true;
         this.notify(this.currentUser);
         return;
       }
@@ -143,6 +145,7 @@ export class FirebaseAuthService {
       const userRef = doc(db, 'users', uid);
 
       this.currentUser = await this.syncUserFromFirebase(fbUser);
+      this.ready = true;
       this.notify(this.currentUser);
 
       // Real-time listener: immediately update UI without reload if role or status changes
@@ -168,6 +171,11 @@ export class FirebaseAuthService {
         console.warn(`User profile snapshot notice for users/${uid}:`, error?.message || error);
       });
     });
+  }
+
+  /** True once Firebase has reported the initial sign-in state. */
+  public isReady(): boolean {
+    return this.ready;
   }
 
   public getCurrentUser(): User {

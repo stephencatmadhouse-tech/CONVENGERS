@@ -12,6 +12,11 @@ import { Card, Kpi, HealthBadge, StatusPill, ProgressBar, Empty, Pill, pct, kind
 import { addDays, diffDays, fmtDate, fmtRange } from '../domain/dates.ts';
 import { ALIGNMENT_COLORS, alignmentSummary } from '../domain/alignment.ts';
 import { fmtVar } from '../domain/reports.ts';
+import { buildOutlook } from '../domain/attention.ts';
+import { monthRange } from '../domain/dates.ts';
+import { procurementStore, documentStore, publicationStore } from '../firebase/opsStores.ts';
+import { useStore } from '../firebase/useStore.ts';
+import { isDeliveryLate } from './Operations.tsx';
 
 export const CommandCenter: React.FC = () => {
   const { register, metrics, alignment, attention, today, actions, issues, isLive, sharedStorage, snapshots } = useCommand();
@@ -391,6 +396,96 @@ export const CommandCenter: React.FC = () => {
           )}
         </Card>
       </div>
+      <OperationsPulse />
+    </div>
+  );
+};
+
+/** Priorities, blockers and recent updates across all modules. */
+const OperationsPulse: React.FC = () => {
+  const { register, alignment, today, actions } = useCommand();
+  const procurement = useStore(procurementStore);
+  const docs = useStore(documentStore);
+  const pubs = useStore(publicationStore);
+  const lateDeliveries = procurement.items.filter((p) => !p.archived && isDeliveryLate(p, today));
+  const weekEnd = addDays(today, 7);
+  const monthEnd = monthRange(today).end;
+  const atRiskWeek = useMemo(() => buildOutlook(register, alignment, today, weekEnd, today).filter((o) => o.outlook === 'At risk'), [register, alignment, today, weekEnd]);
+  const monthMilestones = register.filter((r) => (r.kind === 'milestone' || r.kind === 'pour') && r.status !== 'Completed' && r.finish && r.finish >= today && r.finish <= monthEnd);
+  const recent = useMemo(() => {
+    const out: { at: string; title: string; detail: string; go: () => void }[] = [];
+    register.forEach((r) => r.lastUpdated && out.push({ at: r.lastUpdated, title: r.name, detail: `${r.workstream} · ${r.status}${r.updatedBy ? ` · ${r.updatedBy}` : ''}`, go: () => actions.openActivity(r.id) }));
+    procurement.items.forEach((p) => out.push({ at: p.updatedAt, title: `Procurement: ${p.material}`, detail: `${p.status} · ${p.updatedBy}`, go: () => actions.navigate('procurement') }));
+    docs.items.forEach((d) => out.push({ at: d.updatedAt, title: `Document: ${d.title}`, detail: `${d.category} · ${d.updatedBy}`, go: () => actions.navigate('documents') }));
+    pubs.items.forEach((p) => out.push({ at: p.updatedAt, title: `Portal: ${p.title}`, detail: `${p.status} · ${p.updatedBy}`, go: () => actions.navigate('publishing') }));
+    return out.filter((x) => x.at).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 8);
+  }, [register, procurement.items, docs.items, pubs.items, actions]);
+
+  return (
+    <div className="cv-grid cv-g3">
+      <Card title="Blockers — deliveries" note="Material deliveries past their expected or required date" actions={<button type="button" className="cv-btn sm" onClick={() => actions.navigate('procurement')}>Procurement</button>}>
+        {lateDeliveries.length ? (
+          <div className="cv-list">
+            {lateDeliveries.slice(0, 6).map((p) => (
+              <div key={p.id} className="cv-li">
+                <span className="cv-sev" style={{ background: '#E5484D' }} />
+                <div className="cv-li-main">
+                  <div className="cv-li-t">{p.material}</div>
+                  <div className="cv-li-s">
+                    {p.supplier || 'Supplier not yet provided'} · due {fmtDate(p.expectedDelivery || p.requiredDate)}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Empty>{procurement.items.length ? 'No delayed deliveries.' : 'No procurement records yet.'}</Empty>
+        )}
+      </Card>
+      <Card title="Priorities" note="At-risk work this week · milestones this month">
+        {atRiskWeek.length || monthMilestones.length ? (
+          <div className="cv-list">
+            {atRiskWeek.slice(0, 4).map((o) => (
+              <button key={o.activity.id} type="button" className="cv-li clickable" style={{ textAlign: 'left', color: 'inherit' }} onClick={() => actions.openActivity(o.activity.id)}>
+                <span className="cv-sev" style={{ background: '#F5A623' }} />
+                <div className="cv-li-main">
+                  <div className="cv-li-t">{o.activity.name}</div>
+                  <div className="cv-li-s">This week · {o.reasons.join(' · ')}</div>
+                </div>
+              </button>
+            ))}
+            {monthMilestones.slice(0, 4).map((r) => (
+              <button key={r.id} type="button" className="cv-li clickable" style={{ textAlign: 'left', color: 'inherit' }} onClick={() => actions.openActivity(r.id)}>
+                <span className="cv-sev" style={{ background: '#7026C8' }} />
+                <div className="cv-li-main">
+                  <div className="cv-li-t">{r.name}</div>
+                  <div className="cv-li-s">This month · due {fmtDate(r.finish)}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <Empty>No at-risk work this week and no milestones due this month.</Empty>
+        )}
+      </Card>
+      <Card title="Recent updates" note="Latest changes across modules">
+        {recent.length ? (
+          <div className="cv-list">
+            {recent.map((x, i) => (
+              <button key={i} type="button" className="cv-li clickable" style={{ textAlign: 'left', color: 'inherit' }} onClick={x.go}>
+                <div className="cv-li-main">
+                  <div className="cv-li-t">{x.title}</div>
+                  <div className="cv-li-s">
+                    {fmtDate(x.at.slice(0, 10))} · {x.detail}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <Empty>No recorded updates yet.</Empty>
+        )}
+      </Card>
     </div>
   );
 };

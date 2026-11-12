@@ -31,6 +31,7 @@ export interface ActivityPatch {
   actualFinish?: string;
   owner?: string;
   supporting?: string;
+  department?: string;
   priority?: ActivityOverride['priority'];
   commitment?: ActivityOverride['commitment'];
   dependsOn?: string[];
@@ -50,6 +51,7 @@ export interface CommandActions {
   saveIssue: (i: ProjectIssue) => Promise<void>;
   deleteIssue: (id: string) => Promise<void>;
   saveReport: (r: ProjectReport) => Promise<void>;
+  setReportPublishing: (id: string, to: 'published' | 'archived') => Promise<void>;
   deleteReport: (id: string) => Promise<void>;
   captureSnapshot: (manual?: boolean) => Promise<void>;
   freezeBaseline: () => Promise<void>;

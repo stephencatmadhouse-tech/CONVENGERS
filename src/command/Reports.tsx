@@ -50,7 +50,7 @@ export function reportTitle(type: ReportType, periodStart: string, periodEnd: st
 }
 
 export const ReportsPage: React.FC<{ type: ReportType }> = ({ type }) => {
-  const { register, data, issues, snapshots, reports, today, actions, isManager, user, route, sharedStorage } = useCommand();
+  const { register, data, issues, snapshots, reports, today, actions, isManager, canEdit, user, route, sharedStorage } = useCommand();
   const params = parseParams(route.param);
   const [anchor, setAnchor] = useState(() => {
     if (params.id) return params.id.replace(/^W-/, '').replace(/^M-/, '') + (params.id.startsWith('M-') ? '-01' : '');
@@ -64,7 +64,8 @@ export const ReportsPage: React.FC<{ type: ReportType }> = ({ type }) => {
   const id = type === 'weekly' ? weeklyReportId(anchor) : monthlyReportId(anchor);
   const range = type === 'weekly' ? weekRange(anchor) : monthRange(anchor);
   const saved = reports.find((r) => r.id === id);
-  const approved = saved?.status === 'approved';
+  // Approved, published and archived reports are frozen
+  const approved = !!saved && ['approved', 'published', 'archived'].includes(saved.status);
 
   const live = useMemo<ReportContent>(
     () =>
@@ -78,6 +79,7 @@ export const ReportsPage: React.FC<{ type: ReportType }> = ({ type }) => {
   const [narrative, setNarrative] = useState<ReportNarrative>(saved?.narrative || {});
   const [dirty, setDirty] = useState(false);
   const [confirmApprove, setConfirmApprove] = useState(false);
+  const [confirmPublish, setConfirmPublish] = useState<null | 'published' | 'archived'>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     setNarrative(saved?.narrative || {});
@@ -86,7 +88,7 @@ export const ReportsPage: React.FC<{ type: ReportType }> = ({ type }) => {
 
   const fields = type === 'weekly' ? WEEKLY_FIELDS : MONTHLY_FIELDS;
   const title = reportTitle(type, range.start, range.end);
-  const editable = isManager && !approved;
+  const editable = canEdit && !approved;
 
   const shift = (n: number) => {
     if (type === 'weekly') setAnchor(addDays(range.start, 7 * n));
@@ -96,7 +98,7 @@ export const ReportsPage: React.FC<{ type: ReportType }> = ({ type }) => {
     }
   };
 
-  const buildRecord = (status: 'draft' | 'approved'): ProjectReport => {
+  const buildRecord = (status: 'draft' | 'review' | 'approved'): ProjectReport => {
     const now = new Date().toISOString();
     return {
       id,
@@ -116,11 +118,17 @@ export const ReportsPage: React.FC<{ type: ReportType }> = ({ type }) => {
     };
   };
 
-  const saveDraft = async () => {
+  const saveDraft = async (status: 'draft' | 'review' = 'draft') => {
     setBusy(true);
-    await actions.saveReport(buildRecord('draft'));
+    await actions.saveReport(buildRecord(status));
     setBusy(false);
     setDirty(false);
+  };
+  const changePublishing = async (to: 'published' | 'archived') => {
+    setConfirmPublish(null);
+    setBusy(true);
+    await actions.setReportPublishing(id, to);
+    setBusy(false);
   };
   const approve = async () => {
     setConfirmApprove(false);
@@ -186,6 +194,22 @@ export const ReportsPage: React.FC<{ type: ReportType }> = ({ type }) => {
         <Banner kind="ok">
           Approved by {saved!.approvedBy} on {fmtDate(saved!.approvedAt!.slice(0, 10))}. This report is locked: its figures were frozen at approval and will
           not change when the master schedule is updated.
+          {saved!.status === 'published' && ` Published to the client portal by ${saved!.publishedBy} on ${fmtDate(saved!.publishedAt!.slice(0, 10))} (client-safe version: no owners, internal notes, issues or production details).`}
+          {saved!.status === 'archived' && ' Archived — not visible on the client portal.'}
+          {isManager && (
+            <span className="cv-row" style={{ marginTop: 8 }}>
+              {saved!.status !== 'published' && (
+                <button type="button" className="cv-btn sm primary" disabled={busy} onClick={() => setConfirmPublish('published')}>
+                  Publish to client portal
+                </button>
+              )}
+              {saved!.status !== 'archived' && (
+                <button type="button" className="cv-btn sm" disabled={busy} onClick={() => setConfirmPublish('archived')}>
+                  {saved!.status === 'published' ? 'Unpublish & archive' : 'Archive'}
+                </button>
+              )}
+            </span>
+          )}
         </Banner>
       ) : (
         <Banner kind="info">
@@ -222,18 +246,52 @@ export const ReportsPage: React.FC<{ type: ReportType }> = ({ type }) => {
               ))}
             </div>
             <div className="cv-row" style={{ marginTop: 12 }}>
-              <button type="button" className="cv-btn" disabled={busy || (!dirty && !!saved)} onClick={saveDraft}>
-                {busy ? 'Saving…' : saved ? 'Save draft' : 'Generate & save draft'}
+              <button type="button" className="cv-btn" disabled={busy || (!dirty && !!saved)} onClick={() => saveDraft(saved?.status === 'review' ? 'review' : 'draft')}>
+                {busy ? 'Saving…' : saved ? 'Save' : 'Generate & save draft'}
               </button>
-              <button type="button" className="cv-btn primary" disabled={busy} onClick={() => setConfirmApprove(true)}>
-                Approve & lock
-              </button>
+              {saved?.status !== 'review' && (
+                <button type="button" className="cv-btn" disabled={busy} onClick={() => saveDraft('review')}>
+                  Submit for review
+                </button>
+              )}
+              {isManager && saved?.status === 'review' && (
+                <button type="button" className="cv-btn" disabled={busy} onClick={() => saveDraft('draft')}>
+                  Return to draft
+                </button>
+              )}
+              {isManager && (
+                <button type="button" className="cv-btn primary" disabled={busy} onClick={() => setConfirmApprove(true)}>
+                  Approve & lock
+                </button>
+              )}
+            </div>
+            <div className="cv-dim" style={{ marginTop: 6 }}>
+              Workflow: Draft → For Review → Approved (locked) → Published to client portal → Archived. {isManager ? '' : 'Approval and publishing are done by a Project Manager.'}
             </div>
             {dirty && <div className="cv-dim" style={{ marginTop: 6 }}>Unsaved narrative changes.</div>}
           </div>
         )}
       </div>
-      {!isManager && !approved && <div className="cv-dim" style={{ marginTop: 8 }}>Only Managers and Admins can edit or approve reports.</div>}
+      {!canEdit && !approved && <div className="cv-dim" style={{ marginTop: 8 }}>Read-only access.</div>}
+      {confirmPublish && (
+        <ConfirmDialog
+          title={confirmPublish === 'published' ? 'Publish to the client portal?' : 'Archive this report?'}
+          message={
+            confirmPublish === 'published' ? (
+              <>
+                A client-safe copy of <b>{title}</b> will appear on the Executive &amp; Client Portal: executive summary, construction narrative, progress figures,
+                completed / ongoing / upcoming construction activities and milestones. Responsible persons, internal notes, issues, corrective actions and
+                production details are <b>not</b> published.
+              </>
+            ) : (
+              'The report stays locked in the internal archive and is removed from the client portal.'
+            )
+          }
+          confirmLabel={confirmPublish === 'published' ? 'Publish' : 'Archive'}
+          onConfirm={() => changePublishing(confirmPublish)}
+          onCancel={() => setConfirmPublish(null)}
+        />
+      )}
       {confirmApprove && (
         <ConfirmDialog
           title="Approve and lock this report?"
@@ -259,13 +317,19 @@ export const ReportsPage: React.FC<{ type: ReportType }> = ({ type }) => {
 
 export const ReportStatusStamp: React.FC<{ report?: ProjectReport }> = ({ report }) => {
   if (!report) return <span className="cv-stamp" style={{ color: '#9A9AA3', borderColor: '#9A9AA3' }}>Not generated</span>;
-  if (report.status === 'approved')
-    return (
-      <span className="cv-stamp" style={{ color: '#22A06B', borderColor: '#22A06B' }}>
-        🔒 Approved
-      </span>
-    );
-  return <span className="cv-stamp" style={{ color: '#8A5300', borderColor: '#F5A623', background: '#FFF4E2' }}>Draft</span>;
+  const map: Record<string, [string, string, string]> = {
+    draft: ['Draft', '#8A5300', '#F5A623'],
+    review: ['For Review', '#8A5300', '#F5A623'],
+    approved: ['🔒 Approved', '#1E8E5E', '#22A06B'],
+    published: ['🔒 Published', '#7026C8', '#7026C8'],
+    archived: ['🔒 Archived', '#777777', '#C7C7D0'],
+  };
+  const [label, fg, bd] = map[report.status] || map.draft;
+  return (
+    <span className="cv-stamp" style={{ color: fg, borderColor: bd, background: '#FFFFFF' }}>
+      {label}
+    </span>
+  );
 };
 
 // ---------- Report document (screen & print) ----------
@@ -374,7 +438,7 @@ export const ReportDocument: React.FC<{ content: ReportContent; narrative: Repor
         </div>
         <div className="cv-dim">
           Period {fmtRange(c.periodStart, c.periodEnd)} · Generated {fmtDate(c.generatedAt.slice(0, 10))}
-          {report?.status === 'approved' ? ` · Approved by ${report.approvedBy} on ${fmtDate(report.approvedAt!.slice(0, 10))}` : report ? ' · DRAFT' : ' · DRAFT (not saved)'}
+          {report?.approvedAt ? ` · Approved by ${report.approvedBy} on ${fmtDate(report.approvedAt.slice(0, 10))}` : report ? ` · ${report.status === 'review' ? 'FOR REVIEW' : 'DRAFT'}` : ' · DRAFT (not saved)'}
         </div>
       </div>
       <HealthBadge level={c.metrics.health} />

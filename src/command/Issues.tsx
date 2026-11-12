@@ -7,7 +7,10 @@
 
 import React, { useMemo, useState } from 'react';
 import { useCommand } from './context.tsx';
-import { ProjectIssue, IssueSeverity, IssueStatus, IssueType } from '../types/index.ts';
+import { ProjectIssue, IssueSeverity, IssueStatus, IssueType, Publication } from '../types/index.ts';
+import { publicationStore } from '../firebase/opsStores.ts';
+import { newId } from '../firebase/collectionStore.ts';
+import { firestoreData } from '../firebase/firestoreData.ts';
 import { ownerAccountability, AttentionCategory } from '../domain/attention.ts';
 import { fmtDate, todayIso } from '../domain/dates.ts';
 import { Card, Empty, Modal, Field, Banner, Pill, ConfirmDialog, Kpi } from './ui.tsx';
@@ -211,7 +214,28 @@ export const IssueLog: React.FC = () => {
 };
 
 const IssueEditor: React.FC<{ issue: ProjectIssue; onClose: () => void; canDelete: boolean }> = ({ issue, onClose, canDelete }) => {
-  const { actions, canEdit, register, user } = useCommand();
+  const { actions, canEdit, register, user, isManager } = useCommand();
+  const prepareConsideration = async () => {
+    const now = new Date().toISOString();
+    const pub: Publication = {
+      id: newId('CON'),
+      kind: 'consideration',
+      title: f.title,
+      status: 'draft',
+      sourceId: f.id,
+      // Starts from the issue title only — the client-facing text is written by the team before review.
+      payload: { text: '', date: now.slice(0, 10), category: f.type === 'Risk' ? 'Risk' : 'Schedule', impact: '' },
+      history: [{ at: now, by: user.name, to: 'draft', note: `Prepared from internal ${f.type.toLowerCase()} ${f.id}` }],
+      createdAt: now,
+      createdBy: user.name,
+      updatedAt: now,
+      updatedBy: user.name,
+    };
+    const res = await publicationStore.put(pub);
+    await firestoreData.logAudit(user, 'PREPARE_PUBLICATION', 'Publication', pub.id, `From issue ${f.id}`);
+    actions.toast(res === 'shared' ? 'Draft consideration created — write the client-facing text, then submit for review' : 'Draft saved on this device only');
+    actions.navigate('publishing/considerations');
+  };
   const [f, setF] = useState<ProjectIssue>(issue);
   const [busy, setBusy] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
@@ -244,6 +268,11 @@ const IssueEditor: React.FC<{ issue: ProjectIssue; onClose: () => void; canDelet
       width={720}
       footer={
         <>
+          {isManager && !isNew && (
+            <button type="button" className="cv-btn" style={{ marginRight: canDelete ? 0 : 'auto' }} onClick={prepareConsideration} title="Create a draft client-facing consideration (internal details are not copied)">
+              Prepare client-safe consideration
+            </button>
+          )}
           {canDelete && !isNew && (
             <button type="button" className="cv-btn danger" style={{ marginRight: 'auto' }} onClick={() => setConfirmDel(true)}>
               Delete

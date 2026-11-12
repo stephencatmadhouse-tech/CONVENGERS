@@ -167,3 +167,60 @@ test('date helpers and scope date text round-trip', () => {
   assert.equal(curve[0].planned >= 0, true);
   assert.equal(curve[curve.length - 1].planned, 100);
 });
+
+// ---------------- Portal publishing & sanitization ----------------
+import { buildPortalSnapshot, sanitizeReport, canTransition, nextTransitions, transitionPublication } from './portal.ts';
+import { audienceOf } from '../auth/roles.ts';
+
+test('portal snapshot contains construction data only and no internal fields', () => {
+  const reg = buildRegister(input, TODAY);
+  const m = computeMetrics(reg, INITIAL_MILESTONES, TODAY);
+  const snap = buildPortalSnapshot(reg, INITIAL_MILESTONES, m, TODAY);
+  const json = JSON.stringify(snap);
+  // No responsible persons, remarks or episode/production content
+  assert.ok(!json.includes('Engr. Richard'), 'owner names must not be published');
+  assert.ok(!json.includes('Direk'), 'production directors must not be published');
+  assert.ok(!/"owner"|"remarks"|"concern"|"correctiveAction"|"supporting"/.test(json));
+  assert.ok(!snap.ongoing.concat(snap.upcoming, snap.completed).some((i) => /^Ep \d|B-ROLLS/.test(i.name)));
+  assert.equal(snap.actualPct, m.actualPct);
+  assert.equal(snap.milestones.length, INITIAL_MILESTONES.length);
+  assert.ok(snap.milestones.every((x) => ['Confirmed', 'Tentative', 'Target'].includes(x.commitment)));
+});
+
+test('only approved (frozen) reports can be sanitized for the portal, and owners/issues are stripped', () => {
+  const reg = buildRegister(input, TODAY);
+  const content = buildMonthlyContent(reg, INITIAL_MILESTONES, [], [], [], TODAY, TODAY);
+  const base = { id: 'M-2026-11', type: 'monthly' as const, periodStart: content.periodStart, periodEnd: content.periodEnd, title: 'Monthly', narrative: { executiveSummary: 'Summary', recommendations: 'INTERNAL RECO', issues: 'INTERNAL ISSUE' }, createdAt: '', createdBy: '', updatedAt: '', updatedBy: '' };
+  assert.throws(() => sanitizeReport({ ...base, status: 'draft' }));
+  const pub = sanitizeReport({ ...base, status: 'approved', frozen: content });
+  const json = JSON.stringify(pub);
+  assert.ok(!json.includes('Engr. Richard'));
+  assert.ok(!json.includes('INTERNAL RECO') && !json.includes('INTERNAL ISSUE'));
+  assert.ok(!json.includes('Direk'));
+  assert.equal(pub.executiveSummary, 'Summary');
+});
+
+test('publishing workflow enforces roles and order', () => {
+  assert.ok(canTransition('draft', 'review', 'engineer'));
+  assert.ok(!canTransition('review', 'approved', 'engineer'));
+  assert.ok(canTransition('review', 'approved', 'manager'));
+  assert.ok(!canTransition('draft', 'published', 'admin'), 'cannot skip review/approval');
+  assert.ok(canTransition('approved', 'published', 'admin'));
+  assert.ok(!canTransition('approved', 'published', 'client'));
+  assert.deepEqual(nextTransitions('published').map((t) => t.to), ['archived']);
+  const p = transitionPublication({ id: 'X', kind: 'update', title: 't', status: 'draft', payload: {}, history: [], createdAt: '', createdBy: '', updatedAt: '', updatedBy: '' }, 'review', 'Ana');
+  assert.equal(p.status, 'review');
+  assert.equal(p.history[0].from, 'draft');
+  assert.equal(p.history[0].by, 'Ana');
+});
+
+test('role routing: guests, pending, internal and external audiences', () => {
+  const u = (role: any, status: any = 'active', id = 'u1') => ({ id, name: 'x', email: 'x', role, status, createdAt: '' });
+  assert.equal(audienceOf(u('viewer', 'active', 'viewer_guest')), 'guest');
+  assert.equal(audienceOf(u('pending', 'pending')), 'pending');
+  assert.equal(audienceOf(u('client', 'revoked')), 'pending');
+  assert.equal(audienceOf(u('engineer')), 'internal');
+  assert.equal(audienceOf(u('viewer')), 'internal');
+  assert.equal(audienceOf(u('owner')), 'external');
+  assert.equal(audienceOf(u('executive')), 'external');
+});

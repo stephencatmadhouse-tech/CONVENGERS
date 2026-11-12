@@ -65,11 +65,27 @@ service cloud.firestore {
       );
     }
 
+    // Staff level = authorized internal team that may edit operational records
     function isStaff() {
       return isSignedIn() && (
         isManager() ||
-        (getUserRole() == 'staff' && getUserStatus() == 'active')
+        (getUserRole() in ['staff', 'engineer', 'production'] && getUserStatus() == 'active')
       );
+    }
+
+    // INTERNAL = any active internal role (incl. internal read-only viewers)
+    function isInternal() {
+      return isSignedIn() && (
+        isStaff() ||
+        (getUserRole() == 'viewer' && getUserStatus() == 'active')
+      );
+    }
+
+    // EXTERNAL = Executive & Client Portal roles. They can read ONLY the
+    // `portal` collection (sanitized, published content) and their own profile.
+    function isExternal() {
+      return isSignedIn() && getUserStatus() == 'active' &&
+        getUserRole() in ['owner', 'executive', 'client', 'stakeholder'];
     }
 
     // --- USERS COLLECTION ---
@@ -91,7 +107,8 @@ service cloud.firestore {
       // Role changes: Only admin can update users, and a user can NEVER change their own role.
       allow update: if isAdmin() && request.auth.uid != userId && (
         (!incoming().diff(existing()).affectedKeys().hasAny(['role']) ||
-         incoming().role in ['admin', 'manager', 'staff', 'viewer', 'pending'])
+         incoming().role in ['admin', 'manager', 'engineer', 'production', 'staff', 'viewer',
+                             'owner', 'executive', 'client', 'stakeholder', 'pending'])
       );
 
       // Deletion: Only admin can delete a user, cannot delete self.
@@ -103,7 +120,7 @@ service cloud.firestore {
     // Only admin can delete; admin and manager can create/update all fields.
     // Staff can only update status, updatedAt, updatedBy, and notes.
     match /milestones/{milestoneId} {
-      allow read: if true;
+      allow read: if isInternal();
       allow create: if isManager();
       allow delete: if isAdmin();
       allow update: if isManager() || (
@@ -114,7 +131,7 @@ service cloud.firestore {
 
     // --- SCOPES ---
     match /scopes/{scopeId} {
-      allow read: if true;
+      allow read: if isInternal();
       allow create: if isManager();
       allow delete: if isAdmin();
       allow update: if isManager() || (
@@ -128,7 +145,7 @@ service cloud.firestore {
 
     // --- CONCRETE POURS ---
     match /pours/{pourId} {
-      allow read: if true;
+      allow read: if isInternal();
       allow create: if isManager();
       allow delete: if isAdmin();
       allow update: if isManager() || (
@@ -139,7 +156,7 @@ service cloud.firestore {
 
     // --- PRODUCTION EPISODES ---
     match /episodes/{episodeId} {
-      allow read: if true;
+      allow read: if isInternal();
       allow create: if isManager();
       allow delete: if isAdmin();
       allow update: if isManager() || (
@@ -150,7 +167,7 @@ service cloud.firestore {
 
     // --- ACTIVITIES ---
     match /activities/{activityId} {
-      allow read: if true;
+      allow read: if isInternal();
       allow create: if isManager();
       allow delete: if isAdmin();
       allow update: if isManager() || (
@@ -161,20 +178,20 @@ service cloud.firestore {
 
     // --- CHARACTERS ---
     match /characters/{characterId} {
-      allow read: if true;
+      allow read: if isInternal();
       allow create, update: if isManager();
       allow delete: if isAdmin();
     }
 
     // --- OVERRIDES ---
     match /overrides/{overrideKey} {
-      allow read: if true;
+      allow read: if isInternal();
       allow write: if isStaff();
     }
 
     // --- SETTINGS ---
     match /settings/{settingsId} {
-      allow read: if true;
+      allow read: if isInternal();
       allow write: if isManager();
     }
 
@@ -183,19 +200,24 @@ service cloud.firestore {
     // locked: it can no longer be updated or deleted, so historical reports
     // cannot be changed silently.
     match /reports/{reportId} {
-      allow read: if true;
-      allow create: if isManager() && isValidId(reportId) && incoming().id == reportId
+      allow read: if isInternal();
+      allow create: if isStaff() && isValidId(reportId) && incoming().id == reportId
         && incoming().type in ['weekly', 'monthly']
-        && incoming().status in ['draft', 'approved'];
-      allow update: if isManager() && existing().status != 'approved'
+        && incoming().status in ['draft', 'review'];
+      // Drafts / reports under review: staff may edit and submit; only managers approve.
+      allow update: if isStaff() && existing().status in ['draft', 'review']
         && incoming().id == existing().id && incoming().type == existing().type
-        && incoming().status in ['draft', 'approved'];
-      allow delete: if isAdmin() && existing().status != 'approved';
+        && (incoming().status in ['draft', 'review'] || (isManager() && incoming().status == 'approved'));
+      // Approved / published reports are frozen: only the publishing status may change.
+      allow update: if isManager() && existing().status in ['approved', 'published', 'archived']
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'publishedAt', 'publishedBy', 'archivedAt', 'archivedBy', 'updatedAt', 'updatedBy'])
+        && incoming().status in ['approved', 'published', 'archived'];
+      allow delete: if isAdmin() && existing().status in ['draft', 'review'];
     }
 
     // --- COMMAND CENTER: ISSUES, RISKS & DECISIONS LOG ---
     match /issues/{issueId} {
-      allow read: if true;
+      allow read: if isInternal();
       allow create, update: if isStaff() && isValidId(issueId) && incoming().id == issueId
         && incoming().title is string && incoming().title.size() > 0 && incoming().title.size() <= 300;
       allow delete: if isAdmin();
@@ -203,10 +225,51 @@ service cloud.firestore {
 
     // --- COMMAND CENTER: DAILY PROGRESS SNAPSHOTS (trend history) ---
     match /snapshots/{snapshotId} {
-      allow read: if true;
+      allow read: if isInternal();
       allow create, update: if isStaff() && snapshotId.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
         && incoming().actualPct is number && incoming().plannedPct is number;
       allow delete: if isAdmin();
+    }
+
+    // --- OPERATIONS: procurement & materials, manpower plans, document repository ---
+    match /procurement/{id} {
+      allow read: if isInternal();
+      allow create, update: if isStaff() && isValidId(id) && incoming().id == id;
+      allow delete: if isAdmin();
+    }
+    match /manpower/{id} {
+      allow read: if isInternal();
+      allow create, update: if isStaff() && isValidId(id) && incoming().id == id;
+      allow delete: if isAdmin();
+    }
+    match /documents/{id} {
+      allow read: if isInternal();
+      allow create, update: if isStaff() && isValidId(id) && incoming().id == id;
+      allow delete: if isAdmin();
+    }
+
+    // --- FINANCE: budget & expenses — restricted to System Administrator / Project Manager ---
+    match /budget/{id} {
+      allow read, write: if isManager();
+    }
+    match /expenses/{id} {
+      allow read, write: if isManager();
+    }
+
+    // --- PUBLISHING: internal records prepared for the client portal ---
+    match /publications/{id} {
+      allow read: if isInternal();
+      // Staff create drafts and submit for review; approval, publishing and archiving are manager-only.
+      allow create: if isStaff() && isValidId(id) && incoming().id == id && incoming().status in ['draft', 'review'];
+      allow update: if (isStaff() && existing().status in ['draft', 'review'] && incoming().status in ['draft', 'review'])
+        || isManager();
+      allow delete: if isAdmin();
+    }
+
+    // --- EXTERNAL PORTAL: sanitized, PUBLISHED content only ---
+    match /portal/{id} {
+      allow read: if isInternal() || isExternal();
+      allow write: if isManager();
     }
 
     // --- AUDIT LOGS ---

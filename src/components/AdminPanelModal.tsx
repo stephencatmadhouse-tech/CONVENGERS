@@ -84,6 +84,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     staff: { bg: 'var(--sxa-bg-5)', text: 'var(--sx-text-11)', border: 'var(--sxa-border-4)' },
     viewer: { bg: 'var(--sx-bg-16)', text: 'var(--sx-text-2)', border: 'var(--sx-border-17)' },
     pending: { bg: 'var(--sxa-bg-6)', text: 'var(--sx-text-10)', border: 'var(--sxa-border-2)' },
+    engineer: { bg: 'var(--sxa-bg-5)', text: 'var(--sx-text-11)', border: 'var(--sxa-border-4)' },
+    production: { bg: 'var(--sxa-bg-5)', text: 'var(--sx-text-11)', border: 'var(--sxa-border-4)' },
+    owner: { bg: '#FFFFFF', text: '#C02AE0', border: '#C02AE0' },
+    executive: { bg: '#FFFFFF', text: '#C02AE0', border: '#C02AE0' },
+    client: { bg: '#FFFFFF', text: '#C02AE0', border: '#C02AE0' },
+    stakeholder: { bg: '#FFFFFF', text: '#C02AE0', border: '#C02AE0' },
   };
 
   const pendingCount = users.filter((u) => u.role === 'pending' || u.status === 'pending').length;
@@ -245,10 +251,20 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                   }
                                 }}
                               >
-                                <option value="admin">Administrator</option>
-                                <option value="manager">Manager</option>
-                                <option value="staff">Site Staff</option>
-                                <option value="viewer">Viewer (Read-only)</option>
+                                <optgroup label="Internal — Project Management System">
+                                  <option value="admin">System Administrator</option>
+                                  <option value="manager">Project Manager</option>
+                                  <option value="engineer">Site Engineer</option>
+                                  <option value="production">Production Coordinator</option>
+                                  <option value="staff">Internal Team Member</option>
+                                  <option value="viewer">Internal Viewer (read-only)</option>
+                                </optgroup>
+                                <optgroup label="External — Executive & Client Portal">
+                                  <option value="owner">Project Owner</option>
+                                  <option value="executive">Executive</option>
+                                  <option value="client">Client Representative</option>
+                                  <option value="stakeholder">Authorized Stakeholder</option>
+                                </optgroup>
                                 <option value="pending">Pending</option>
                               </select>
                             </label>

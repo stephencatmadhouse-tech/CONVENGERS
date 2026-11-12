@@ -1404,3 +1404,15 @@ html:not([data-eff='dark']) .cv-banner.error {
 html:not([data-eff='dark']) .cv-banner.ok {
   border-left-color: #22a06b;
 }
+.cv-side-group {
+  font: 800 10.5px 'Barlow Condensed', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--cv-dim);
+  padding: 14px 12px 4px;
+}
+.cv-portal-link {
+  margin-top: 12px;
+  border: 1px dashed var(--cv-silver);
+  text-decoration: none;
+}

@@ -228,3 +228,49 @@ Implementation files (visual only — no data, calculation or reporting logic ch
 `src/command/command.css`, `src/theme-palette.css`, `src/theme-status.css`,
 `src/utils/themeColors.ts`. The original dark look remains a per-device option
 (toolbar *Theme* button), stored in the browser only.
+
+## 8. Integrated system — internal back-end & external client portal
+
+One application, one sign-in, one database, two experiences:
+
+| Audience | Roles | Lands on | Can read |
+|---|---|---|---|
+| Internal | System Administrator (`admin`), Project Manager (`manager`), Site Engineer (`engineer`), Production Coordinator (`production`), Internal Team Member (`staff`), Internal Viewer (`viewer`) | Project Management System | All internal collections (finance: admin & manager only) |
+| External | Project Owner (`owner`), Executive, Client Representative (`client`), Authorized Stakeholder (`stakeholder`) | Executive & Client Portal | **Only** the `portal` collection |
+| Not signed in | — | Sign-in page | Nothing |
+| Pending / revoked | — | Awaiting-approval page | Their own profile |
+
+The System Administrator assigns roles in **Admin Panel → user list**. New sign-ups are pending.
+
+### Security model (server-side, not front-end checks)
+
+* `firestore.rules` now make every internal collection readable **only by internal roles**. External roles can read only `portal`. The earlier public read access (`read: if true`) has been **removed**, so public "presentation" links stop working once the rules are deployed. Everyone signs in.
+* Finance (`budget`, `expenses`) is readable and writable only by `admin` / `manager`.
+* `storage.rules`: `documents/**` is for internal roles; `portal/**` (approved photos and documents) is for internal and external roles.
+* The UI routing (`src/Root.tsx`) only decides which interface to render. External users never load internal modules, and the database rules refuse their reads even if they edit the URL or call the API directly.
+
+### Publishing (internal → approval → external)
+
+`Draft → For Review → Approved → Published → Archived` for project status updates, weekly and monthly reports, progress photos, documents, major considerations and important updates.
+
+* Staff create drafts and submit them for review. Project Managers approve, publish and archive. The rules enforce the same permissions.
+* Publishing writes a **sanitized copy** to `portal`: construction progress, phases, milestones, dates with their commitment (Confirmed / Tentative / Target) and the narratives written for clients. It never includes responsible persons, internal remarks, issues, corrective actions, procurement, budget or production details. This is covered by unit tests.
+* Approved reports are frozen. Publishing or archiving changes only their status.
+* Every step is recorded in the item's history and in the audit log.
+
+### New internal modules
+
+Procurement & Materials (with delayed-delivery detection), Manpower schedules, Budget & Expenses (restricted), Document Repository (uploads or links, linked to activities), Client Portal Publishing, and Summary reports (construction progress, production/construction coordination, delayed and upcoming activities). The tracker gains department and deadline filters, a department field and attachments. The construction calendar gains layers for material deliveries and manpower. The Command Center gains delivery blockers, priorities and recent updates. All new modules start empty and show "Not yet provided" until the team enters data. Nothing is pre-filled.
+
+### Actions required to go live
+
+1. **Deploy `firestore.rules`.** This is required for the internal/external separation, publishing and all new modules to work across users. Until then:
+   * new records stay on the device that created them;
+   * the old public-read rules still apply on the server.
+2. **Enable Firebase Storage and deploy `storage.rules`** for file uploads. The rules read user roles from the project's named Firestore database. If cross-service rules are not supported for that database, uploads are refused and files can be attached as links instead.
+3. **Assign roles** to team members and clients in the Admin Panel.
+
+### Known limitations
+
+* The original seed project data (`src/db/seedData.ts`) is bundled in the app's JavaScript for the baseline-reset feature. Anyone who downloads the app files can read that seed snapshot. Live data is protected by the rules. Remove the seed import from the client bundle if that snapshot is confidential.
+* Concurrent edits to the same field: last save wins (the audit log shows who changed what).

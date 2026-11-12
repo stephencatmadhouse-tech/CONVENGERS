@@ -49,6 +49,7 @@ export interface RegisterActivity {
   description: string;
   owner: string;
   supporting: string;
+  department: string;
   /** Baseline (original) planned dates — preserved when the schedule is revised. */
   plannedStart?: string;
   plannedFinish?: string;
@@ -252,6 +253,7 @@ export function buildRegister(input: RegisterInput, today: string = todayIso()):
       description: s.subNote || '',
       owner: meta.owner || '',
       supporting: meta.supporting || '',
+      department: meta.department || '',
       plannedStart,
       plannedFinish,
       start,
@@ -327,6 +329,7 @@ export function buildRegister(input: RegisterInput, today: string = todayIso()):
       description: `Prep ${p.prepStatus} · Pour ${p.pourStatus} · Cure ${p.cureStatus} · Inspection ${p.inspStatus}`,
       owner: meta.owner || '',
       supporting: meta.supporting || '',
+      department: meta.department || '',
       plannedStart,
       plannedFinish,
       start,
@@ -398,6 +401,7 @@ export function buildRegister(input: RegisterInput, today: string = todayIso()):
       description: m.badge?.text ? `${m.badge.text} date` : '',
       owner: meta.owner || '',
       supporting: meta.supporting || '',
+      department: meta.department || '',
       plannedStart,
       plannedFinish,
       start,
@@ -469,6 +473,7 @@ export function buildRegister(input: RegisterInput, today: string = todayIso()):
       description: e.topic || '',
       owner: e.director || meta.owner || '',
       supporting: meta.supporting || '',
+      department: meta.department || '',
       plannedStart,
       plannedFinish,
       start,
@@ -538,6 +543,7 @@ export function buildRegister(input: RegisterInput, today: string = todayIso()):
       description: a.description || '',
       owner: a.owner || meta.owner || '',
       supporting: meta.supporting || '',
+      department: meta.department || '',
       plannedStart,
       plannedFinish,
       start,

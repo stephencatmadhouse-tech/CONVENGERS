@@ -50,7 +50,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  const isAuthenticated = Boolean(currentUser && currentUser.role !== 'viewer');
+  const isAuthenticated = Boolean(currentUser && currentUser.id && currentUser.id !== 'viewer_guest');
   const isPending = currentUser?.role === 'pending' || currentUser?.status === 'pending';
   const isAdmin = currentUser?.role === 'admin';
 

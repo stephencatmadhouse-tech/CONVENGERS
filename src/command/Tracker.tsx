@@ -35,6 +35,8 @@ export const Tracker: React.FC = () => {
   const [owner, setOwner] = useState('');
   const [priority, setPriority] = useState('');
   const [onlyAttention, setOnlyAttention] = useState(false);
+  const [department, setDepartment] = useState('');
+  const [deadline, setDeadline] = useState('');
   const [sort, setSort] = useState<{ k: SortKey; dir: 1 | -1 }>({ k: 'start', dir: 1 });
   const [adding, setAdding] = useState(false);
 
@@ -45,6 +47,8 @@ export const Tracker: React.FC = () => {
 
   const workstreams = useMemo(() => Array.from(new Set(register.map((r) => r.workstream))).sort(), [register]);
   const owners = useMemo(() => Array.from(new Set(register.map((r) => r.owner.trim() || 'Unassigned'))).sort(), [register]);
+  const departments = useMemo(() => Array.from(new Set(register.map((r) => r.department.trim() || 'Not yet provided'))).sort(), [register]);
+  const { today } = useCommand();
 
   const rows = useMemo(() => {
     const ql = q.trim().toLowerCase();
@@ -55,6 +59,16 @@ export const Tracker: React.FC = () => {
       if (status && r.status !== status) return false;
       if (owner && (r.owner.trim() || 'Unassigned') !== owner) return false;
       if (priority && r.priority !== priority) return false;
+      if (department && (r.department.trim() || 'Not yet provided') !== department) return false;
+      if (deadline) {
+        if (r.status === 'Completed' || !r.finish) return false;
+        if (deadline === 'overdue' && !(r.finish < today)) return false;
+        if (deadline !== 'overdue') {
+          const lim = new Date(+today.slice(0, 4), +today.slice(5, 7) - 1, +today.slice(8, 10) + Number(deadline));
+          const limIso = `${lim.getFullYear()}-${String(lim.getMonth() + 1).padStart(2, '0')}-${String(lim.getDate()).padStart(2, '0')}`;
+          if (!(r.finish >= today && r.finish <= limIso)) return false;
+        }
+      }
       if (onlyAttention && !(r.status === 'Delayed' || (!r.owner.trim() && r.status !== 'Completed') || r.revisionCount >= 2 || r.priority === 'Critical')) return false;
       return true;
     });
@@ -89,7 +103,7 @@ export const Tracker: React.FC = () => {
       const vb = val(b);
       return (va < vb ? -1 : va > vb ? 1 : 0) * sort.dir;
     });
-  }, [register, q, stream, workstream, status, owner, priority, onlyAttention, sort]);
+  }, [register, q, stream, workstream, status, owner, priority, onlyAttention, sort, department, deadline, today]);
 
   const th = (k: SortKey, label: string, cls = '') => (
     <th
@@ -111,6 +125,7 @@ export const Tracker: React.FC = () => {
         'Scope of work',
         'Responsible',
         'Supporting',
+        'Department',
         'Baseline start',
         'Baseline finish',
         'Current start',
@@ -138,6 +153,7 @@ export const Tracker: React.FC = () => {
         r.scopeOfWork,
         r.owner,
         r.supporting,
+        r.department,
         r.plannedStart,
         r.plannedFinish,
         r.start,
@@ -170,6 +186,8 @@ export const Tracker: React.FC = () => {
     setOwner('');
     setPriority('');
     setOnlyAttention(false);
+    setDepartment('');
+    setDeadline('');
   };
 
   return (
@@ -205,6 +223,19 @@ export const Tracker: React.FC = () => {
           {['Critical', 'High', 'Medium', 'Low'].map((p) => (
             <option key={p}>{p}</option>
           ))}
+        </select>
+        <select className="cv-select" value={department} onChange={(e) => setDepartment(e.target.value)} aria-label="Department">
+          <option value="">All departments</option>
+          {departments.map((d) => (
+            <option key={d}>{d}</option>
+          ))}
+        </select>
+        <select className="cv-select" value={deadline} onChange={(e) => setDeadline(e.target.value)} aria-label="Deadline">
+          <option value="">Any deadline</option>
+          <option value="overdue">Overdue</option>
+          <option value="7">Due in 7 days</option>
+          <option value="14">Due in 14 days</option>
+          <option value="30">Due in 30 days</option>
         </select>
         <label className="cv-row" style={{ fontSize: 13 }}>
           <input type="checkbox" checked={onlyAttention} onChange={(e) => setOnlyAttention(e.target.checked)} /> Needs attention
@@ -257,7 +288,10 @@ export const Tracker: React.FC = () => {
                   </td>
                   <td className="cv-dim nowrap">{r.id.length > 22 ? `${r.id.slice(0, 22)}…` : r.id}</td>
                   <td className="nowrap">{r.workstream}</td>
-                  <td>{r.owner || <span className="cv-late">Unassigned</span>}</td>
+                  <td>
+                    {r.owner || <span className="cv-late">Unassigned</span>}
+                    <div className="cv-dim">{r.department || 'Dept. not yet provided'}</div>
+                  </td>
                   <td className="nowrap">
                     <div>{fmtRange(r.plannedStart, r.plannedFinish)}</div>
                     {r.revisionCount > 0 && <div className="cv-late">→ {fmtRange(r.start, r.finish)}</div>}

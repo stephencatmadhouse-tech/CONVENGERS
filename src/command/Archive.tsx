@@ -17,7 +17,7 @@ export const Archive: React.FC = () => {
   const { reports, snapshots, actions, isAdmin } = useCommand();
   const [onlyApproved, setOnlyApproved] = useState(false);
   const [viewing, setViewing] = useState<ProjectReport | null>(null);
-  const list = reports.filter((r) => !onlyApproved || r.status === 'approved');
+  const list = reports.filter((r) => !onlyApproved || !!r.frozen);
 
   const tree = useMemo(() => {
     const years = new Map<string, Map<string, ProjectReport[]>>();
@@ -84,7 +84,7 @@ export const Archive: React.FC = () => {
                         <div className="cv-li-t">{r.title}</div>
                         <div className="cv-li-s">
                           {r.type === 'weekly' ? 'Weekly' : 'Monthly'} · {fmtRange(r.periodStart, r.periodEnd)} ·{' '}
-                          {r.status === 'approved' ? `approved ${fmtDate(r.approvedAt?.slice(0, 10))} by ${r.approvedBy}` : `draft updated ${fmtDate(r.updatedAt.slice(0, 10))}`}
+                          {r.approvedAt ? `approved ${fmtDate(r.approvedAt.slice(0, 10))} by ${r.approvedBy}${r.status === 'published' ? ' · on client portal' : r.status === 'archived' ? ' · archived' : ''}` : `${r.status === 'review' ? 'for review' : 'draft'} updated ${fmtDate(r.updatedAt.slice(0, 10))}`}
                           {r.frozen ? ` · actual ${pct((r.frozen as ReportContent).metrics.actualPct)}` : ''}
                           {r.localOnly ? ' · this device only' : ''}
                         </div>
@@ -115,7 +115,7 @@ export const Archive: React.FC = () => {
                         >
                           JSON
                         </button>
-                        {isAdmin && r.status !== 'approved' && (
+                        {isAdmin && !r.frozen && (
                           <button type="button" className="cv-btn sm danger" onClick={() => actions.deleteReport(r.id)}>
                             Delete draft
                           </button>

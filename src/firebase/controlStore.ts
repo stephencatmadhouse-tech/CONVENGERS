@@ -19,6 +19,7 @@ type ControlCollection = 'reports' | 'issues' | 'snapshots';
 type Rec = { id: string; localOnly?: boolean; [k: string]: any };
 
 const LS_PREFIX = 'convengers_cc_';
+const LOCKED = ['approved', 'published', 'archived'];
 
 function lsRead(col: ControlCollection): Record<string, Rec> {
   try {
@@ -122,13 +123,15 @@ class ControlStore {
       this.unsubs.push(
         onSnapshot(
           collection(db, col),
+          { includeMetadataChanges: true },
           (snap) => {
+            if (snap.metadata.fromCache && !this.shared[col] && snap.empty) return;
             const map: Record<string, Rec> = {};
             snap.forEach((d) => {
               map[d.id] = { ...(d.data() as Rec), id: d.id, localOnly: false };
             });
             this.remote[col] = map;
-            this.shared[col] = true;
+            this.shared[col] = !snap.metadata.fromCache || this.shared[col];
             this.emit();
           },
           () => {
@@ -195,15 +198,32 @@ class ControlStore {
   // ---- Reports ----
   public async saveReport(r: ProjectReport): Promise<WriteResult> {
     const existing = this.getState().reports.find((x) => x.id === r.id);
-    if (existing && existing.status === 'approved') {
+    if (existing && LOCKED.includes(existing.status)) {
       throw new Error('This report is approved and locked. Approved reports cannot be modified.');
     }
     return this.put('reports', r as Rec);
   }
 
+  /** Publishing-status change of a locked report (content is never changed). */
+  public async setReportStatus(id: string, to: 'approved' | 'published' | 'archived', by: string): Promise<WriteResult> {
+    const existing = this.getState().reports.find((x) => x.id === id);
+    if (!existing) throw new Error('Report not found.');
+    if (!LOCKED.includes(existing.status)) throw new Error('Only approved reports can be published or archived.');
+    const now = new Date().toISOString();
+    const next: ProjectReport = {
+      ...existing,
+      status: to,
+      updatedAt: now,
+      updatedBy: by,
+      ...(to === 'published' ? { publishedAt: now, publishedBy: by } : {}),
+      ...(to === 'archived' ? { archivedAt: now, archivedBy: by } : {}),
+    };
+    return this.put('reports', next as Rec);
+  }
+
   public async deleteReport(id: string): Promise<void> {
     const existing = this.getState().reports.find((x) => x.id === id);
-    if (existing?.status === 'approved') throw new Error('Approved reports are part of the archive and cannot be deleted.');
+    if (existing && LOCKED.includes(existing.status)) throw new Error('Approved reports are part of the archive and cannot be deleted.');
     return this.remove('reports', id);
   }
 
@@ -239,7 +259,7 @@ class ControlStore {
     for (const r of payload.reports || []) {
       if (!r || !r.id) continue;
       const cur = state.reports.find((x) => x.id === r.id);
-      if (cur && cur.status === 'approved') {
+      if (cur && LOCKED.includes(cur.status)) {
         skipped++;
         continue;
       }

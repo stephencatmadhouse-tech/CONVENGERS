@@ -667,6 +667,34 @@
     "/snapshots/{snapshotId}": {
       "schema": "progressSnapshot",
       "description": "Daily progress snapshots"
+    },
+    "/procurement/{id}": {
+      "schema": "object",
+      "description": "Procurement & materials monitoring (internal)"
+    },
+    "/manpower/{id}": {
+      "schema": "object",
+      "description": "Manpower schedules (internal)"
+    },
+    "/documents/{id}": {
+      "schema": "object",
+      "description": "Internal document repository metadata (internal)"
+    },
+    "/budget/{id}": {
+      "schema": "object",
+      "description": "Budget lines (admin / project manager only)"
+    },
+    "/expenses/{id}": {
+      "schema": "object",
+      "description": "Expenses (admin / project manager only)"
+    },
+    "/publications/{id}": {
+      "schema": "object",
+      "description": "Items prepared for the client portal with publishing workflow (internal)"
+    },
+    "/portal/{id}": {
+      "schema": "object",
+      "description": "Sanitized, PUBLISHED content for the Executive & Client Portal (internal + external roles)"
     }
   }
 }

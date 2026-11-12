@@ -251,7 +251,7 @@ export function buildMonthlyContent(
     if (w.end >= start) {
       const id = `W-${w.start}`;
       const saved = reports.find((r) => r.id === id);
-      const frozen = saved?.status === 'approved' ? (saved.frozen as WeeklyContent | undefined) : undefined;
+      const frozen = saved?.frozen ? (saved.frozen as WeeklyContent | undefined) : undefined;
       const snap = snapshotAt(snapshots, w.end < today ? w.end : today);
       weekly.push({
         id,

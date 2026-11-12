@@ -13,15 +13,30 @@ import { addDays, fmtDate, fmtRange, monthLabel, monthRange, isValidIso } from '
 import { ALIGNMENT_COLORS, AlignmentClass, alignmentSummary } from '../domain/alignment.ts';
 import { PHILIPPINE_HOLIDAYS_SET, WORK_STOPPAGE_START, WORK_STOPPAGE_END, toIsoDate } from '../utils/calculations.ts';
 import { StatusPill, Pill, Empty, Card, Modal, kindColor, STREAM_HEX } from './ui.tsx';
+import { procurementStore, manpowerStore } from '../firebase/opsStores.ts';
+import { useStore } from '../firebase/useStore.ts';
+import { deliveryEvents, manpowerEvents, isDeliveryLate } from './Operations.tsx';
 
-type Layer = 'construction' | 'pours' | 'milestones' | 'production';
+type Layer = 'construction' | 'pours' | 'milestones' | 'production' | 'deliveries' | 'manpower';
 
 const LAYER_META: Record<Layer, { label: string; color: string }> = {
   construction: { label: 'Construction', color: STREAM_HEX.Construction },
   pours: { label: 'Concrete pours', color: STREAM_HEX.Concrete },
   milestones: { label: 'Milestones', color: STREAM_HEX.Milestone },
   production: { label: 'Production shoots', color: STREAM_HEX.Production },
+  deliveries: { label: 'Material deliveries', color: '#777777' },
+  manpower: { label: 'Manpower', color: '#B0B0BA' },
 };
+
+interface ExtraEvent {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  status: string;
+  route: string;
+  layer: Layer;
+}
 
 function layerOf(r: RegisterActivity): Layer {
   if (r.kind === 'pour') return 'pours';
@@ -65,6 +80,19 @@ export const ScheduleCalendar: React.FC<{ defaultLayers: Layer[]; title?: string
   }
 
   const onDay = (d: string) => items.filter((r) => r.start! <= d && (r.finish || r.start)! >= d);
+  const procurement = useStore(procurementStore);
+  const manpower = useStore(manpowerStore);
+  const extras: ExtraEvent[] = useMemo(() => {
+    const out: ExtraEvent[] = [];
+    if (layers.has('deliveries'))
+      deliveryEvents(procurement.items).forEach((e) => {
+        const p = procurement.items.find((x) => `PRC:${x.id}` === e.id)!;
+        out.push({ ...e, layer: 'deliveries', status: isDeliveryLate(p, today) ? 'Delayed' : e.status });
+      });
+    if (layers.has('manpower')) manpowerEvents(manpower.items).forEach((e) => out.push({ ...e, layer: 'manpower' }));
+    return out;
+  }, [layers, procurement.items, manpower.items, today]);
+  const extrasOnDay = (d: string) => extras.filter((e) => e.start <= d && e.end >= d);
   const shift = (n: number) => {
     const d = new Date(+month.slice(0, 4), +month.slice(5, 7) - 1 + n, 1);
     setMonth(toIsoDate(d));
@@ -155,6 +183,20 @@ export const ScheduleCalendar: React.FC<{ defaultLayers: Layer[]; title?: string
                     </button>
                   );
                 })}
+                {extrasOnDay(d)
+                  .slice(0, 2)
+                  .map((e) => (
+                    <button
+                      type="button"
+                      key={e.id}
+                      className="cv-cal-ev"
+                      style={{ borderLeftColor: LAYER_META[e.layer].color, outline: e.status === 'Delayed' ? '1px solid #E5484D' : undefined, fontStyle: 'italic' }}
+                      title={`${e.title} · ${fmtRange(e.start, e.end)} · ${e.status}`}
+                      onClick={() => actions.navigate(e.route)}
+                    >
+                      {e.title}
+                    </button>
+                  ))}
                 {evs.length > shown.length && (
                   <button type="button" className="cv-cal-more" onClick={() => setDayOpen(d)}>
                     +{evs.length - shown.length} more
@@ -165,7 +207,24 @@ export const ScheduleCalendar: React.FC<{ defaultLayers: Layer[]; title?: string
           })}
         </div>
       ) : agenda.length ? (
-        <AgendaList items={agenda} classByEp={classByEp} />
+        <>
+          <AgendaList items={agenda} classByEp={classByEp} />
+          {extras.filter((e) => e.start <= mEnd && e.end >= mStart).length > 0 && (
+            <div className="cv-list" style={{ marginTop: 8 }}>
+              {extras
+                .filter((e) => e.start <= mEnd && e.end >= mStart)
+                .map((e) => (
+                  <button key={e.id} type="button" className="cv-li clickable" style={{ textAlign: 'left', color: 'inherit' }} onClick={() => actions.navigate(e.route)}>
+                    <span className="cv-sev" style={{ background: LAYER_META[e.layer].color }} />
+                    <div className="cv-li-main">
+                      <div className="cv-li-t">{e.title}</div>
+                      <div className="cv-li-s">{fmtRange(e.start, e.end)} · {e.status}</div>
+                    </div>
+                  </button>
+                ))}
+            </div>
+          )}
+        </>
       ) : (
         <Empty>No activities in {monthLabel(key)} for the selected layers.</Empty>
       )}
@@ -179,6 +238,19 @@ export const ScheduleCalendar: React.FC<{ defaultLayers: Layer[]; title?: string
       {dayOpen && (
         <Modal title={`Activities on ${fmtDate(dayOpen)}`} onClose={() => setDayOpen(null)} width={640}>
           <AgendaList items={onDay(dayOpen)} classByEp={classByEp} onPick={() => setDayOpen(null)} />
+          {extrasOnDay(dayOpen).length > 0 && (
+            <div className="cv-list" style={{ marginTop: 8 }}>
+              {extrasOnDay(dayOpen).map((e) => (
+                <button key={e.id} type="button" className="cv-li clickable" style={{ textAlign: 'left', color: 'inherit' }} onClick={() => { setDayOpen(null); actions.navigate(e.route); }}>
+                  <span className="cv-sev" style={{ background: LAYER_META[e.layer].color }} />
+                  <div className="cv-li-main">
+                    <div className="cv-li-t">{e.title}</div>
+                    <div className="cv-li-s">{fmtRange(e.start, e.end)} · {e.status}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </Modal>
       )}
     </div>

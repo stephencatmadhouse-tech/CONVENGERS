@@ -13,6 +13,12 @@ import { validateActivityEdit, findDuplicates } from '../domain/validation.ts';
 import { fmtDate, fmtRange } from '../domain/dates.ts';
 import { useCommand, ActivityPatch } from './context.tsx';
 import { Modal, Field, Banner, StatusPill, Pill, ProgressBar, PRIORITY_HEX } from './ui.tsx';
+import { documentStore } from '../firebase/opsStores.ts';
+import { useStore } from '../firebase/useStore.ts';
+import { newId } from '../firebase/collectionStore.ts';
+import { uploadFile } from '../firebase/files.ts';
+import { firestoreData } from '../firebase/firestoreData.ts';
+import { DocumentCategory } from '../types/index.ts';
 
 const MILESTONE_STATUSES = ['Upcoming', 'In progress', 'Complete', 'Delayed', 'Date passed · confirm'];
 const POUR_STATUSES = [
@@ -50,6 +56,7 @@ export const ActivityEditor: React.FC<{ activity: RegisterActivity; onClose: () 
     actualFinish: r.actualFinish || '',
     owner: r.owner,
     supporting: r.supporting,
+    department: r.department,
     priority: r.priority,
     commitment: r.commitment,
     dependsOn: r.dependsOn,
@@ -109,6 +116,7 @@ export const ActivityEditor: React.FC<{ activity: RegisterActivity; onClose: () 
     if ((form.actualFinish || '') !== (r.actualFinish || '')) patch.actualFinish = form.actualFinish;
     if (form.owner !== r.owner) patch.owner = form.owner;
     if (form.supporting !== r.supporting) patch.supporting = form.supporting;
+    if (form.department !== r.department) patch.department = form.department;
     if (form.priority !== r.priority) patch.priority = form.priority;
     if (form.commitment !== r.commitment) patch.commitment = form.commitment;
     if (JSON.stringify(form.dependsOn) !== JSON.stringify(r.dependsOn)) patch.dependsOn = form.dependsOn;
@@ -278,6 +286,14 @@ export const ActivityEditor: React.FC<{ activity: RegisterActivity; onClose: () 
         <Field label="Supporting personnel">
           <input className="cv-input" value={form.supporting} onChange={(e) => set('supporting', e.target.value)} />
         </Field>
+        <Field label="Responsible department">
+          <input className="cv-input" list="cv-departments" value={form.department} onChange={(e) => set('department', e.target.value)} placeholder="Not yet provided" />
+          <datalist id="cv-departments">
+            {['Engineering / Site', 'Production', 'Procurement', 'Project Management', 'Architecture & Design', 'MEP', 'Finance'].map((d) => (
+              <option key={d} value={d} />
+            ))}
+          </datalist>
+        </Field>
         <Field label="Priority">
           <select className="cv-select" value={form.priority} onChange={(e) => set('priority', e.target.value as typeof form.priority)}>
             {['Low', 'Medium', 'High', 'Critical'].map((p) => (
@@ -360,6 +376,8 @@ export const ActivityEditor: React.FC<{ activity: RegisterActivity; onClose: () 
         </Field>
       </fieldset>
 
+      <Attachments activityId={r.id} />
+
       {revisions.length > 0 && (
         <fieldset className="cv-fieldset">
           <legend>Schedule revision history</legend>
@@ -385,5 +403,103 @@ export const ActivityEditor: React.FC<{ activity: RegisterActivity; onClose: () 
         {r.slipDays !== 0 && <Pill label={`Slip vs baseline: ${r.slipDays > 0 ? '+' : ''}${r.slipDays} d`} color={r.slipDays > 0 ? '#E5484D' : '#22A06B'} />}
       </div>
     </Modal>
+  );
+};
+
+/** Documents linked to this activity (stored in the Document Repository). */
+const Attachments: React.FC<{ activityId: string }> = ({ activityId }) => {
+  const { canEdit, user, actions } = useCommand();
+  const docs = useStore(documentStore);
+  const linked = docs.items.filter((d) => d.linkedActivityId === activityId && !d.archived);
+  const [title, setTitle] = useState('');
+  const [url, setUrl] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const add = async () => {
+    setBusy(true);
+    setErr('');
+    try {
+      let rec: any = {};
+      if (file) {
+        const up = await uploadFile('documents', file);
+        rec = { url: up.url, storagePath: up.storagePath, fileName: file.name, size: up.size, contentType: up.contentType };
+      } else rec = { url };
+      const now = new Date().toISOString();
+      const category: DocumentCategory = file && file.type.startsWith('image/') ? 'Site photo' : 'Other attachment';
+      const res = await documentStore.put({
+        id: newId('DOC'),
+        title: title.trim() || file?.name || 'Attachment',
+        category,
+        date: now.slice(0, 10),
+        linkedActivityId: activityId,
+        ...rec,
+        createdAt: now,
+        createdBy: user.name,
+        updatedAt: now,
+        updatedBy: user.name,
+      });
+      await firestoreData.logAudit(user, 'ADD_DOCUMENT', 'Document', activityId, title || file?.name || url);
+      actions.toast(res === 'shared' ? 'Attachment added' : 'Attachment saved on this device only');
+      setTitle('');
+      setUrl('');
+      setFile(null);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not add attachment');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <fieldset className="cv-fieldset">
+      <legend>Attachments</legend>
+      <div className="full cv-list">
+        {linked.length ? (
+          linked.map((d) => (
+            <div key={d.id} className="cv-li">
+              <div className="cv-li-main">
+                <div className="cv-li-t">{d.title}</div>
+                <div className="cv-li-s">
+                  {d.category} · {d.date} · {d.createdBy}
+                </div>
+              </div>
+              {d.url && (
+                <a className="cv-btn sm" href={d.url} target="_blank" rel="noopener noreferrer">
+                  Open
+                </a>
+              )}
+            </div>
+          ))
+        ) : (
+          <span className="cv-dim">No attachments linked to this activity.</span>
+        )}
+      </div>
+      {canEdit && (
+        <>
+          {err && (
+            <div className="full">
+              <Banner kind="error">{err}</Banner>
+            </div>
+          )}
+          <Field label="Attachment title">
+            <input className="cv-input" value={title} onChange={(e) => setTitle(e.target.value)} />
+          </Field>
+          <Field label="File">
+            <input type="file" className="cv-input" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+          </Field>
+          <Field label="…or link">
+            <input className="cv-input" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" />
+          </Field>
+          <div className="full cv-row">
+            <button type="button" className="cv-btn sm" disabled={busy || (!file && !url.trim())} onClick={add}>
+              {busy ? 'Adding…' : '+ Attach'}
+            </button>
+            <button type="button" className="cv-btn sm ghost" onClick={() => actions.navigate(`documents/all/act=${encodeURIComponent(activityId)}`)}>
+              Open in Document Repository
+            </button>
+          </div>
+        </>
+      )}
+    </fieldset>
   );
 };

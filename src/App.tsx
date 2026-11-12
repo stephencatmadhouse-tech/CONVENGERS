@@ -59,6 +59,8 @@ import { buildAttention } from './domain/attention.ts';
 import { makeSnapshot } from './domain/validation.ts';
 import { todayIso, toScopeDateText, isValidIso } from './domain/dates.ts';
 import { CommandProvider, CommandState, ActivityPatch } from './command/context.tsx';
+import { sanitizeReport } from './domain/portal.ts';
+import { portalStore, procurementStore, manpowerStore, documentStore, publicationStore, budgetStore, expenseStore } from './firebase/opsStores.ts';
 import { Shell, SlideKey, useHashRoute } from './command/Shell.tsx';
 import { ActivityEditor } from './command/ActivityEditor.tsx';
 import { ConfirmDialog } from './command/ui.tsx';
@@ -1031,6 +1033,14 @@ export default function App() {
       reports: control.reports.map(({ localOnly: _l, ...r }) => r),
       issues: control.issues.map(({ localOnly: _l, ...r }) => r),
       snapshots: control.snapshots.map(({ localOnly: _l, ...r }) => r),
+      // Operations & publishing records (finance only for managers)
+      operations: {
+        procurement: procurementStore.getState().items,
+        manpower: manpowerStore.getState().items,
+        documents: documentStore.getState().items,
+        publications: publicationStore.getState().items,
+        ...(isManager ? { budget: budgetStore.getState().items, expenses: expenseStore.getState().items } : {}),
+      },
     };
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -1063,7 +1073,7 @@ export default function App() {
         throw new Error('Invalid JSON syntax in the selected backup file.');
       }
       const src: any = json && typeof json === 'object' ? json : {};
-      const hasControl = Array.isArray(src.reports) || Array.isArray(src.issues) || Array.isArray(src.snapshots) || (src.report && src.report.id);
+      const hasControl = Array.isArray(src.reports) || Array.isArray(src.issues) || Array.isArray(src.snapshots) || (src.report && src.report.id) || !!src.operations;
       let controlMsg = '';
       if (hasControl) {
         const res = await controlStore.importRecords({
@@ -1072,6 +1082,27 @@ export default function App() {
           snapshots: src.snapshots,
         });
         controlMsg = ` · ${res.imported} report/issue/snapshot record(s) merged, ${res.skipped} kept unchanged`;
+      }
+      if (src.operations && typeof src.operations === 'object') {
+        const ops = src.operations as Record<string, any[]>;
+        const pairs: [string, any][] = [
+          ['procurement', procurementStore],
+          ['manpower', manpowerStore],
+          ['documents', documentStore],
+          ['publications', publicationStore],
+          ...(isManager ? ([['budget', budgetStore], ['expenses', expenseStore]] as [string, any][]) : []),
+        ];
+        let merged = 0;
+        for (const [k, st] of pairs) {
+          const existing = new Set(st.getState().items.map((x: any) => x.id));
+          for (const rec of Array.isArray(ops[k]) ? ops[k] : []) {
+            if (!rec?.id || existing.has(rec.id)) continue; // never overwrite existing records
+            const { localOnly: _l, ...clean } = rec;
+            await st.put(clean);
+            merged++;
+          }
+        }
+        controlMsg += ` · ${merged} operations record(s) added`;
       }
       const PROJECT_KEYS = ['milestones', 'scopes', 'pours', 'episodes', 'activities', 'characters', 'overrides', 'ms', 'pct', 'pm', 'page', 'data', 'dashboard'];
       if (!PROJECT_KEYS.some((k) => src[k] !== undefined)) {
@@ -1226,7 +1257,7 @@ export default function App() {
     }
     try {
       const meta: Partial<ActivityOverride> = {};
-      (['supporting', 'priority', 'commitment', 'dependsOn', 'concern', 'correctiveAction', 'resolutionDate', 'onHold'] as const).forEach((k) => {
+      (['supporting', 'department', 'priority', 'commitment', 'dependsOn', 'concern', 'correctiveAction', 'resolutionDate', 'onHold'] as const).forEach((k) => {
         if (patch[k] !== undefined) (meta as any)[k] = patch[k];
       });
       if (r.kind !== 'pour') {
@@ -1324,8 +1355,12 @@ export default function App() {
     }
   };
   const saveReport = async (r: ProjectReport) => {
-    if (!isManager) {
-      showToast('Only Admins and Managers can save or approve reports.');
+    if (!canEdit) {
+      handleViewerAttemptEdit();
+      return;
+    }
+    if (r.status === 'approved' && !isManager) {
+      showToast('Only a Project Manager or System Administrator can approve reports.');
       return;
     }
     try {
@@ -1336,6 +1371,38 @@ export default function App() {
       showToast(formatErrorForToast(err, 'Failed to save report'));
     }
   };
+  /** Publish a locked report to the client portal (sanitized copy) or archive it. */
+  const setReportPublishing = async (id: string, to: 'published' | 'archived') => {
+    if (!isManager) {
+      showToast('Only a Project Manager or System Administrator can publish or archive reports.');
+      return;
+    }
+    const report = control.reports.find((r) => r.id === id);
+    if (!report) return;
+    try {
+      if (to === 'published') {
+        const content = sanitizeReport(report);
+        await portalStore.put({
+          id: report.id,
+          kind: 'report',
+          title: report.title,
+          publishedAt: new Date().toISOString(),
+          publishedBy: user.name,
+          periodStart: report.periodStart,
+          periodEnd: report.periodEnd,
+          content,
+        });
+      } else if (report.status === 'published') {
+        await portalStore.remove(report.id);
+      }
+      const res = await controlStore.setReportStatus(id, to, user.name);
+      await firestoreData.logAudit(user, to === 'published' ? 'PUBLISH_REPORT' : 'ARCHIVE_REPORT', 'Report', id, report.title);
+      toastStored(res, to === 'published' ? 'Report published to the client portal' : 'Report archived');
+    } catch (err) {
+      showToast(formatErrorForToast(err, 'Failed to update report publishing'));
+    }
+  };
+
   const deleteReport = async (id: string) => {
     try {
       await controlStore.deleteReport(id);
@@ -1420,6 +1487,7 @@ export default function App() {
       saveIssue,
       deleteIssue,
       saveReport,
+      setReportPublishing,
       deleteReport,
       captureSnapshot,
       freezeBaseline,

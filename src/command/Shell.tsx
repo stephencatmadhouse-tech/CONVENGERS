@@ -21,8 +21,19 @@ import {
   TriangleAlert,
   Archive as ArchiveIcon,
   Settings as SettingsIcon,
+  Package,
+  Wallet,
+  FolderOpen,
+  Send,
+  ExternalLink,
   type LucideIcon,
 } from 'lucide-react';
+import { ROLE_LABEL } from '../auth/roles.ts';
+import { Procurement, Manpower } from './Operations.tsx';
+import { Finance } from './Finance.tsx';
+import { Documents } from './Documents.tsx';
+import { Publishing } from './Publishing.tsx';
+import { SummaryReports } from './SummaryReports.tsx';
 import { useCommand } from './context.tsx';
 import { SectionHeader } from './ui.tsx';
 import { CommandCenter } from './CommandCenter.tsx';
@@ -46,6 +57,7 @@ interface Tab {
 interface Section {
   id: string;
   num: string;
+  group?: string;
   icon?: LucideIcon;
   label: string;
   title: string;
@@ -53,7 +65,43 @@ interface Section {
   tabs?: Tab[];
 }
 
-export const SECTIONS: Section[] = [
+const RAW_SECTIONS: Section[] = [
+  {
+    id: 'procurement',
+    num: '00',
+    label: 'Procurement & Materials',
+    title: 'Procurement & Materials Monitoring',
+    sub: 'Material requirements, procurement status, suppliers, purchase and delivery schedules, pending orders, received materials and delayed deliveries.',
+  },
+  {
+    id: 'finance',
+    num: '00',
+    label: 'Budget & Expenses',
+    title: 'Budget & Expense Monitoring',
+    sub: 'Project budget, allocations, actual expenses, remaining balance and cost variation. Restricted to the System Administrator and Project Managers.',
+  },
+  {
+    id: 'documents',
+    num: '00',
+    label: 'Document Repository',
+    title: 'Internal Document Repository',
+    sub: 'Site reports, weekly and monthly reports, meeting minutes, construction documents, drawings, procurement records, approvals and attachments.',
+  },
+  {
+    id: 'publishing',
+    num: '00',
+    label: 'Client Portal Publishing',
+    title: 'Client Portal Publishing',
+    sub: 'Prepare, review, approve and publish client-safe information to the Executive & Client Portal. Only published items are visible to external users.',
+    tabs: [
+      { id: 'overview', label: 'Overview' },
+      { id: 'snapshot', label: 'Project status updates' },
+      { id: 'considerations', label: 'Considerations & updates' },
+      { id: 'gallery', label: 'Progress gallery' },
+      { id: 'documents', label: 'Documents' },
+      { id: 'reports', label: 'Reports' },
+    ],
+  },
   {
     id: 'command',
     num: '01',
@@ -94,6 +142,7 @@ export const SECTIONS: Section[] = [
     sub: 'Construction calendar, floor-by-floor scopes of work and concrete pouring milestones.',
     tabs: [
       { id: 'calendar', label: 'Construction calendar' },
+      { id: 'manpower', label: 'Manpower & deliveries' },
       { id: 'gf', label: 'Ground floor', slide: 'gf' },
       { id: '2f', label: 'Second floor', slide: '2f' },
       { id: '3f', label: 'Third floor', slide: '3f' },
@@ -139,6 +188,7 @@ export const SECTIONS: Section[] = [
     tabs: [
       { id: 'weekly', label: 'Weekly report' },
       { id: 'monthly', label: 'Monthly report' },
+      { id: 'summary', label: 'Summary reports' },
     ],
   },
   {
@@ -180,6 +230,31 @@ export const SECTIONS: Section[] = [
   },
 ];
 
+/** Navigation order and grouping (numbers follow this order). */
+const ORDER: [string, string][] = [
+  ['command', 'Operations'],
+  ['tracker', 'Operations'],
+  ['construction', 'Operations'],
+  ['production', 'Operations'],
+  ['timeline', 'Operations'],
+  ['milestones', 'Operations'],
+  ['procurement', 'Operations'],
+  ['finance', 'Operations'],
+  ['issues', 'Operations'],
+  ['reports', 'Reporting & Publishing'],
+  ['analytics', 'Reporting & Publishing'],
+  ['documents', 'Reporting & Publishing'],
+  ['publishing', 'Reporting & Publishing'],
+  ['archive', 'Reporting & Publishing'],
+  ['overview', 'Presentation & System'],
+  ['settings', 'Presentation & System'],
+];
+
+export const SECTIONS: Section[] = ORDER.map(([id, group], idx) => {
+  const sec = RAW_SECTIONS.find((x) => x.id === id)!;
+  return { ...sec, group, num: String(idx + 1).padStart(2, '0') };
+});
+
 const ICONS: Record<string, LucideIcon> = {
   command: LayoutDashboard,
   overview: Presentation,
@@ -193,6 +268,10 @@ const ICONS: Record<string, LucideIcon> = {
   issues: TriangleAlert,
   archive: ArchiveIcon,
   settings: SettingsIcon,
+  procurement: Package,
+  finance: Wallet,
+  documents: FolderOpen,
+  publishing: Send,
 };
 
 export function parseRoute(hash: string): { section: string; tab?: string; param?: string } {
@@ -235,7 +314,15 @@ export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; re
       case 'tracker':
         return <Tracker />;
       case 'construction':
-        return <ScheduleCalendar defaultLayers={['construction', 'pours', 'milestones']} />;
+        return tab?.id === 'manpower' ? <Manpower /> : <ScheduleCalendar defaultLayers={['construction', 'pours', 'milestones', 'deliveries', 'manpower']} />;
+      case 'procurement':
+        return <Procurement />;
+      case 'finance':
+        return <Finance />;
+      case 'documents':
+        return <Documents />;
+      case 'publishing':
+        return <Publishing tab={tab?.id} />;
       case 'production':
         return <AlignmentView />;
       case 'timeline':
@@ -243,7 +330,7 @@ export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; re
       case 'milestones':
         return <Milestones />;
       case 'reports':
-        return <ReportsPage key={tab?.id} type={tab?.id === 'monthly' ? 'monthly' : 'weekly'} />;
+        return tab?.id === 'summary' ? <SummaryReports /> : <ReportsPage key={tab?.id} type={tab?.id === 'monthly' ? 'monthly' : 'weekly'} />;
       case 'analytics':
         return tab?.id === 'forecast' ? <Forecast /> : <Analytics />;
       case 'issues':
@@ -261,8 +348,10 @@ export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; re
     <div className={`cv-shell ${navOpen ? 'nav-open' : ''}`}>
       <div className="cv-backdrop" onClick={() => setNavOpen(false)} />
       <nav className="cv-sidebar" aria-label="Command Center sections">
-        <div className="cv-side-title">Command Center</div>
-        {SECTIONS.map((s) => (
+        <div className="cv-side-title">Project Management System</div>
+        {SECTIONS.map((s, i) => (
+          <React.Fragment key={s.id}>
+          {s.group !== SECTIONS[i - 1]?.group && <div className="cv-side-group">{s.group}</div>}
           <button
             key={s.id}
             type="button"
@@ -275,12 +364,19 @@ export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; re
             <span className="cv-nav-num">{s.num}</span>
             {s.id === 'issues' && critical > 0 && <span className="cv-nav-badge" title="Critical attention items">{critical}</span>}
           </button>
+          </React.Fragment>
         ))}
+        <a className="cv-nav-btn cv-portal-link" href="#/portal/overview">
+          <ExternalLink size={18} strokeWidth={1.9} className="cv-nav-ico" aria-hidden />
+          <span className="cv-nav-label">Preview client portal</span>
+        </a>
         <div className="cv-side-foot">
           <div>
             Health: <b>{metrics.health}</b> · {metrics.actualPct}% actual
           </div>
-          <div>{user.role === 'viewer' || user.role === 'pending' ? 'Read-only viewer' : `Signed in: ${user.name}`}</div>
+          <div>
+            {user.name} · {ROLE_LABEL[user.role]}
+          </div>
           <div>www.ConvengersAssemble.com</div>
         </div>
       </nav>

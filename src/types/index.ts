@@ -3,7 +3,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type UserRole = 'admin' | 'manager' | 'staff' | 'viewer' | 'pending';
+/**
+ * Internal roles: admin (System Administrator), manager (Project Manager),
+ * engineer (Site Engineer), production (Production Coordinator),
+ * staff (Authorized internal team member), viewer (internal read-only).
+ * External roles (Executive & Client Portal only): owner (Project Owner),
+ * executive, client (Client Representative), stakeholder.
+ */
+export type UserRole =
+  | 'admin'
+  | 'manager'
+  | 'engineer'
+  | 'production'
+  | 'staff'
+  | 'viewer'
+  | 'owner'
+  | 'executive'
+  | 'client'
+  | 'stakeholder'
+  | 'pending';
 export type UserStatus = 'active' | 'pending' | 'revoked';
 
 export interface User {
@@ -192,6 +210,7 @@ export interface ActivityOverride {
   concern?: string;
   correctiveAction?: string;
   resolutionDate?: string; // YYYY-MM-DD
+  department?: string;
 }
 
 export type IssueType = 'Issue' | 'Risk' | 'Decision';
@@ -246,7 +265,8 @@ export interface ProgressSnapshot {
 }
 
 export type ReportType = 'weekly' | 'monthly';
-export type ReportStatus = 'draft' | 'approved';
+/** Publishing lifecycle: draft → review → approved (frozen) → published (on portal) → archived. */
+export type ReportStatus = 'draft' | 'review' | 'approved' | 'published' | 'archived';
 
 export interface ReportNarrative {
   executiveSummary?: string;
@@ -274,6 +294,10 @@ export interface ProjectReport {
   updatedBy: string;
   approvedAt?: string;
   approvedBy?: string;
+  publishedAt?: string;
+  publishedBy?: string;
+  archivedAt?: string;
+  archivedBy?: string;
   localOnly?: boolean;
 }
 
@@ -336,3 +360,144 @@ export interface CellEditEvent {
   userName: string;
 }
 
+
+// ===================== Operations modules =====================
+
+export type ProcurementStatus = 'Required' | 'For Canvass' | 'Ordered' | 'Partially Delivered' | 'Delivered' | 'Delayed' | 'Cancelled';
+
+export interface ProcurementItem {
+  id: string;
+  material: string;
+  description?: string;
+  quantity?: number;
+  unit?: string;
+  linkedActivityId?: string;
+  supplier?: string;
+  supplierContact?: string;
+  poNumber?: string;
+  requiredDate?: string; // YYYY-MM-DD — needed on site
+  orderDate?: string;
+  expectedDelivery?: string;
+  actualDelivery?: string;
+  status: ProcurementStatus;
+  remarks?: string;
+  archived?: boolean;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+  updatedBy: string;
+  localOnly?: boolean;
+}
+
+export interface ManpowerPlan {
+  id: string;
+  trade: string; // e.g. Masons, Steelmen, Electricians
+  team?: string; // contractor / crew name
+  headcount?: number;
+  start: string;
+  end: string;
+  linkedActivityId?: string;
+  notes?: string;
+  archived?: boolean;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+  updatedBy: string;
+  localOnly?: boolean;
+}
+
+export interface BudgetLine {
+  id: string;
+  category: string;
+  description?: string;
+  budget: number; // approved budget
+  allocated?: number; // committed / allocated amount
+  notes?: string;
+  archived?: boolean;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+  updatedBy: string;
+  localOnly?: boolean;
+}
+
+export interface Expense {
+  id: string;
+  date: string;
+  budgetLineId?: string;
+  description: string;
+  amount: number;
+  vendor?: string;
+  reference?: string; // OR / invoice no.
+  linkedProcurementId?: string;
+  archived?: boolean;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+  updatedBy: string;
+  localOnly?: boolean;
+}
+
+export type DocumentCategory =
+  | 'Site report'
+  | 'Weekly report'
+  | 'Monthly report'
+  | 'Meeting minutes'
+  | 'Construction document'
+  | 'Drawing / plan'
+  | 'Procurement record'
+  | 'Internal approval'
+  | 'Site photo'
+  | 'Other attachment';
+
+export interface ProjectDocument {
+  id: string;
+  title: string;
+  category: DocumentCategory;
+  date: string;
+  url?: string; // download URL (Firebase Storage or external link)
+  storagePath?: string;
+  fileName?: string;
+  contentType?: string;
+  size?: number;
+  linkedActivityId?: string;
+  notes?: string;
+  archived?: boolean;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+  updatedBy: string;
+  localOnly?: boolean;
+}
+
+// ===================== Publishing (internal → external) =====================
+
+export type PublishStatus = 'draft' | 'review' | 'approved' | 'published' | 'archived';
+export type PublicationKind = 'snapshot' | 'photo' | 'document' | 'consideration' | 'update';
+
+export interface PublicationEvent {
+  at: string;
+  by: string;
+  from?: PublishStatus;
+  to: PublishStatus;
+  note?: string;
+}
+
+/** Internal record of something prepared for the external portal. */
+export interface Publication {
+  id: string;
+  kind: PublicationKind;
+  title: string;
+  status: PublishStatus;
+  /** Client-facing content, frozen when the record is created / edited in draft. */
+  payload: any;
+  sourceId?: string; // e.g. document id or issue id it was prepared from
+  periodStart?: string;
+  periodEnd?: string;
+  history: PublicationEvent[];
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+  updatedBy: string;
+  localOnly?: boolean;
+}

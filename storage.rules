@@ -1,0 +1,48 @@
+rules_version = '2';
+
+// Firebase Storage rules for the Convengers Bahay Build system.
+// Roles are read from the same Firestore `users` documents used by firestore.rules.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function role() {
+      return firestore.get(/databases/ai-studio-convengersbahayb-9549615c-3eae-403b-ac70-ae255a328f43/documents/users/$(request.auth.uid)).data.role;
+    }
+    function status() {
+      let s = firestore.get(/databases/ai-studio-convengersbahayb-9549615c-3eae-403b-ac70-ae255a328f43/documents/users/$(request.auth.uid)).data.status;
+      return s == null ? 'active' : s;
+    }
+    function isInternal() {
+      return request.auth != null && status() == 'active'
+        && role() in ['admin', 'manager', 'engineer', 'production', 'staff', 'viewer'];
+    }
+    function isStaff() {
+      return request.auth != null && status() == 'active'
+        && role() in ['admin', 'manager', 'engineer', 'production', 'staff'];
+    }
+    function isManager() {
+      return request.auth != null && status() == 'active' && role() in ['admin', 'manager'];
+    }
+    function isExternal() {
+      return request.auth != null && status() == 'active'
+        && role() in ['owner', 'executive', 'client', 'stakeholder'];
+    }
+
+    // Internal document repository (site reports, drawings, approvals, …)
+    match /documents/{allPaths=**} {
+      allow read: if isInternal();
+      allow write: if isStaff() && request.resource.size < 25 * 1024 * 1024;
+    }
+
+    // Files prepared for the client portal (approved photos & documents).
+    // Staff upload; external roles can read. Visibility on the portal still
+    // depends on the record being Published in the `portal` collection.
+    match /portal/{allPaths=**} {
+      allow read: if isInternal() || isExternal();
+      allow write: if isStaff() && request.resource.size < 25 * 1024 * 1024;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
