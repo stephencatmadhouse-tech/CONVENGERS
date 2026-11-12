@@ -178,6 +178,37 @@ service cloud.firestore {
       allow write: if isManager();
     }
 
+    // --- COMMAND CENTER: WEEKLY & MONTHLY REPORTS ---
+    // Draft reports can be edited by Managers. Once a report is approved it is
+    // locked: it can no longer be updated or deleted, so historical reports
+    // cannot be changed silently.
+    match /reports/{reportId} {
+      allow read: if true;
+      allow create: if isManager() && isValidId(reportId) && incoming().id == reportId
+        && incoming().type in ['weekly', 'monthly']
+        && incoming().status in ['draft', 'approved'];
+      allow update: if isManager() && existing().status != 'approved'
+        && incoming().id == existing().id && incoming().type == existing().type
+        && incoming().status in ['draft', 'approved'];
+      allow delete: if isAdmin() && existing().status != 'approved';
+    }
+
+    // --- COMMAND CENTER: ISSUES, RISKS & DECISIONS LOG ---
+    match /issues/{issueId} {
+      allow read: if true;
+      allow create, update: if isStaff() && isValidId(issueId) && incoming().id == issueId
+        && incoming().title is string && incoming().title.size() > 0 && incoming().title.size() <= 300;
+      allow delete: if isAdmin();
+    }
+
+    // --- COMMAND CENTER: DAILY PROGRESS SNAPSHOTS (trend history) ---
+    match /snapshots/{snapshotId} {
+      allow read: if true;
+      allow create, update: if isStaff() && snapshotId.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && incoming().actualPct is number && incoming().plannedPct is number;
+      allow delete: if isAdmin();
+    }
+
     // --- AUDIT LOGS ---
     match /auditLogs/{logId} {
       allow read: if isAdmin();

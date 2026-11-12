@@ -151,6 +151,24 @@ export interface Character {
   createdAt: string;
 }
 
+export type Priority = 'Low' | 'Medium' | 'High' | 'Critical';
+export type Commitment = 'Confirmed' | 'Tentative' | 'Target';
+
+export interface ScheduleRevision {
+  at: string; // ISO timestamp
+  by: string;
+  fromStart?: string; // YYYY-MM-DD
+  fromFinish?: string;
+  toStart?: string;
+  toFinish?: string;
+}
+
+/**
+ * Activity control metadata. One document per activity (keyed by its stable
+ * register key, e.g. `sc|<scopeId>`, `p|<pourId>`, `e|<episodeId>|s`).
+ * Older documents keyed by the legacy `c|floor|phase|name|date` format are
+ * still read and merged, so no existing assignment is lost.
+ */
 export interface ActivityOverride {
   key: string;
   owner?: string;
@@ -158,6 +176,105 @@ export interface ActivityOverride {
   onHold?: boolean;
   updatedAt?: string;
   updatedBy?: string;
+  // --- Command Center extensions (all optional, backward compatible) ---
+  supporting?: string;
+  priority?: Priority;
+  commitment?: Commitment;
+  dependsOn?: string[]; // register activity IDs (e.g. "SC-sc_gf_s_3")
+  actualStart?: string; // YYYY-MM-DD
+  actualFinish?: string; // YYYY-MM-DD
+  baselineStart?: string; // YYYY-MM-DD — original planned start, preserved on revisions
+  baselineFinish?: string; // YYYY-MM-DD
+  revisionCount?: number;
+  lastRevisedAt?: string;
+  revisions?: ScheduleRevision[];
+  progress?: number; // manual activities only
+  concern?: string;
+  correctiveAction?: string;
+  resolutionDate?: string; // YYYY-MM-DD
+}
+
+export type IssueType = 'Issue' | 'Risk' | 'Decision';
+export type IssueSeverity = 'Low' | 'Medium' | 'High' | 'Critical';
+export type IssueStatus = 'Open' | 'In Progress' | 'Resolved' | 'Closed';
+
+export interface ProjectIssue {
+  id: string; // ISS-YYYYMMDD-xxxx
+  type: IssueType;
+  title: string;
+  description: string;
+  severity: IssueSeverity;
+  status: IssueStatus;
+  linkedActivityId?: string;
+  owner: string;
+  supporting?: string;
+  raisedDate: string; // YYYY-MM-DD
+  dueDate?: string; // resolution deadline
+  correctiveAction?: string;
+  resolution?: string;
+  decisionRequired?: boolean;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+  updatedBy: string;
+  localOnly?: boolean;
+}
+
+export interface WorkstreamSnapshot {
+  key: string;
+  label: string;
+  actual: number;
+  planned: number;
+  weight: number;
+}
+
+/** Daily point-in-time record of measured progress, used for trends. */
+export interface ProgressSnapshot {
+  id: string; // YYYY-MM-DD
+  date: string;
+  actualPct: number;
+  plannedPct: number;
+  workstreams: WorkstreamSnapshot[];
+  counts: { completed: number; ongoing: number; delayed: number; upcoming: number; onHold: number };
+  milestonesComplete: number;
+  milestonesTotal: number;
+  episodesCompleted: number;
+  episodesTotal: number;
+  capturedAt: string;
+  capturedBy: string;
+  localOnly?: boolean;
+}
+
+export type ReportType = 'weekly' | 'monthly';
+export type ReportStatus = 'draft' | 'approved';
+
+export interface ReportNarrative {
+  executiveSummary?: string;
+  construction?: string;
+  production?: string;
+  issues?: string;
+  correctiveActions?: string;
+  nextPeriod?: string;
+  recommendations?: string;
+}
+
+export interface ProjectReport {
+  id: string; // W-2026-11-09 or M-2026-11
+  type: ReportType;
+  periodStart: string;
+  periodEnd: string;
+  title: string;
+  status: ReportStatus;
+  narrative: ReportNarrative;
+  /** Frozen computed content (set when approved). Drafts recompute live. */
+  frozen?: any;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+  updatedBy: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  localOnly?: boolean;
 }
 
 export interface SystemSettings {

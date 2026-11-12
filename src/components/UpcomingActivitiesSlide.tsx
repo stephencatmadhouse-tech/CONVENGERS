@@ -17,6 +17,7 @@ import {
 } from '../types/index.ts';
 import { STATUS_COLORS, TYPE_COLORS } from '../constants/assets.ts';
 import { BrandLogo } from './BrandLogo.tsx';
+import { resolveMeta } from '../domain/register.ts';
 import {
   parseDateWindow,
   parseIsoDate,
@@ -37,6 +38,7 @@ interface UnifiedItem {
   overdue: boolean;
   kind: 'scope' | 'milestone' | 'episode' | 'pour' | 'manual';
   refId?: string;
+  legacyKey?: string;
 }
 
 interface UpcomingActivitiesSlideProps {
@@ -102,8 +104,10 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
       const win = parseDateWindow(s.dateText);
       if (!win) return;
       const [start, end] = win;
-      const key = `c|${s.floor}|${s.phase}|${s.name}|${s.dateText}`;
-      const ov = overrides[key] || {};
+      // Stable key (survives renames / date edits); legacy key still read
+      const legacyKey = `c|${s.floor}|${s.phase}|${s.name}|${s.dateText}`;
+      const key = `sc|${s.id}`;
+      const ov = resolveMeta(overrides, key, [legacyKey]);
       let status: ActivityStatus =
         s.percentComplete >= 100
           ? 'Completed'
@@ -129,6 +133,7 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
         overdue: isOverdue,
         kind: 'scope',
         refId: s.id,
+        legacyKey,
       });
     });
 
@@ -137,8 +142,9 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
       const win = parseDateWindow(m.dateText);
       if (!win) return;
       const [start, end] = win;
-      const key = `m|${m.index}|${m.label}`;
-      const ov = overrides[key] || {};
+      const legacyKey = `m|${m.index}|${m.label}`;
+      const key = `ms|${m.id}`;
+      const ov = resolveMeta(overrides, key, [legacyKey]);
       let status: ActivityStatus =
         m.status === 'Complete'
           ? 'Completed'
@@ -168,6 +174,7 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
         overdue: isOverdue,
         kind: 'milestone',
         refId: m.id,
+        legacyKey,
       });
     });
 
@@ -752,7 +759,7 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
       {assigningItem && (
         <AssignOverrideModal
           item={assigningItem}
-          override={overrides[assigningItem.key]}
+          override={resolveMeta(overrides, assigningItem.key, assigningItem.legacyKey ? [assigningItem.legacyKey] : [])}
           onClose={() => setAssigningItem(null)}
           onSave={(ov) => {
             onSetOverride(assigningItem.key, ov);

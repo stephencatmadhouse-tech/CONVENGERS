@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from './api/client.ts';
 import { realtime } from './utils/realtime.ts';
 import {
@@ -18,6 +19,8 @@ import {
   SystemSettings,
   Collaborator,
   RemoteFocus,
+  ProjectIssue,
+  ProjectReport,
 } from './types/index.ts';
 import { Toolbar } from './components/Toolbar.tsx';
 import { OverviewSlide } from './components/OverviewSlide.tsx';
@@ -35,8 +38,39 @@ import { AdminPanelModal } from './components/AdminPanelModal.tsx';
 import { PrintReport } from './components/PrintReport.tsx';
 import { authService } from './firebase/authService.ts';
 import { firestoreData } from './firebase/firestoreData.ts';
-import { recalculateScopeTimeline } from './utils/calculations.ts';
+import { recalculateScopeTimeline, parseDateWindow, toIsoDate } from './utils/calculations.ts';
 import { exportDashboardAsHtml } from './utils/htmlExporter.ts';
+import { controlStore, ControlState } from './firebase/controlStore.ts';
+import {
+  buildRegister,
+  resolveMeta,
+  RegisterActivity,
+  scopeKey,
+  legacyScopeKey,
+  milestoneKey,
+  legacyMilestoneKey,
+  pourKey,
+  episodeKey,
+  manualKey,
+} from './domain/register.ts';
+import { computeMetrics } from './domain/metrics.ts';
+import { buildAlignment } from './domain/alignment.ts';
+import { buildAttention } from './domain/attention.ts';
+import { makeSnapshot } from './domain/validation.ts';
+import { todayIso, toScopeDateText, isValidIso } from './domain/dates.ts';
+import { CommandProvider, CommandState, ActivityPatch } from './command/context.tsx';
+import { Shell, SlideKey, useHashRoute } from './command/Shell.tsx';
+import { ActivityEditor } from './command/ActivityEditor.tsx';
+import { ConfirmDialog } from './command/ui.tsx';
+import './command/command.css';
+
+function windowOf(text: string | undefined): [string, string] | [undefined, undefined] {
+  const w = parseDateWindow(text || '');
+  return w ? [toIsoDate(w[0]), toIsoDate(w[1])] : [undefined, undefined];
+}
+
+const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+const nextFrames = () => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 
 const PAPER_SIZES: Record<string, { size: string; width: number; height: number }> = {
   a4: { size: '297mm 210mm', width: 1122.5, height: 793.7 },
@@ -64,6 +98,23 @@ export default function App() {
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [isAdminPresentationMode, setIsAdminPresentationMode] = useState(false);
   const [isPrintingReport, setIsPrintingReport] = useState(false);
+
+  // Command Center state
+  const route = useHashRoute();
+  const [control, setControl] = useState<ControlState>(() => controlStore.getState());
+  const [today, setToday] = useState(() => todayIso());
+  const [dbReady, setDbReady] = useState(false);
+  const [openActivityId, setOpenActivityId] = useState<string | null>(null);
+  const [printNode, setPrintNode] = useState<React.ReactNode>(null);
+  const [pendingImport, setPendingImport] = useState<File | null>(null);
+  const dataRef = useRef(data);
+  dataRef.current = data;
+
+  useEffect(() => controlStore.subscribe(setControl), []);
+  useEffect(() => {
+    const t = setInterval(() => setToday(todayIso()), 60000);
+    return () => clearInterval(t);
+  }, []);
 
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -160,15 +211,27 @@ export default function App() {
 
   // Window resize calculation for --s
   useEffect(() => {
+    // Slides scale to the width of the Command Center main column
     const handleResize = () => {
-      const w = window.innerWidth;
-      const s = Math.min(1, Math.max((w - 32) / 1920, w < 900 ? 0.42 : 0));
+      const main = document.getElementById('cv-main');
+      const w = main ? main.clientWidth - 44 + 32 : window.innerWidth;
+      const s = Math.min(1, Math.max((w - 32) / 1920, window.innerWidth < 900 ? 0.42 : 0));
       document.documentElement.style.setProperty('--s', String(s));
+      const tb = document.querySelector('.toolbar') as HTMLElement | null;
+      if (tb) document.documentElement.style.setProperty('--cv-toolbar-h', `${tb.offsetHeight}px`);
     };
 
     handleResize();
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(handleResize) : null;
+    const main = document.getElementById('cv-main');
+    if (ro && main) ro.observe(main);
+    const tb = document.querySelector('.toolbar');
+    if (ro && tb) ro.observe(tb);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      ro?.disconnect();
+    };
   }, []);
 
   // Theme application
@@ -191,7 +254,7 @@ export default function App() {
       document.head.appendChild(styleEl);
     }
 
-    if (isPrintingReport) {
+    if (isPrintingReport || printNode) {
       styleEl.textContent = `
         @page { size: A4 portrait; margin: 12mm 14mm; }
         @media print {
@@ -220,7 +283,7 @@ export default function App() {
         .slide { position: absolute !important; left: ${offsetX}px !important; top: ${offsetY}px !important; transform: scale(${k}) !important; transform-origin: 0 0 !important; margin: 0 !important; }
       }
     `;
-  }, [data?.settings?.paper, data?.settings?.theme, isPrintingReport]);
+  }, [data?.settings?.paper, data?.settings?.theme, isPrintingReport, printNode]);
 
   // Real-Time Firebase Auth and Firestore Subscriptions
   useEffect(() => {
@@ -232,6 +295,7 @@ export default function App() {
     });
 
     const unsubFirestore = firestoreData.subscribeAll((freshData) => {
+      if (freshData.scopes || freshData.milestones) setDbReady(true);
       setData((prev) => {
         if (!prev || isEditingTextRef.current) return prev;
         return {
@@ -267,6 +331,76 @@ export default function App() {
     });
     return () => unsubAudit();
   }, [user?.role]);
+
+  // ===== MASTER PROJECT REGISTER (single derived source of truth) =====
+  const register = useMemo(
+    () =>
+      buildRegister(
+        {
+          scopes: data.scopes,
+          pours: data.pours,
+          milestones: data.milestones,
+          episodes: data.episodes,
+          activities: data.activities,
+          overrides: data.overrides,
+          characters: data.characters,
+        },
+        today
+      ),
+    [data.scopes, data.pours, data.milestones, data.episodes, data.activities, data.overrides, data.characters, today]
+  );
+  const registerRef = useRef(register);
+  registerRef.current = register;
+  const metrics = useMemo(() => computeMetrics(register, data.milestones, today), [register, data.milestones, today]);
+  const alignment = useMemo(() => buildAlignment(register, today), [register, today]);
+  const attention = useMemo(() => buildAttention(register, control.issues, alignment, today), [register, control.issues, alignment, today]);
+
+  /**
+   * Write activity control metadata to its stable key. Legacy-keyed values
+   * (owner, remarks…) are merged in so nothing is lost when a scope's name
+   * or date changes.
+   */
+  const writeMeta = useCallback(
+    async (key: string, patch: Partial<ActivityOverride>, legacyKeys?: string[]) => {
+      const legacy = legacyKeys ?? (registerRef.current.find((r) => r.key === key)?.legacyKeys || []);
+      const merged = resolveMeta(dataRef.current.overrides, key, legacy);
+      const next: ActivityOverride = { ...merged, ...patch, key };
+      Object.keys(next).forEach((k) => (next as any)[k] === undefined && delete (next as any)[k]);
+      const stamp = new Date().toISOString();
+      setData((prev) => ({ ...prev, overrides: { ...prev.overrides, [key]: { ...next, updatedAt: stamp, updatedBy: user.name } } }));
+      await firestoreData.setOverride(key, next, user.name);
+      await firestoreData.logAudit(user, 'SET_OVERRIDE', 'ActivityOverride', key, Object.keys(patch).join(', '));
+    },
+    [user]
+  );
+
+  /** Preserve the baseline and log a schedule revision when dates change. */
+  const recordRevision = useCallback(
+    async (key: string, legacyKeys: string[], from: [string | undefined, string | undefined], to: [string | undefined, string | undefined]) => {
+      const [fs, ff] = from;
+      const [ts, tf] = to;
+      if (!fs && !ff) return;
+      if (fs === ts && ff === tf) return;
+      const meta = resolveMeta(dataRef.current.overrides, key, legacyKeys);
+      const now = new Date().toISOString();
+      try {
+        await writeMeta(
+          key,
+          {
+            baselineStart: meta.baselineStart || fs,
+            baselineFinish: meta.baselineFinish || ff,
+            revisionCount: (meta.revisionCount || 0) + 1,
+            lastRevisedAt: now,
+            revisions: [...(meta.revisions || []), { at: now, by: user.name, fromStart: fs, fromFinish: ff, toStart: ts, toFinish: tf }].slice(-12),
+          },
+          legacyKeys
+        );
+      } catch {
+        // Revision log is best-effort; the schedule change itself is already saved
+      }
+    },
+    [writeMeta, user]
+  );
 
   const handleViewerAttemptEdit = useCallback(() => {
     showToast('Read-only mode. Sign in as a team member to edit.');
@@ -384,6 +518,16 @@ export default function App() {
 
     realtime.editCell('milestone', id, field, trimmed);
 
+    const oldMs = dataRef.current.milestones.find((m) => m.id === id);
+    if (oldMs) {
+      const legacy = [legacyMilestoneKey(oldMs)];
+      if (field === 'dateText') {
+        recordRevision(milestoneKey(oldMs), legacy, windowOf(oldMs.dateText), windowOf(trimmed));
+      } else if (dataRef.current.overrides[legacy[0]] && !dataRef.current.overrides[milestoneKey(oldMs)]) {
+        writeMeta(milestoneKey(oldMs), {}, legacy).catch(() => {});
+      }
+    }
+
     try {
       await firestoreData.updateMilestone(id, { [field]: trimmed }, user.name);
       await firestoreData.logAudit(user, 'UPDATE_MILESTONE', 'Milestone', id, `${field} -> ${trimmed}`);
@@ -408,6 +552,16 @@ export default function App() {
       };
     });
     realtime.editCell('scope', id, 'percentComplete', percent);
+    // Record actual start / finish on the day progress is first reported
+    const oldScope = dataRef.current.scopes.find((s) => s.id === id);
+    if (oldScope) {
+      const legacy = [legacyScopeKey(oldScope)];
+      const meta = resolveMeta(dataRef.current.overrides, scopeKey(oldScope), legacy);
+      const patch: Partial<ActivityOverride> = {};
+      if (percent > 0 && !meta.actualStart) patch.actualStart = todayIso();
+      if (percent >= 100 && !meta.actualFinish) patch.actualFinish = todayIso();
+      if (Object.keys(patch).length) writeMeta(scopeKey(oldScope), patch, legacy).catch(() => {});
+    }
     try {
       await firestoreData.updateScope(id, { percentComplete: percent }, user.name);
       await firestoreData.logAudit(user, 'UPDATE_SCOPE', 'Scope', id, `Progress -> ${percent}%`);
@@ -456,6 +610,14 @@ export default function App() {
     });
 
     realtime.editCell('scope', id, field, trimmed);
+    if (targetScope) {
+      const legacy = [legacyScopeKey(targetScope)];
+      if (field === 'dateText') {
+        recordRevision(scopeKey(targetScope), legacy, windowOf(targetScope.dateText), windowOf(trimmed));
+      } else if (dataRef.current.overrides[legacy[0]] && !dataRef.current.overrides[scopeKey(targetScope)]) {
+        writeMeta(scopeKey(targetScope), {}, legacy).catch(() => {});
+      }
+    }
     try {
       await firestoreData.updateScope(id, timelineUpdates, user.name);
       const logDetail =
@@ -580,6 +742,10 @@ export default function App() {
           ...(updates.status !== undefined ? { status: updates.status } : {}),
           ...(updates.notes !== undefined ? { notes: updates.notes } : {}),
         };
+    const oldAct = dataRef.current.activities.find((a) => a.id === id);
+    if (oldAct && (safeUpdates.startDate !== undefined || safeUpdates.endDate !== undefined)) {
+      recordRevision(manualKey(oldAct), [], [oldAct.startDate, oldAct.endDate], [safeUpdates.startDate ?? oldAct.startDate, safeUpdates.endDate ?? oldAct.endDate]);
+    }
     try {
       await firestoreData.updateActivity(id, safeUpdates, user.name);
       await firestoreData.logAudit(user, 'UPDATE_ACTIVITY', 'Activity', id);
@@ -655,6 +821,15 @@ export default function App() {
       showToast('Only Admins and Managers can edit concrete pour dates or components.');
       return;
     }
+    const oldPour = dataRef.current.pours.find((p) => p.id === id);
+    if (oldPour && (safeUpdates.targetPour !== undefined || safeUpdates.targetCompletion !== undefined)) {
+      recordRevision(
+        pourKey(oldPour),
+        [],
+        [oldPour.targetPour || undefined, oldPour.targetCompletion || oldPour.targetPour || undefined],
+        [safeUpdates.targetPour ?? oldPour.targetPour, safeUpdates.targetCompletion ?? oldPour.targetCompletion]
+      );
+    }
     try {
       await firestoreData.updatePour(id, safeUpdates, user.name);
       await firestoreData.logAudit(user, 'UPDATE_POUR', 'ConcretePour', id);
@@ -722,6 +897,15 @@ export default function App() {
           ...(updates.scopeStatus !== undefined ? { scopeStatus: updates.scopeStatus } : {}),
           ...(updates.remarks !== undefined ? { remarks: updates.remarks } : {}),
         };
+    const oldEp = dataRef.current.episodes.find((e) => e.id === id);
+    if (oldEp && (safeUpdates.shootStart !== undefined || safeUpdates.shootEnd !== undefined)) {
+      recordRevision(
+        episodeKey(oldEp),
+        [],
+        [oldEp.shootStart || undefined, oldEp.shootEnd || oldEp.shootStart || undefined],
+        [safeUpdates.shootStart ?? oldEp.shootStart, safeUpdates.shootEnd ?? oldEp.shootEnd]
+      );
+    }
     try {
       await firestoreData.updateEpisode(id, safeUpdates, user.name);
       await firestoreData.logAudit(user, 'UPDATE_EPISODE', 'Episode', id);
@@ -823,18 +1007,7 @@ export default function App() {
       return;
     }
     try {
-      await firestoreData.setOverride(key, ov, user.name);
-      await firestoreData.logAudit(user, 'SET_OVERRIDE', 'ActivityOverride', key);
-      setData((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          overrides: {
-            ...prev.overrides,
-            [key]: { ...(prev.overrides[key] || { key }), ...ov },
-          },
-        };
-      });
+      await writeMeta(key, ov);
       showToast('Assignment & notes saved');
     } catch (err: unknown) {
       showToast(formatErrorForToast(err, 'Failed to save assignment'));
@@ -845,7 +1018,7 @@ export default function App() {
   const handleExportBackup = () => {
     const backup = {
       app: 'convengers-bahay-build',
-      format: 1,
+      format: 2,
       exportedAt: new Date().toISOString(),
       settings: data.settings,
       milestones: data.milestones,
@@ -855,6 +1028,10 @@ export default function App() {
       episodes: data.episodes,
       characters: data.characters,
       overrides: data.overrides,
+      // Command Center records (reports, issues, progress snapshots)
+      reports: control.reports.map(({ localOnly: _l, ...r }) => r),
+      issues: control.issues.map(({ localOnly: _l, ...r }) => r),
+      snapshots: control.snapshots.map(({ localOnly: _l, ...r }) => r),
     };
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -886,6 +1063,23 @@ export default function App() {
       } catch {
         throw new Error('Invalid JSON syntax in the selected backup file.');
       }
+      const src: any = json && typeof json === 'object' ? json : {};
+      const hasControl = Array.isArray(src.reports) || Array.isArray(src.issues) || Array.isArray(src.snapshots) || (src.report && src.report.id);
+      let controlMsg = '';
+      if (hasControl) {
+        const res = await controlStore.importRecords({
+          reports: Array.isArray(src.reports) ? src.reports : src.report ? [src.report] : [],
+          issues: src.issues,
+          snapshots: src.snapshots,
+        });
+        controlMsg = ` · ${res.imported} report/issue/snapshot record(s) merged, ${res.skipped} kept unchanged`;
+      }
+      const PROJECT_KEYS = ['milestones', 'scopes', 'pours', 'episodes', 'activities', 'characters', 'overrides', 'ms', 'pct', 'pm', 'page', 'data', 'dashboard'];
+      if (!PROJECT_KEYS.some((k) => src[k] !== undefined)) {
+        if (!hasControl) throw new Error('No recognizable project data found in this JSON file.');
+        showToast(`Imported${controlMsg}`);
+        return;
+      }
       const imported = await firestoreData.importBackup(json, user);
       setIsEditingText(false);
       setData((prev) =>
@@ -898,7 +1092,7 @@ export default function App() {
             }
           : prev
       );
-      showToast('Backup imported and synced to Firestore!');
+      showToast(`Backup imported and synced to Firestore!${controlMsg}`);
     } catch (err: unknown) {
       showToast(formatErrorForToast(err, 'Failed to import JSON backup'));
     }
@@ -922,30 +1116,24 @@ export default function App() {
     }
   };
 
-  if (!data) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#03051a] text-white">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-4 border-[#F5C518] border-t-transparent rounded-full animate-spin" />
-          <b className="font-['Barlow_Condensed'] text-xl tracking-wider text-[#F5C518]">
-            LOADING CONVENGERS BAHAY BUILD TIMELINE...
-          </b>
-        </div>
-      </div>
-    );
-  }
-
-  const handleJumpToRow = useCallback((targetKey: string) => {
-    let targetSlide = 's1';
-    if (targetKey.startsWith('c|GF|')) targetSlide = 's3';
-    else if (targetKey.startsWith('c|2F|')) targetSlide = 's4';
-    else if (targetKey.startsWith('c|3F|')) targetSlide = 's5';
-    else if (targetKey.startsWith('m|')) targetSlide = 's1';
-    else if (targetKey.startsWith('p|')) targetSlide = 's6';
-    else if (targetKey.startsWith('e|')) targetSlide = 's7';
-    const el = document.getElementById(targetSlide);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const navigate = useCallback((r: string) => {
+    const next = `#/${r.replace(/^#?\/?/, '')}`;
+    if (window.location.hash !== next) window.location.hash = next;
   }, []);
+
+  const handleJumpToRow = useCallback(
+    (targetKey: string) => {
+      const [prefix, id] = targetKey.split('|');
+      if (prefix === 'sc') {
+        const sc = dataRef.current.scopes.find((x) => x.id === id);
+        navigate(`construction/${sc ? sc.floor.toLowerCase() : 'gf'}`);
+      } else if (prefix === 'c') navigate(`construction/${(id || 'gf').toLowerCase()}`);
+      else if (prefix === 'p') navigate('construction/pours');
+      else if (prefix === 'e') navigate('production/calendar');
+      else navigate('overview/slide');
+    },
+    [navigate]
+  );
 
   const waitForImagesAndPrint = useCallback(async () => {
     const imgs = Array.from(document.images);
@@ -968,12 +1156,41 @@ export default function App() {
   }, []);
 
   // Print PDF & Formal Report
+  const ensureDeck = async () => {
+    if (!(route.section === 'overview' && route.tab === 'deck')) {
+      navigate('overview/deck');
+      await wait(700);
+    }
+    await nextFrames();
+  };
+
   const handlePrintPdf = async () => {
     document.body.classList.remove('pmrep-active');
     setIsPrintingReport(false);
-    await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+    await ensureDeck();
     await waitForImagesAndPrint();
   };
+
+  /** Print any Command Center document (reports) in the Convengers A4 layout. */
+  const printElement = useCallback(
+    async (render: () => React.ReactNode, title: string) => {
+      const prevTitle = document.title;
+      document.title = title;
+      setPrintNode(render());
+      document.body.classList.add('cv-printing');
+      const cleanup = () => {
+        document.body.classList.remove('cv-printing');
+        setPrintNode(null);
+        document.title = prevTitle;
+        window.removeEventListener('afterprint', cleanup);
+      };
+      window.addEventListener('afterprint', cleanup);
+      await wait(150);
+      await waitForImagesAndPrint();
+      cleanup();
+    },
+    [waitForImagesAndPrint]
+  );
 
   const handlePrintReport = async () => {
     setIsPrintingReport(true);
@@ -989,8 +1206,9 @@ export default function App() {
     cleanup();
   };
 
-  const handleDownloadHtml = () => {
+  const handleDownloadHtml = async () => {
     showToast('Preparing standalone HTML presentation...');
+    await ensureDeck();
     try {
       exportDashboardAsHtml();
       showToast('Downloaded HTML presentation!');
@@ -998,6 +1216,380 @@ export default function App() {
       showToast(formatErrorForToast(err, 'Failed to export HTML'));
     }
   };
+
+
+  // ===== COMMAND CENTER ACTIONS =====
+  /** Apply an edit from any Command Center module to the ORIGINAL record. */
+  const patchActivity = async (r: RegisterActivity, patch: ActivityPatch): Promise<boolean> => {
+    if (!canEdit) {
+      handleViewerAttemptEdit();
+      return false;
+    }
+    try {
+      const meta: Partial<ActivityOverride> = {};
+      (['supporting', 'priority', 'commitment', 'dependsOn', 'concern', 'correctiveAction', 'resolutionDate', 'onHold'] as const).forEach((k) => {
+        if (patch[k] !== undefined) (meta as any)[k] = patch[k];
+      });
+      if (r.kind !== 'pour') {
+        if (patch.actualStart !== undefined) meta.actualStart = patch.actualStart || undefined;
+        if (patch.actualFinish !== undefined) meta.actualFinish = patch.actualFinish || undefined;
+      }
+      if (patch.owner !== undefined && r.kind !== 'episode' && r.kind !== 'manual') meta.owner = patch.owner;
+      if (patch.remarks !== undefined && (r.kind === 'scope' || r.kind === 'milestone')) meta.remarks = patch.remarks;
+      const datesChanged = patch.start !== undefined || patch.finish !== undefined;
+      const newStart = patch.start !== undefined ? patch.start : r.start;
+      const newFinish = patch.finish !== undefined ? patch.finish : r.finish;
+      if (datesChanged && (!isValidIso(newStart) || (newFinish && !isValidIso(newFinish)))) {
+        showToast('Start and finish dates are required.');
+        return false;
+      }
+
+      switch (r.kind) {
+        case 'scope': {
+          if (patch.name !== undefined) await handleUpdateScopeField(r.sourceId, 'name', patch.name);
+          if (datesChanged) await handleUpdateScopeField(r.sourceId, 'dateText', toScopeDateText(newStart!, newFinish || newStart!));
+          if (patch.progress !== undefined) {
+            await handleUpdateScopeProgress(r.sourceId, patch.progress);
+            // Explicit actual dates in the same edit take precedence over auto-recorded ones
+          }
+          break;
+        }
+        case 'pour': {
+          const u: Partial<ConcretePour> = {};
+          if (patch.start !== undefined) u.targetPour = patch.start;
+          if (patch.finish !== undefined) u.targetCompletion = patch.finish;
+          if (patch.actualStart !== undefined) u.actualPour = patch.actualStart;
+          if (patch.actualFinish !== undefined) u.actualCompletion = patch.actualFinish;
+          if (patch.sourceStatus !== undefined) u.milestoneStatus = patch.sourceStatus as ConcretePour['milestoneStatus'];
+          if (patch.remarks !== undefined) u.remarks = patch.remarks;
+          if (Object.keys(u).length) await handleUpdatePour(r.sourceId, u);
+          break;
+        }
+        case 'milestone': {
+          if (patch.name !== undefined) await handleUpdateMilestoneField(r.sourceId, 'label', patch.name);
+          if (datesChanged) await handleUpdateMilestoneField(r.sourceId, 'dateText', toScopeDateText(newStart!, newFinish || newStart!));
+          if (patch.sourceStatus !== undefined) await handleUpdateMilestone(r.sourceId, patch.sourceStatus as Milestone['status']);
+          break;
+        }
+        case 'episode': {
+          const u: Partial<Episode> = {};
+          if (patch.start !== undefined) u.shootStart = patch.start;
+          if (patch.finish !== undefined) u.shootEnd = patch.finish;
+          if (patch.sourceStatus !== undefined) u.status = patch.sourceStatus as Episode['status'];
+          if (patch.owner !== undefined) u.director = patch.owner;
+          if (patch.remarks !== undefined) u.remarks = patch.remarks;
+          if (Object.keys(u).length) await handleUpdateEpisode(r.sourceId, u);
+          break;
+        }
+        case 'manual': {
+          const u: Partial<Activity> = {};
+          if (patch.name !== undefined) u.title = patch.name;
+          if (patch.start !== undefined) u.startDate = patch.start;
+          if (patch.finish !== undefined) u.endDate = patch.finish || patch.start;
+          if (patch.sourceStatus !== undefined) u.status = patch.sourceStatus as Activity['status'];
+          if (patch.owner !== undefined) u.owner = patch.owner;
+          if (patch.remarks !== undefined) u.notes = patch.remarks;
+          if (patch.progress !== undefined) meta.progress = patch.progress;
+          if (Object.keys(u).length) await handleUpdateActivity(r.sourceId, u);
+          break;
+        }
+      }
+      if (Object.keys(meta).length) await writeMeta(r.key, meta, r.legacyKeys);
+      showToast(`${r.name} updated — reflected in every module`);
+      return true;
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to save activity'));
+      return false;
+    }
+  };
+
+  const toastStored = (res: { stored: 'shared' | 'local' }, what: string) =>
+    showToast(res.stored === 'shared' ? `${what} saved to the shared project database` : `${what} saved on this device only (shared storage unavailable)`);
+
+  const saveIssue = async (i: ProjectIssue) => {
+    try {
+      const res = await controlStore.saveIssue(i);
+      await firestoreData.logAudit(user, 'SAVE_ISSUE', 'Issue', i.id, i.title);
+      toastStored(res, 'Issue');
+    } catch (err) {
+      showToast(formatErrorForToast(err, 'Failed to save issue'));
+    }
+  };
+  const deleteIssue = async (id: string) => {
+    try {
+      await controlStore.deleteIssue(id);
+      await firestoreData.logAudit(user, 'DELETE_ISSUE', 'Issue', id);
+      showToast('Issue deleted');
+    } catch (err) {
+      showToast(formatErrorForToast(err, 'Failed to delete issue'));
+    }
+  };
+  const saveReport = async (r: ProjectReport) => {
+    if (!isManager) {
+      showToast('Only Admins and Managers can save or approve reports.');
+      return;
+    }
+    try {
+      const res = await controlStore.saveReport(r);
+      await firestoreData.logAudit(user, r.status === 'approved' ? 'APPROVE_REPORT' : 'SAVE_REPORT', 'Report', r.id, r.title);
+      toastStored(res, r.status === 'approved' ? 'Approved report' : 'Draft report');
+    } catch (err) {
+      showToast(formatErrorForToast(err, 'Failed to save report'));
+    }
+  };
+  const deleteReport = async (id: string) => {
+    try {
+      await controlStore.deleteReport(id);
+      await firestoreData.logAudit(user, 'DELETE_REPORT', 'Report', id);
+      showToast('Draft report deleted');
+    } catch (err) {
+      showToast(formatErrorForToast(err, 'Failed to delete report'));
+    }
+  };
+
+  const captureSnapshot = useCallback(
+    async (manual = false) => {
+      try {
+        const res = await controlStore.saveSnapshot(makeSnapshot(metrics, register, user.name, today));
+        if (manual) toastStored(res, 'Progress snapshot');
+      } catch (err) {
+        if (manual) showToast(formatErrorForToast(err, 'Failed to save snapshot'));
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [metrics, register, user.name, today]
+  );
+
+  // Automatic daily snapshot (once live data has loaded; updated if values change that day)
+  useEffect(() => {
+    if (!canEdit || !dbReady) return;
+    const existing = control.snapshots.find((x) => x.id === today);
+    if (
+      existing &&
+      existing.actualPct === metrics.actualPct &&
+      existing.plannedPct === metrics.plannedPct &&
+      existing.counts.delayed === metrics.counts.delayed &&
+      existing.counts.completed === metrics.counts.completed
+    )
+      return;
+    const t = setTimeout(() => captureSnapshot(false), 5000);
+    return () => clearTimeout(t);
+  }, [canEdit, dbReady, today, metrics.actualPct, metrics.plannedPct, metrics.counts.delayed, metrics.counts.completed, control.snapshots, captureSnapshot]);
+
+  const freezeBaseline = async () => {
+    if (!isManager) return;
+    const targets = register.filter(
+      (r) => (r.kind === 'scope' || r.kind === 'milestone' || r.kind === 'pour' || r.kind === 'episode' || r.kind === 'manual') && !data.overrides[r.key]?.baselineStart && r.plannedStart
+    );
+    let n = 0;
+    for (const r of targets) {
+      try {
+        await writeMeta(r.key, { baselineStart: r.plannedStart, baselineFinish: r.plannedFinish || r.plannedStart }, r.legacyKeys);
+        n++;
+      } catch {
+        // continue with the rest
+      }
+    }
+    await firestoreData.logAudit(user, 'FREEZE_BASELINE', 'System', 'all', `${n} activities`);
+    showToast(`Baseline frozen for ${n} activit${n === 1 ? 'y' : 'ies'}`);
+  };
+
+  const commandState: CommandState = {
+    data,
+    register,
+    metrics,
+    alignment,
+    attention,
+    reports: control.reports,
+    issues: control.issues,
+    snapshots: control.snapshots,
+    sharedStorage: control.shared,
+    today,
+    user,
+    canEdit,
+    isManager,
+    isAdmin,
+    isLive: isLiveConnected,
+    route,
+    actions: {
+      navigate,
+      openActivity: (id) => setOpenActivityId(id),
+      toast: showToast,
+      patchActivity,
+      addActivity: handleAddActivity,
+      saveIssue,
+      deleteIssue,
+      saveReport,
+      deleteReport,
+      captureSnapshot,
+      freezeBaseline,
+      syncLocal: async () => {
+        const n = await controlStore.syncLocal();
+        showToast(n ? `Uploaded ${n} record(s) to the shared database` : 'Shared storage still unavailable — records remain on this device');
+      },
+      exportBackup: handleExportBackup,
+      importBackup: (f) => setPendingImport(f),
+      printSlides: handlePrintPdf,
+      printExecutiveReport: handlePrintReport,
+      downloadHtml: handleDownloadHtml,
+      openAuditLogs: () => setIsAuditOpen(true),
+      openAdminPanel: () => setIsAdminPanelOpen(true),
+      resetBaseline: handleReset,
+      toggleTheme: handleToggleTheme,
+      changePaper: handleChangePaper,
+      printElement,
+    },
+  };
+  const openActivity = openActivityId ? register.find((r) => r.id === openActivityId) : undefined;
+
+  const slides: Record<SlideKey, () => React.ReactNode> = {
+    overview: () => (
+      <OverviewSlide
+        milestones={data.milestones}
+        scopes={data.scopes}
+        pours={data.pours}
+        episodes={data.episodes}
+        settings={data.settings}
+        canEdit={canEdit}
+        canEditTimeline={isManager}
+        onUpdateMilestone={handleUpdateMilestone}
+        onUpdateMilestoneField={handleUpdateMilestoneField}
+        onViewerAttemptEdit={handleViewerAttemptEdit}
+        remoteFocusMap={remoteFocusMap}
+      />
+    ),
+    upcoming: () => (
+      <UpcomingActivitiesSlide
+        activities={data.activities}
+        scopes={data.scopes}
+        milestones={data.milestones}
+        episodes={data.episodes}
+        pours={data.pours}
+        overrides={data.overrides}
+        settings={data.settings}
+        canEdit={canEdit}
+        canEditTimeline={isManager}
+        canDelete={isAdmin}
+        onAddActivity={handleAddActivity}
+        onUpdateActivity={handleUpdateActivity}
+        onDeleteActivity={handleDeleteActivity}
+        onSetOverride={handleSetOverride}
+        onJumpToRow={handleJumpToRow}
+        onViewerAttemptEdit={handleViewerAttemptEdit}
+      />
+    ),
+    gf: () => floorSlide('GF', '03'),
+    '2f': () => floorSlide('2F', '04'),
+    '3f': () => floorSlide('3F', '05'),
+    pours: () => (
+      <ConcretePourSlide
+        pours={data.pours}
+        settings={data.settings}
+        canEdit={canEdit}
+        canEditTimeline={isManager}
+        canDelete={isAdmin}
+        onAddPour={handleAddPour}
+        onUpdatePour={handleUpdatePour}
+        onDeletePour={handleDeletePour}
+        onViewerAttemptEdit={handleViewerAttemptEdit}
+      />
+    ),
+    production: () => (
+      <ContentCalendarSlide
+        episodes={data.episodes}
+        characters={data.characters}
+        settings={data.settings}
+        canEdit={canEdit}
+        canEditTimeline={isManager}
+        canDelete={isAdmin}
+        onAddEpisode={handleAddEpisode}
+        onUpdateEpisode={handleUpdateEpisode}
+        onDeleteEpisode={handleDeleteEpisode}
+        onAddCharacter={handleAddCharacter}
+        onUpdateCharacter={handleUpdateCharacter}
+        onDeleteCharacter={handleDeleteCharacter}
+        onViewerAttemptEdit={handleViewerAttemptEdit}
+      />
+    ),
+    episodes: () => (
+      <EpisodesTableSlide
+        episodes={data.episodes}
+        settings={data.settings}
+        canEdit={canEdit}
+        canEditTimeline={isManager}
+        onUpdateEpisode={handleUpdateEpisode}
+        onViewerAttemptEdit={handleViewerAttemptEdit}
+      />
+    ),
+    master: () => (
+      <OverallProjectTimelineSlide
+        milestones={data.milestones}
+        scopes={data.scopes}
+        pours={data.pours}
+        episodes={data.episodes}
+        settings={data.settings}
+        canEdit={canEdit}
+        onUpdateMilestone={handleUpdateMilestone}
+        onUpdateEpisode={handleUpdateEpisode}
+        onViewerAttemptEdit={handleViewerAttemptEdit}
+        remoteFocusMap={remoteFocusMap}
+      />
+    ),
+    methodology: () => <MethodologySlide settings={data.settings} />,
+    watch: () => <HolidaysSlide settings={data.settings} />,
+    notes: () => <NotesSlide settings={data.settings} />,
+  };
+
+  function floorSlide(floor: 'GF' | '2F' | '3F', num: string) {
+    return (
+      <FloorScopeSlide
+        floor={floor}
+        slideNumber={num}
+        scopes={data.scopes}
+        episodes={data.episodes}
+        settings={data.settings}
+        canEdit={canEdit}
+        canEditTimeline={isManager}
+        canDelete={isAdmin}
+        onUpdateProgress={handleUpdateScopeProgress}
+        onUpdateScopeField={handleUpdateScopeField}
+        onUpdateScopeWorkingDays={handleUpdateScopeWorkingDays}
+        onAddScope={handleAddScope}
+        onDeleteScope={handleDeleteScope}
+        onViewerAttemptEdit={handleViewerAttemptEdit}
+        remoteFocusMap={remoteFocusMap}
+      />
+    );
+  }
+
+  const DECK: { id: string; key: SlideKey }[] = [
+    { id: 's1', key: 'overview' },
+    { id: 's2', key: 'upcoming' },
+    { id: 's3', key: 'gf' },
+    { id: 's4', key: '2f' },
+    { id: 's5', key: '3f' },
+    { id: 's6', key: 'pours' },
+    { id: 's7', key: 'production' },
+    { id: 's8', key: 'episodes' },
+    { id: 's9', key: 'master' },
+    { id: 's10', key: 'methodology' },
+    { id: 's11', key: 'watch' },
+    { id: 's12', key: 'notes' },
+  ];
+  const renderSlide = (k: SlideKey) => (
+    <main className="stage" id="stage">
+      <div id={DECK.find((d) => d.key === k)?.id}>{slides[k]()}</div>
+    </main>
+  );
+  const renderDeck = () => (
+    <main className="stage" id="stage">
+      {DECK.map((d) => (
+        <div id={d.id} key={d.id}>
+          {slides[d.key]()}
+        </div>
+      ))}
+    </main>
+  );
 
   return (
     <div className={isEditingText ? 'editing' : ''}>
@@ -1023,11 +1615,13 @@ export default function App() {
         onPrintReport={handlePrintReport}
         onDownloadHtml={handleDownloadHtml}
         onExportBackup={handleExportBackup}
-        onImportBackup={handleImportBackup}
+        onImportBackup={(f) => setPendingImport(f)}
         onOpenAuditLogs={() => setIsAuditOpen(true)}
         onReset={handleReset}
         onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
         isAdminPresentationMode={isAdminPresentationMode}
+        compact
+        onOpenSettings={() => navigate('settings')}
         onToggleAdminPresentationMode={() => {
           setIsAdminPresentationMode((prev) => {
             const next = !prev;
@@ -1042,239 +1636,11 @@ export default function App() {
         }}
       />
 
-      {/* Intro Header */}
-      <header className="intro">
-        <h1>Convengers Assemble — Scope of Work Timeline</h1>
-        <p>
-          Interactive full-stack project dashboard for the Convengers Bahay Build: timeline, scopes of work, concrete pouring milestones, upcoming activities, and production calendar. Official portal at <b className="text-[#F5C518]">www.ConvengersAssemble.com</b>. Real-time persistent database with role-based permissions and secure authentication.
-        </p>
-      </header>
-
-      {/* Slide Navigation Jump Bar */}
-      <nav className="jumpnav max-w-[1920px] mx-auto px-4 py-2 sticky top-[48px] z-30 flex items-center justify-between gap-2 overflow-x-auto bg-[#0A1140]/95 backdrop-blur border-y border-[#7B4DFF]/60 shadow-[0_4px_16px_rgba(0,0,0,0.5)] mb-4 rounded-b-lg">
-        <div className="flex items-center gap-2">
-          <span className="text-[#F5C518] font-bold text-xs uppercase tracking-wider whitespace-nowrap">
-            Jump to Slide:
-          </span>
-          {[
-            { id: 's1', label: '01 Overview' },
-            { id: 's2', label: '02 Upcoming' },
-            { id: 's3', label: '03 GF' },
-            { id: 's4', label: '04 2F' },
-            { id: 's5', label: '05 3F' },
-            { id: 's6', label: '06 Concrete Pours' },
-            { id: 's7', label: '07 Production Calendar' },
-            { id: 's8', label: '08 Episodes Table' },
-            { id: 's9', label: '★ 09 Master Timeline (Construction + Production)', highlight: true },
-            { id: 's10', label: '10 Methodology' },
-            { id: 's11', label: '11 Watch Items & Holidays' },
-            { id: 's12', label: '12 Schedule Notes' },
-          ].map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => {
-                const el = document.getElementById(item.id);
-                if (el) {
-                  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-              }}
-              className={`px-2.5 py-1 rounded text-xs font-semibold whitespace-nowrap transition-all border ${
-                item.highlight
-                  ? 'bg-[#7B4DFF] text-[#F5C518] border-[#F5C518] shadow-[0_0_12px_rgba(245,197,24,0.5)] font-bold'
-                  : 'bg-[#121C5A] text-[#BAC4E2] hover:text-white border-[#7B4DFF]/40 hover:border-[#7B4DFF]'
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-        <div className="text-[11px] text-[#BAC4E2] font-mono hidden xl:block">
-          Official Portal: <span className="text-[#F5C518]">www.ConvengersAssemble.com</span>
-        </div>
-      </nav>
-
-      {/* Main Multi-Slide Stage */}
-      <main className="stage" id="stage">
-        {/* Slide 1: Executive Overview */}
-        <div id="s1">
-          <OverviewSlide
-            milestones={data.milestones}
-            scopes={data.scopes}
-            pours={data.pours}
-            episodes={data.episodes}
-            settings={data.settings}
-            canEdit={canEdit}
-            canEditTimeline={isManager}
-            onUpdateMilestone={handleUpdateMilestone}
-            onUpdateMilestoneField={handleUpdateMilestoneField}
-            onViewerAttemptEdit={handleViewerAttemptEdit}
-            remoteFocusMap={remoteFocusMap}
-          />
-        </div>
-
-        {/* Slide 2: Upcoming / Next Activities */}
-        <div id="s2">
-          <UpcomingActivitiesSlide
-            activities={data.activities}
-            scopes={data.scopes}
-            milestones={data.milestones}
-            episodes={data.episodes}
-            pours={data.pours}
-            overrides={data.overrides}
-            settings={data.settings}
-            canEdit={canEdit}
-            canEditTimeline={isManager}
-            canDelete={isAdmin}
-            onAddActivity={handleAddActivity}
-            onUpdateActivity={handleUpdateActivity}
-            onDeleteActivity={handleDeleteActivity}
-            onSetOverride={handleSetOverride}
-            onJumpToRow={handleJumpToRow}
-            onViewerAttemptEdit={handleViewerAttemptEdit}
-          />
-        </div>
-
-        {/* Slide 3: Ground Floor */}
-        <div id="s3">
-          <FloorScopeSlide
-            floor="GF"
-            slideNumber="03"
-            scopes={data.scopes}
-            episodes={data.episodes}
-            settings={data.settings}
-            canEdit={canEdit}
-            canEditTimeline={isManager}
-            canDelete={isAdmin}
-            onUpdateProgress={handleUpdateScopeProgress}
-            onUpdateScopeField={handleUpdateScopeField}
-            onUpdateScopeWorkingDays={handleUpdateScopeWorkingDays}
-            onAddScope={handleAddScope}
-            onDeleteScope={handleDeleteScope}
-            onViewerAttemptEdit={handleViewerAttemptEdit}
-            remoteFocusMap={remoteFocusMap}
-          />
-        </div>
-
-        {/* Slide 4: Second Floor */}
-        <div id="s4">
-          <FloorScopeSlide
-            floor="2F"
-            slideNumber="04"
-            scopes={data.scopes}
-            episodes={data.episodes}
-            settings={data.settings}
-            canEdit={canEdit}
-            canEditTimeline={isManager}
-            canDelete={isAdmin}
-            onUpdateProgress={handleUpdateScopeProgress}
-            onUpdateScopeField={handleUpdateScopeField}
-            onUpdateScopeWorkingDays={handleUpdateScopeWorkingDays}
-            onAddScope={handleAddScope}
-            onDeleteScope={handleDeleteScope}
-            onViewerAttemptEdit={handleViewerAttemptEdit}
-            remoteFocusMap={remoteFocusMap}
-          />
-        </div>
-
-        {/* Slide 5: Third Floor */}
-        <div id="s5">
-          <FloorScopeSlide
-            floor="3F"
-            slideNumber="05"
-            scopes={data.scopes}
-            episodes={data.episodes}
-            settings={data.settings}
-            canEdit={canEdit}
-            canEditTimeline={isManager}
-            canDelete={isAdmin}
-            onUpdateProgress={handleUpdateScopeProgress}
-            onUpdateScopeField={handleUpdateScopeField}
-            onUpdateScopeWorkingDays={handleUpdateScopeWorkingDays}
-            onAddScope={handleAddScope}
-            onDeleteScope={handleDeleteScope}
-            onViewerAttemptEdit={handleViewerAttemptEdit}
-            remoteFocusMap={remoteFocusMap}
-          />
-        </div>
-
-        {/* Slide 6: Concrete Pouring Milestones */}
-        <div id="s6">
-          <ConcretePourSlide
-            pours={data.pours}
-            settings={data.settings}
-            canEdit={canEdit}
-            canEditTimeline={isManager}
-            canDelete={isAdmin}
-            onAddPour={handleAddPour}
-            onUpdatePour={handleUpdatePour}
-            onDeletePour={handleDeletePour}
-            onViewerAttemptEdit={handleViewerAttemptEdit}
-          />
-        </div>
-
-        {/* Slide 7: Production Calendar & Multiverse Characters */}
-        <div id="s7">
-          <ContentCalendarSlide
-            episodes={data.episodes}
-            characters={data.characters}
-            settings={data.settings}
-            canEdit={canEdit}
-            canEditTimeline={isManager}
-            canDelete={isAdmin}
-            onAddEpisode={handleAddEpisode}
-            onUpdateEpisode={handleUpdateEpisode}
-            onDeleteEpisode={handleDeleteEpisode}
-            onAddCharacter={handleAddCharacter}
-            onUpdateCharacter={handleUpdateCharacter}
-            onDeleteCharacter={handleDeleteCharacter}
-            onViewerAttemptEdit={handleViewerAttemptEdit}
-          />
-        </div>
-
-        {/* Slide 8: 24 Episodes Table */}
-        <div id="s8">
-          <EpisodesTableSlide
-            episodes={data.episodes}
-            settings={data.settings}
-            canEdit={canEdit}
-            canEditTimeline={isManager}
-            onUpdateEpisode={handleUpdateEpisode}
-            onViewerAttemptEdit={handleViewerAttemptEdit}
-          />
-        </div>
-
-        {/* Slide 9: Overall Project Timeline (Construction + Production Master Schedule) */}
-        <div id="s9">
-          <OverallProjectTimelineSlide
-            milestones={data.milestones}
-            scopes={data.scopes}
-            pours={data.pours}
-            episodes={data.episodes}
-            settings={data.settings}
-            canEdit={canEdit}
-            onUpdateMilestone={handleUpdateMilestone}
-            onUpdateEpisode={handleUpdateEpisode}
-            onViewerAttemptEdit={handleViewerAttemptEdit}
-            remoteFocusMap={remoteFocusMap}
-          />
-        </div>
-
-        {/* Slide 10: Structural Methodology (Moved to last pages) */}
-        <div id="s10">
-          <MethodologySlide settings={data.settings} />
-        </div>
-
-        {/* Slide 11: Watch Items & Philippine Holidays (Moved to last pages) */}
-        <div id="s11">
-          <HolidaysSlide settings={data.settings} />
-        </div>
-
-        {/* Slide 12: Schedule Notes & Validation Items (Moved to last pages) */}
-        <div id="s12">
-          <NotesSlide settings={data.settings} />
-        </div>
-      </main>
+      <CommandProvider value={commandState}>
+        <Shell renderSlide={renderSlide} renderDeck={renderDeck} />
+        {openActivity && <ActivityEditor key={openActivity.id} activity={openActivity} onClose={() => setOpenActivityId(null)} />}
+        {printNode && createPortal(<div id="cv-print-root">{printNode}</div>, document.body)}
+      </CommandProvider>
 
       {/* Printable Report View (shown during Print Report) */}
       <PrintReport data={data} />
@@ -1387,6 +1753,31 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {pendingImport && (
+        <ConfirmDialog
+          title="Import this backup?"
+          message={
+            <>
+              <b>{pendingImport.name}</b>
+              <div style={{ marginTop: 8 }}>
+                Project collections contained in the file (milestones, scopes, pours, episodes, activities, characters, assignments) will be restored to the
+                file's contents. Reports, issues and snapshots are merged and never deleted; approved reports are never overwritten.
+              </div>
+              <div style={{ marginTop: 8 }} className="cv-late">
+                Export a backup of the current data first if you may need to roll back.
+              </div>
+            </>
+          }
+          confirmLabel="Import backup"
+          onCancel={() => setPendingImport(null)}
+          onConfirm={() => {
+            const f = pendingImport;
+            setPendingImport(null);
+            handleImportBackup(f);
+          }}
+        />
       )}
 
       {/* Toast Notification */}

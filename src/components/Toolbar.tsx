@@ -29,6 +29,9 @@ interface ToolbarProps {
   onOpenAdminPanel?: () => void;
   isAdminPresentationMode?: boolean;
   onToggleAdminPresentationMode?: () => void;
+  /** Compact mode: data-management controls live in "12 — Settings & Data". */
+  compact?: boolean;
+  onOpenSettings?: () => void;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -52,6 +55,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onOpenAdminPanel,
   isAdminPresentationMode = false,
   onToggleAdminPresentationMode,
+  compact = false,
+  onOpenSettings,
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -199,6 +204,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         </button>
       )}
 
+      {!compact && (
       <label style={{ fontSize: '13px', color: '#BAC4E2', display: 'flex', alignItems: 'center', gap: '6px' }}>
         Paper{' '}
         <select
@@ -220,6 +226,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           <option value="tabloid">Tabloid 11×17 landscape</option>
         </select>
       </label>
+      )}
 
       <button id="print" type="button" onClick={onPrintPdf}>
         Print / save PDF
@@ -229,7 +236,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         Print report
       </button>
 
-      {onDownloadHtml && (
+      {compact && onOpenSettings && (
+        <button type="button" onClick={onOpenSettings} title="Backup, import, export, baseline, audit log and administration">
+          Data & settings
+        </button>
+      )}
+
+      {!compact && onDownloadHtml && (
         <button
           id="dlhtml"
           type="button"
@@ -241,12 +254,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         </button>
       )}
 
+      {!compact && (
       <button id="pmexp" type="button" onClick={onExportBackup}>
         Export backup
       </button>
+      )}
 
       {/* Backup Import: Hidden in viewer/presentation mode */}
-      {user && (user.role === 'admin' || user.role === 'manager') && !isAdminPresentationMode && (
+      {!compact && user && (user.role === 'admin' || user.role === 'manager') && !isAdminPresentationMode && (
         <>
           <button id="pmimp" type="button" onClick={() => fileInputRef.current?.click()}>
             Import backup
@@ -261,14 +276,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         </>
       )}
 
-      {user && user.role === 'admin' && !isAdminPresentationMode && (
+      {!compact && user && user.role === 'admin' && !isAdminPresentationMode && (
         <button type="button" onClick={onOpenAuditLogs} className="bg-[#121C5A]">
           Audit Logs
         </button>
       )}
 
       {/* Reset: Administrator Only, Hidden in presentation mode */}
-      {user && user.role === 'admin' && !isAdminPresentationMode && (
+      {!compact && user && user.role === 'admin' && !isAdminPresentationMode && (
         <button id="reset" type="button" onClick={onReset} className="border border-[#E0213B]/70 hover:border-[#E0213B] text-[#FF7A8A]">
           Reset
         </button>
@@ -277,7 +292,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       <span id="tver">
         Version {settings.version}
       </span>
-      <span className="text-[12px] leading-tight">
+      <span className={`text-[12px] leading-tight ${compact ? 'hidden 2xl:inline' : ''}`}>
         {user && user.role !== 'viewer' && user.role !== 'pending' && !isAdminPresentationMode
           ? `Madhouse ${user.role.toUpperCase()} Editor Active · Real-time sync.`
           : 'Viewing in presentation mode. Timeline cells, milestone statuses, and production dates are locked to prevent accidental edits.'}

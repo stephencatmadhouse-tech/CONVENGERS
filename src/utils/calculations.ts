@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ScopeItem, ConcretePour, Milestone } from '../types';
+import { ScopeItem, ConcretePour, Milestone } from '../types/index.ts';
 
 export const PHILIPPINE_HOLIDAYS_SET = new Set([
   '2026-11-02', // All Souls' Day
