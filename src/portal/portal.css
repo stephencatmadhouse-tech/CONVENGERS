@@ -566,3 +566,217 @@
     padding: 0;
   }
 }
+
+/* =====================================================================
+   Left sidebar — deep indigo / violet (reference palette); content white
+   ===================================================================== */
+.pt-layout {
+  display: flex;
+  min-height: 100vh;
+}
+.pt-side {
+  width: 264px;
+  flex: none;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 14px 18px;
+  color: #ece9f7;
+  background:
+    radial-gradient(120% 34% at 70% 102%, rgba(150, 92, 255, 0.55) 0%, rgba(124, 58, 237, 0.22) 38%, rgba(21, 15, 51, 0) 72%),
+    linear-gradient(180deg, #150f33 0%, #120c2c 55%, #0e0a24 100%);
+  scrollbar-color: rgba(201, 189, 246, 0.25) transparent;
+  z-index: 50;
+}
+.pt-side-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 2px 6px 16px;
+}
+.pt-side-brand img {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(201, 189, 246, 0.35);
+}
+.pt-side-name {
+  font: 800 21px 'Barlow Condensed', sans-serif;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #ffffff;
+  line-height: 1;
+}
+.pt-side-sub {
+  font-size: 12px;
+  color: #a9a1d0;
+  margin-top: 3px;
+}
+.pt-side-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pt-side-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #ece9f7;
+  font: 600 14.5px 'Barlow', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.pt-side-btn svg {
+  color: #c9bdf6;
+  flex: none;
+}
+.pt-side-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+.pt-side-btn.on {
+  background: linear-gradient(90deg, #6a40e0 0%, #8b5cf6 100%);
+  border-color: rgba(196, 170, 255, 0.55);
+  box-shadow: 0 6px 22px rgba(124, 77, 246, 0.42);
+  color: #ffffff;
+}
+.pt-side-btn.on svg {
+  color: #ffffff;
+}
+.pt-side-btn:focus-visible,
+.pt-side-out:focus-visible {
+  outline: 2px solid #c9bdf6;
+  outline-offset: 2px;
+}
+.pt-side-foot {
+  margin-top: auto;
+  padding: 14px 8px 0;
+  border-top: 1px solid rgba(201, 189, 246, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pt-side-user {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  color: #a9a1d0;
+}
+.pt-side-user b {
+  color: #ffffff;
+  font-size: 14px;
+}
+.pt-side-out {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(201, 189, 246, 0.35);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  font: 600 13px 'Barlow', sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+}
+.pt-side-out:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.pt-body {
+  flex: 1;
+  min-width: 0;
+  background: #ffffff;
+}
+.pt-layout .pt-header {
+  position: static;
+}
+.pt-layout .pt-header-in {
+  padding: 18px 28px 14px;
+  max-width: 1240px;
+}
+.pt-layout .pt-main,
+.pt-layout .pt-footer {
+  max-width: 1240px;
+  margin: 0;
+  padding-left: 28px;
+  padding-right: 28px;
+}
+
+@media (max-width: 900px) {
+  .pt-layout {
+    flex-direction: column;
+  }
+  /* Phones: the sidebar becomes a compact dark top bar with swipeable sections */
+  .pt-side {
+    width: 100%;
+    height: auto;
+    position: sticky;
+    top: 0;
+    flex-direction: column;
+    padding: 12px 12px 8px;
+    gap: 8px;
+    background: linear-gradient(180deg, #150f33 0%, #120c2c 100%);
+  }
+  .pt-side-brand {
+    padding: 0 4px;
+  }
+  .pt-side-brand img {
+    width: 34px;
+    height: 34px;
+  }
+  .pt-side-name {
+    font-size: 17px;
+  }
+  .pt-side-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 6px;
+  }
+  .pt-side-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .pt-side-btn {
+    width: auto;
+    white-space: nowrap;
+    padding: 8px 12px;
+    font-size: 13px;
+    gap: 8px;
+  }
+  .pt-side-foot {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 4px 2px;
+    margin-top: 0;
+  }
+  .pt-layout .pt-header {
+    display: none;
+  }
+  .pt-layout .pt-main,
+  .pt-layout .pt-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+@media print {
+  .pt-side {
+    display: none !important;
+  }
+  .pt-layout {
+    display: block;
+  }
+}

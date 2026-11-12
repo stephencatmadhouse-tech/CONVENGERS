@@ -17,17 +17,43 @@ import { ROLE_LABEL } from '../auth/roles.ts';
 import { LOGO_SVG } from '../constants/assets.ts';
 import { PortalRecord, PortalSnapshot, PortalReport, PortalReportRow, NOT_PROVIDED, fmtOrPending } from '../domain/portal.ts';
 import { addDays, diffDays, fmtDate, fmtRange, monthLabel, todayIso } from '../domain/dates.ts';
+import {
+  LayoutDashboard,
+  HardHat,
+  ChartGantt,
+  Flag,
+  CalendarCheck,
+  CalendarDays,
+  Images,
+  MessageSquareWarning,
+  FileDown,
+  LogOut,
+  ArrowLeft,
+  type LucideIcon,
+} from 'lucide-react';
+
+const TAB_ICONS: Record<string, LucideIcon> = {
+  overview: LayoutDashboard,
+  progress: HardHat,
+  timeline: ChartGantt,
+  milestones: Flag,
+  monthly: CalendarCheck,
+  weekly: CalendarDays,
+  gallery: Images,
+  considerations: MessageSquareWarning,
+  reports: FileDown,
+};
 
 const TABS = [
   { id: 'overview', label: 'Executive Overview' },
   { id: 'progress', label: 'Construction Progress' },
-  { id: 'timeline', label: 'Timeline' },
-  { id: 'milestones', label: 'Milestones' },
+  { id: 'timeline', label: 'Project Timeline' },
+  { id: 'milestones', label: 'Key Milestones' },
   { id: 'monthly', label: 'Monthly Accomplishments' },
   { id: 'weekly', label: 'Weekly Highlights' },
-  { id: 'gallery', label: 'Gallery' },
-  { id: 'considerations', label: 'Considerations' },
-  { id: 'reports', label: 'Reports' },
+  { id: 'gallery', label: 'Progress Gallery' },
+  { id: 'considerations', label: 'Major Considerations' },
+  { id: 'reports', label: 'Reports & Downloads' },
 ];
 
 const STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
@@ -104,41 +130,53 @@ export const PortalApp: React.FC<{ user: User; mode: 'external' | 'preview' }> =
   const ctx = { snap, snapRec: byKind.snapshot, ...byKind, go, param };
 
   return (
-    <div className="pt">
+    <div className="pt pt-layout">
+      <aside className="pt-side pt-noprint" aria-label="Portal navigation">
+        <div className="pt-side-brand">
+          <img src={LOGO_SVG} alt="Convengers emblem" />
+          <div>
+            <div className="pt-side-name">Convengers</div>
+            <div className="pt-side-sub">Bahay Build · Client Portal</div>
+          </div>
+        </div>
+        <nav className="pt-side-nav" aria-label="Portal sections">
+          {TABS.map((t) => (
+            <button key={t.id} type="button" className={`pt-side-btn ${tab === t.id ? 'on' : ''}`} onClick={() => go(t.id)} aria-current={tab === t.id ? 'page' : undefined}>
+              {React.createElement(TAB_ICONS[t.id], { size: 19, strokeWidth: 1.9, 'aria-hidden': true })}
+              <span>{t.label}</span>
+            </button>
+          ))}
+        </nav>
+        <div className="pt-side-foot">
+          <div className="pt-side-user">
+            <b>{user.name}</b>
+            <span>{ROLE_LABEL[user.role]}</span>
+          </div>
+          {mode === 'external' ? (
+            <button type="button" className="pt-side-out" onClick={() => authService.signOut()}>
+              <LogOut size={16} aria-hidden /> Sign out
+            </button>
+          ) : (
+            <a className="pt-side-out" href="#/command">
+              <ArrowLeft size={16} aria-hidden /> Project Management System
+            </a>
+          )}
+        </div>
+      </aside>
+      <div className="pt-body">
       {mode === 'preview' && (
         <div className="pt-preview pt-noprint">
           <b>Internal preview of the Executive &amp; Client Portal.</b> External users see exactly this — only Published content.
-          <a className="pt-btn sm" href="#/command">
-            ← Back to Project Management System
-          </a>
         </div>
       )}
       <header className="pt-header">
         <div className="pt-header-in">
           <div className="pt-brand">
-            <img src={LOGO_SVG} alt="Convengers emblem" />
             <div>
               <div className="pt-brand-name">Convengers Bahay Build</div>
               <div className="pt-brand-sub">Executive &amp; Client Reporting Portal</div>
             </div>
-            <div className="pt-user">
-              <span>
-                {user.name} · {ROLE_LABEL[user.role]}
-              </span>
-              {mode === 'external' && (
-                <button type="button" className="pt-btn sm" onClick={() => authService.signOut()}>
-                  Sign out
-                </button>
-              )}
-            </div>
           </div>
-          <nav className="pt-nav" aria-label="Portal sections">
-            {TABS.map((t) => (
-              <button key={t.id} type="button" className={`pt-tab ${tab === t.id ? 'on' : ''}`} onClick={() => go(t.id)} aria-current={tab === t.id ? 'page' : undefined}>
-                {t.label}
-              </button>
-            ))}
-          </nav>
         </div>
       </header>
       <main className="pt-main">
@@ -178,6 +216,7 @@ export const PortalApp: React.FC<{ user: User; mode: 'external' | 'preview' }> =
         {byKind.snapshot ? ` Project status last published ${fmtDate(byKind.snapshot.publishedAt.slice(0, 10))}.` : ''} Dates marked “Tentative” or “Target” are not yet confirmed
         commitments.
       </footer>
+      </div>
     </div>
   );
 };

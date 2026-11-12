@@ -1431,3 +1431,74 @@ html:not([data-eff='dark']) .cv-banner.ok {
     display: none;
   }
 }
+
+/* =====================================================================
+   Sidebar — deep indigo / violet (reference palette). Content stays white.
+   ===================================================================== */
+:root {
+  --sb-bg: #150f33;
+  --sb-bg-2: #0e0a24;
+  --sb-text: #ece9f7;
+  --sb-icon: #c9bdf6;
+  --sb-muted: #8f87b8;
+  --sb-line: rgba(201, 189, 246, 0.14);
+  --sb-hover: rgba(255, 255, 255, 0.06);
+  --sb-active: linear-gradient(90deg, #6a40e0 0%, #8b5cf6 100%);
+  --sb-active-border: rgba(196, 170, 255, 0.55);
+  --sb-active-glow: 0 6px 22px rgba(124, 77, 246, 0.42);
+  --sb-glow: radial-gradient(120% 34% at 70% 102%, rgba(150, 92, 255, 0.55) 0%, rgba(124, 58, 237, 0.22) 38%, rgba(21, 15, 51, 0) 72%);
+}
+html:not([data-eff='dark']) .cv-sidebar {
+  background: var(--sb-glow), linear-gradient(180deg, var(--sb-bg) 0%, #120c2c 55%, var(--sb-bg-2) 100%);
+  background-attachment: local, local;
+  border-right: none;
+  color: var(--sb-text);
+  scrollbar-color: rgba(201, 189, 246, 0.25) transparent;
+  padding: 18px 12px 120px;
+}
+html:not([data-eff='dark']) .cv-side-title {
+  color: #ffffff;
+  letter-spacing: 2.4px;
+}
+html:not([data-eff='dark']) .cv-side-group {
+  color: var(--sb-muted);
+}
+html:not([data-eff='dark']) .cv-nav-btn {
+  color: var(--sb-text);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+html:not([data-eff='dark']) .cv-nav-btn .cv-nav-ico {
+  color: var(--sb-icon);
+}
+html:not([data-eff='dark']) .cv-nav-btn:hover {
+  background: var(--sb-hover);
+  color: #ffffff;
+}
+html:not([data-eff='dark']) .cv-nav-btn.on {
+  background: var(--sb-active);
+  color: #ffffff;
+  border: 1px solid var(--sb-active-border);
+  box-shadow: var(--sb-active-glow);
+}
+html:not([data-eff='dark']) .cv-nav-btn.on .cv-nav-ico {
+  color: #ffffff;
+}
+html:not([data-eff='dark']) .cv-nav-btn:focus-visible {
+  outline-color: #c9bdf6;
+}
+html:not([data-eff='dark']) .cv-portal-link {
+  border: 1px solid var(--sb-line);
+  background: rgba(255, 255, 255, 0.04);
+}
+html:not([data-eff='dark']) .cv-side-foot {
+  border-top: 1px solid var(--sb-line);
+  color: var(--sb-muted);
+}
+html:not([data-eff='dark']) .cv-side-foot b {
+  color: #ffffff;
+}
+html:not([data-eff='dark']) .cv-nav-badge {
+  background: #e5484d;
+  box-shadow: 0 0 0 2px var(--sb-bg);
+}
