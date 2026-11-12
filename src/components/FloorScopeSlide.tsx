@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { themed } from '../utils/themeColors.ts';
 import { ScopeItem, Episode, SystemSettings, RemoteFocus } from '../types/index.ts';
 import { STATUS_COLORS } from '../constants/assets.ts';
 import { BrandLogo } from './BrandLogo.tsx';
@@ -364,7 +365,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
       ? '#E0213B'
       : hits.every((e) => e.scopeStatus === 'Completed')
       ? '#4BE08A'
-      : '#F5C518';
+      : themed('#F5C518');
 
     const statusLabel =
       scope.percentComplete >= 100
@@ -374,7 +375,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
         : 'Not started';
     const statusColor = STATUS_COLORS[statusLabel] || STATUS_COLORS['Not started'];
 
-    const dotColor = scope.phase === 'Structural' ? '#3A9BFF' : '#FF9A1F';
+    const dotColor = themed(scope.phase === 'Structural' ? '#3A9BFF' : '#FF9A1F');
 
     return (
       <div

@@ -12,8 +12,8 @@ import { ownerAccountability, AttentionCategory } from '../domain/attention.ts';
 import { fmtDate, todayIso } from '../domain/dates.ts';
 import { Card, Empty, Modal, Field, Banner, Pill, ConfirmDialog, Kpi } from './ui.tsx';
 
-const SEV_HEX: Record<string, string> = { Critical: '#D92D3F', High: '#E8862A', Medium: '#3A7BEF', Low: '#9A9AAD', critical: '#D92D3F', warn: '#E8862A', info: '#3A7BEF' };
-const STATUS_ISSUE_HEX: Record<IssueStatus, string> = { Open: '#D92D3F', 'In Progress': '#3A7BEF', Resolved: '#22A05A', Closed: '#B5B5C5' };
+const SEV_HEX: Record<string, string> = { Critical: '#D92D3F', High: '#E0A800', Medium: '#A45BE8', Low: '#A9A5B2', critical: '#D92D3F', warn: '#E0A800', info: '#A45BE8' };
+const STATUS_ISSUE_HEX: Record<IssueStatus, string> = { Open: '#D92D3F', 'In Progress': '#A45BE8', Resolved: '#22A05A', Closed: '#C4C2CC' };
 
 export const AttentionList: React.FC = () => {
   const { attention, actions } = useCommand();
@@ -370,7 +370,7 @@ export const Accountability: React.FC = () => {
             </thead>
             <tbody>
               {loads.map((l) => (
-                <tr key={l.owner} className="clickable" onClick={() => setOwner(l.owner)} style={owner === l.owner ? { outline: '2px solid #FFC21A' } : undefined}>
+                <tr key={l.owner} className="clickable" onClick={() => setOwner(l.owner)} style={owner === l.owner ? { outline: '2px solid #A45BE8' } : undefined}>
                   <td className={l.owner === 'Unassigned' ? 'cv-late' : 'cv-strong'}>{l.owner}</td>
                   <td className="num">{l.ongoing}</td>
                   <td className={`num ${l.delayed ? 'cv-late' : ''}`}>{l.delayed}</td>

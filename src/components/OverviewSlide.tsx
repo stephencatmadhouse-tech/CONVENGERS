@@ -202,10 +202,10 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
               <div className="leg" style={{ display: 'flex', gap: '14px', alignItems: 'center', paddingRight: '10px', fontSize: '13px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                 <span>Status:</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: 'var(--sx-bg-63)' }} />Upcoming</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#1F6FE0' }} />In progress</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: 'var(--sxa-bg-9)' }} />In progress</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#4BE08A' }} />Complete</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#E0213B' }} />Delayed</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#FF9A1F' }} />Date passed · confirm</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: 'var(--sxa-bg-1)' }} />Date passed · confirm</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', paddingRight: '14px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', color: 'var(--sx-text-3)', letterSpacing: '-4px', fontStyle: 'italic' }}>
                 //
@@ -274,7 +274,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                         <span
                           style={{
                             display: 'inline-block',
-                            background: safeBadge.type === 'confirmed' || safeBadge.type === 'provided' ? '#4BE08A' : safeBadge.type === 'planned' ? '#1F6FE0' : 'var(--sx-bg-12)',
+                            background: safeBadge.type === 'confirmed' || safeBadge.type === 'provided' ? '#4BE08A' : safeBadge.type === 'planned' ? 'var(--sxa-bg-9)' : 'var(--sx-bg-12)',
                             color: safeBadge.type === 'planned' ? '#fff' : 'var(--sx-text-1)',
                             fontSize: '11px',
                             fontWeight: 600,
@@ -387,11 +387,11 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                 {/* Construction Bars */}
                 {/* GF Structural */}
                 <div style={{ position: 'absolute', left: '-190px', width: '180px', top: '28px', height: '30px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 600 }}>
-                  <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#3A9BFF', flex: 'none' }} />GF · Structural
+                  <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: 'var(--sxa-bg-3)', flex: 'none' }} />GF · Structural
                 </div>
                 <div style={{ position: 'absolute', left: 0, right: 0, top: '28px', height: '30px', borderBottom: 'var(--sx-border-29)' }}>
-                  <div style={{ position: 'absolute', left: '1.89%', width: '35.85%', top: '5px', height: '20px', borderRadius: '4px', background: '#3A9BFF' }} />
-                  <div style={{ position: 'absolute', left: '49.06%', width: '3.77%', top: '5px', height: '20px', borderRadius: '4px', background: '#9CCBFF' }} />
+                  <div style={{ position: 'absolute', left: '1.89%', width: '35.85%', top: '5px', height: '20px', borderRadius: '4px', background: 'var(--sxa-bg-3)' }} />
+                  <div style={{ position: 'absolute', left: '49.06%', width: '3.77%', top: '5px', height: '20px', borderRadius: '4px', background: 'var(--sxa-bg-20)' }} />
                   <div style={{ position: 'absolute', left: 'calc(52.76% + 6px)', top: '7px', fontSize: '13px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                     Oct 5 – Dec 19, 2026 · stair framing Jan 13–20, 2027
                   </div>
@@ -399,10 +399,10 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
 
                 {/* GF Finishing */}
                 <div style={{ position: 'absolute', left: '-190px', width: '180px', top: '58px', height: '30px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 600 }}>
-                  <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#FF9A1F', flex: 'none' }} />GF · Finishing
+                  <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: 'var(--sxa-bg-1)', flex: 'none' }} />GF · Finishing
                 </div>
                 <div style={{ position: 'absolute', left: 0, right: 0, top: '58px', height: '30px', borderBottom: 'var(--sx-border-29)' }}>
-                  <div style={{ position: 'absolute', left: '46.23%', width: '46.23%', top: '5px', height: '20px', borderRadius: '4px', background: '#FF9A1F' }} />
+                  <div style={{ position: 'absolute', left: '46.23%', width: '46.23%', top: '5px', height: '20px', borderRadius: '4px', background: 'var(--sxa-bg-1)' }} />
                   <div style={{ position: 'absolute', right: 'calc(53.77% + 8px)', top: '7px', fontSize: '13px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                     Jan 7 – Apr 14, 2027
                   </div>
@@ -410,11 +410,11 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
 
                 {/* 2F Structural */}
                 <div style={{ position: 'absolute', left: '-190px', width: '180px', top: '88px', height: '30px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 600 }}>
-                  <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#3A9BFF', flex: 'none' }} />2F · Structural
+                  <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: 'var(--sxa-bg-3)', flex: 'none' }} />2F · Structural
                 </div>
                 <div style={{ position: 'absolute', left: 0, right: 0, top: '88px', height: '30px', borderBottom: 'var(--sx-border-29)' }}>
-                  <div style={{ position: 'absolute', left: '20.75%', width: '7.08%', top: '5px', height: '20px', borderRadius: '4px', background: '#3A9BFF' }} />
-                  <div style={{ position: 'absolute', left: '52.83%', width: '3.30%', top: '5px', height: '20px', borderRadius: '4px', background: '#9CCBFF' }} />
+                  <div style={{ position: 'absolute', left: '20.75%', width: '7.08%', top: '5px', height: '20px', borderRadius: '4px', background: 'var(--sxa-bg-3)' }} />
+                  <div style={{ position: 'absolute', left: '52.83%', width: '3.30%', top: '5px', height: '20px', borderRadius: '4px', background: 'var(--sxa-bg-20)' }} />
                   <div style={{ position: 'absolute', left: 'calc(56.06% + 6px)', top: '7px', fontSize: '13px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                     Nov 14 – Nov 28, 2026 · stair framing Jan 21–27, 2027
                   </div>
@@ -422,10 +422,10 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
 
                 {/* 2F Finishing */}
                 <div style={{ position: 'absolute', left: '-190px', width: '180px', top: '118px', height: '30px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 600 }}>
-                  <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#FF9A1F', flex: 'none' }} />2F · Finishing
+                  <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: 'var(--sxa-bg-1)', flex: 'none' }} />2F · Finishing
                 </div>
                 <div style={{ position: 'absolute', left: 0, right: 0, top: '118px', height: '30px', borderBottom: 'var(--sx-border-29)' }}>
-                  <div style={{ position: 'absolute', left: '28.77%', width: '31.60%', top: '5px', height: '20px', borderRadius: '4px', background: '#FF9A1F' }} />
+                  <div style={{ position: 'absolute', left: '28.77%', width: '31.60%', top: '5px', height: '20px', borderRadius: '4px', background: 'var(--sxa-bg-1)' }} />
                   <div style={{ position: 'absolute', left: 'calc(60.31% + 6px)', top: '7px', fontSize: '13px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                     Dec 1, 2026 – Feb 5, 2027
                   </div>
@@ -433,10 +433,10 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
 
                 {/* 3F Structural */}
                 <div style={{ position: 'absolute', left: '-190px', width: '180px', top: '148px', height: '30px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 600 }}>
-                  <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#3A9BFF', flex: 'none' }} />3F · Structural
+                  <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: 'var(--sxa-bg-3)', flex: 'none' }} />3F · Structural
                 </div>
                 <div style={{ position: 'absolute', left: 0, right: 0, top: '148px', height: '30px', borderBottom: 'var(--sx-border-29)' }}>
-                  <div style={{ position: 'absolute', left: '27.36%', width: '32.08%', top: '5px', height: '20px', borderRadius: '4px', background: '#3A9BFF' }} />
+                  <div style={{ position: 'absolute', left: '27.36%', width: '32.08%', top: '5px', height: '20px', borderRadius: '4px', background: 'var(--sxa-bg-3)' }} />
                   <div style={{ position: 'absolute', left: 'calc(59.36% + 6px)', top: '7px', fontSize: '13px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                     Nov 28, 2026 – Feb 3, 2027
                   </div>
@@ -444,10 +444,10 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
 
                 {/* 3F Finishing */}
                 <div style={{ position: 'absolute', left: '-190px', width: '180px', top: '178px', height: '30px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 600 }}>
-                  <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#FF9A1F', flex: 'none' }} />3F · Finishing
+                  <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: 'var(--sxa-bg-1)', flex: 'none' }} />3F · Finishing
                 </div>
                 <div style={{ position: 'absolute', left: 0, right: 0, top: '178px', height: '30px', borderBottom: 'var(--sx-border-29)' }}>
-                  <div style={{ position: 'absolute', left: '61.32%', width: '27.83%', top: '5px', height: '20px', borderRadius: '4px', background: '#FF9A1F' }} />
+                  <div style={{ position: 'absolute', left: '61.32%', width: '27.83%', top: '5px', height: '20px', borderRadius: '4px', background: 'var(--sxa-bg-1)' }} />
                   <div style={{ position: 'absolute', right: 'calc(38.68% + 8px)', top: '7px', fontSize: '13px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                     Feb 8 – Apr 7, 2027
                   </div>
@@ -459,10 +459,10 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                 </div>
                 <div style={{ position: 'absolute', left: 0, right: 0, top: '208px', height: '30px', borderBottom: 'var(--sx-border-29)' }}>
                   <div style={{ position: 'absolute', left: '88.68%', width: '0.94%', top: '5px', height: '20px', borderRadius: '4px', background: 'var(--sx-bg-12)' }} />
-                  <div style={{ position: 'absolute', left: '89.15%', width: '8.02%', top: '5px', height: '20px', borderRadius: '4px', background: '#FF9A1F' }} />
+                  <div style={{ position: 'absolute', left: '89.15%', width: '8.02%', top: '5px', height: '20px', borderRadius: '4px', background: 'var(--sxa-bg-1)' }} />
                   <div style={{ position: 'absolute', left: '97.64%', width: '0.94%', top: '5px', height: '20px', borderRadius: '4px', background: 'var(--sx-bg-33)' }} />
                   <div style={{ position: 'absolute', left: '98.58%', width: '0.94%', top: '5px', height: '20px', borderRadius: '4px', background: '#4BE08A' }} />
-                  <div style={{ position: 'absolute', left: '99.53%', width: '0.94%', top: '5px', height: '20px', borderRadius: '4px', background: '#FF5D8F' }} />
+                  <div style={{ position: 'absolute', left: '99.53%', width: '0.94%', top: '5px', height: '20px', borderRadius: '4px', background: 'var(--sxa-bg-14)' }} />
                   <div style={{ position: 'absolute', right: 'calc(11.32% + 8px)', top: '7px', fontSize: '13px', color: 'var(--sx-text-2)', whiteSpace: 'nowrap' }}>
                     Punchlist Apr 7 · Rectification Apr 8–24 · Interior styling Apr 26–27 · Move-in Apr 28–29 · Turnover Apr 30
                   </div>
@@ -470,7 +470,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
 
                 {/* Content Shoots Row */}
                 <div style={{ position: 'absolute', left: '-190px', width: '180px', top: '238px', height: '30px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 600 }}>
-                  <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#FF5D8F', flex: 'none' }} />Content shoots
+                  <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: 'var(--sxa-bg-14)', flex: 'none' }} />Content shoots
                 </div>
                 <div style={{ position: 'absolute', left: 0, right: 0, top: '238px', height: '30px', borderBottom: 'var(--sx-border-29)' }}>
                   {episodes.map((ep) => {
@@ -505,7 +505,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                             minWidth: '15px',
                             height: '13px',
                             borderRadius: '7px',
-                            background: '#FF5D8F',
+                            background: 'var(--sxa-bg-14)',
                             color: 'var(--sx-text-1)',
                             fontSize: '10px',
                             fontWeight: 700,
@@ -524,7 +524,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
 
                 {/* Concrete Pours & Milestones Row */}
                 <div style={{ position: 'absolute', left: '-190px', width: '180px', top: '268px', height: '30px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 600 }}>
-                  <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#FF9A1F', flex: 'none' }} />Pours &amp; Milestones
+                  <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: 'var(--sxa-bg-1)', flex: 'none' }} />Pours &amp; Milestones
                 </div>
                 <div style={{ position: 'absolute', left: 0, right: 0, top: '268px', height: '30px', borderBottom: 'var(--sx-border-29)' }}>
                   {pours.map((p) => {

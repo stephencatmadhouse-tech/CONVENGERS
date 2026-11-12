@@ -43,8 +43,8 @@ export const CollaboratorBar: React.FC<CollaboratorBarProps> = ({
       <div
         className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold"
         style={{
-          background: isLiveConnected ? 'rgba(75, 224, 138, 0.15)' : 'rgba(255, 154, 31, 0.15)',
-          border: `1px solid ${isLiveConnected ? '#4BE08A' : '#FF9A1F'}`,
+          background: isLiveConnected ? 'rgba(75, 224, 138, 0.15)' : 'var(--sxa-bg-7)',
+          border: `1px solid ${isLiveConnected ? '#4BE08A' : 'var(--sxa-border-2)'}`,
           color: isLiveConnected ? 'var(--sx-text-8)' : 'var(--sx-text-10)',
         }}
         title={
@@ -55,7 +55,7 @@ export const CollaboratorBar: React.FC<CollaboratorBarProps> = ({
       >
         <span
           className={`w-2 h-2 rounded-full inline-block ${isLiveConnected ? 'animate-pulse' : ''}`}
-          style={{ background: isLiveConnected ? '#4BE08A' : '#FF9A1F' }}
+          style={{ background: isLiveConnected ? '#4BE08A' : 'var(--sxa-bg-1)' }}
         />
         <span>{isLiveConnected ? 'LIVE SYNC' : 'CONNECTING...'}</span>
       </div>

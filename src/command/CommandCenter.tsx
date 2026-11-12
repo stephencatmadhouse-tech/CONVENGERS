@@ -6,8 +6,9 @@
  */
 
 import React, { useMemo } from 'react';
+import { TrendingUp, Target, Activity, CalendarCheck, CalendarClock, Gauge, CircleCheck, Hourglass, CircleAlert, CalendarDays, ShieldAlert, Siren } from 'lucide-react';
 import { useCommand } from './context.tsx';
-import { Card, Kpi, HealthBadge, StatusPill, ProgressBar, Empty, Pill, pct, kindColor, HEALTH_HEX } from './ui.tsx';
+import { Card, Kpi, HealthBadge, StatusPill, ProgressBar, Empty, Pill, pct, kindColor, HEALTH_HEX, tintBg } from './ui.tsx';
 import { addDays, diffDays, fmtDate, fmtRange } from '../domain/dates.ts';
 import { ALIGNMENT_COLORS, alignmentSummary } from '../domain/alignment.ts';
 import { fmtVar } from '../domain/reports.ts';
@@ -54,23 +55,25 @@ export const CommandCenter: React.FC = () => {
         actions={
           <>
             <span className="cv-chip" title={isLive ? 'Connected to the shared Firestore project database' : 'Realtime presence server not connected'}>
-              <span className="cv-dot" style={{ background: isLive ? '#22A05A' : '#E8862A' }} /> {isLive ? 'Live collaboration' : 'Shared database (presence offline)'}
+              <span className="cv-dot" style={{ background: isLive ? '#22A05A' : '#E0A800' }} /> {isLive ? 'Live collaboration' : 'Shared database (presence offline)'}
             </span>
             <HealthBadge level={m.health} big />
           </>
         }
       >
         <div className="cv-kpis">
-          <Kpi label="Actual physical accomplishment" value={pct(m.actualPct)} accent sub="Working-day weighted scope progress" />
-          <Kpi label="Planned accomplishment" value={pct(m.plannedPct)} sub="Baseline plan as of today" />
+          <Kpi icon={TrendingUp} label="Actual physical accomplishment" value={pct(m.actualPct)} accent sub="Working-day weighted scope progress" />
+          <Kpi icon={Target} label="Planned accomplishment" value={pct(m.plannedPct)} sub="Baseline plan as of today" />
           <Kpi
+            icon={Activity}
             label="Schedule variance"
             value={fmtVar(m.variancePct)}
-            color={m.variancePct < -3 ? '#D92D3F' : m.variancePct < 0 ? '#E8862A' : '#22A05A'}
+            color={m.variancePct < -3 ? '#D92D3F' : m.variancePct < 0 ? '#E0A800' : '#22A05A'}
             sub={m.spi !== null ? `SPI ${m.spi.toFixed(2)} (actual ÷ planned)` : 'SPI available once planned > 0'}
           />
-          <Kpi label="Target completion" value={fmtDate(m.targetCompletion)} sub="Turnover ceremony milestone" />
+          <Kpi icon={CalendarCheck} label="Target completion" value={fmtDate(m.targetCompletion)} sub="Turnover ceremony milestone" />
           <Kpi
+            icon={CalendarClock}
             label="Projected completion"
             value={fmtDate(m.projectedCompletion)}
             color={m.completionVarianceDays > 0 ? '#D92D3F' : undefined}
@@ -83,6 +86,7 @@ export const CommandCenter: React.FC = () => {
             }
           />
           <Kpi
+            icon={Gauge}
             label="Indicative at current pace"
             value={m.paceCompletion ? fmtDate(m.paceCompletion) : '—'}
             sub={m.paceCompletion ? 'Projection only: remaining time ÷ SPI' : 'Not computed (on/above plan or no plan yet)'}
@@ -106,26 +110,31 @@ export const CommandCenter: React.FC = () => {
       {/* Current operations */}
       <div className="cv-kpis">
         {[
-          { label: 'Completed', v: m.counts.completed, c: '#22A05A', f: 'Completed' },
-          { label: 'Ongoing', v: m.counts.ongoing, c: '#3A7BEF', f: 'Ongoing' },
-          { label: 'Delayed', v: m.counts.delayed, c: '#D92D3F', f: 'Delayed' },
-          { label: 'Upcoming (next 14 days)', v: ops.upcoming.length, c: 'var(--cv-text)', f: 'Upcoming' },
-          { label: 'Open issues & risks', v: openIssues.length, c: '#9B7BE0', f: '' },
-          { label: 'Critical pending actions', v: attention.filter((a) => a.severity === 'critical').length, c: '#D92D3F', f: '' },
+          { label: 'Completed', v: m.counts.completed, c: '#22A05A', f: 'Completed', i: CircleCheck },
+          { label: 'Ongoing', v: m.counts.ongoing, c: '#8746D6', f: 'Ongoing', i: Hourglass },
+          { label: 'Delayed', v: m.counts.delayed, c: '#D92D3F', f: 'Delayed', i: CircleAlert },
+          { label: 'Upcoming (next 14 days)', v: ops.upcoming.length, c: '#A45BE8', f: 'Upcoming', i: CalendarDays },
+          { label: 'Open issues & risks', v: openIssues.length, c: '#B98BEA', f: '', i: ShieldAlert },
+          { label: 'Critical pending actions', v: attention.filter((a) => a.severity === 'critical').length, c: '#D92D3F', f: '', i: Siren },
         ].map((k) => (
           <button
             type="button"
             key={k.label}
-            className="cv-kpi"
+            className="cv-kpi has-ico"
             style={{ textAlign: 'left', cursor: 'pointer', color: 'inherit' }}
             onClick={() => actions.navigate(k.f ? `tracker/register/status=${k.f}` : 'issues/attention')}
             title="Open the filtered list"
           >
-            <div className="cv-kpi-l">{k.label}</div>
-            <div className="cv-kpi-v" style={{ color: k.c }}>
-              {k.v}
-            </div>
-            <div className="cv-kpi-s">View list →</div>
+            <span className="cv-kpi-ico" style={{ color: k.c, background: tintBg(k.c) }} aria-hidden>
+              <k.i size={22} strokeWidth={1.9} />
+            </span>
+            <span style={{ minWidth: 0 }}>
+              <div className="cv-kpi-l">{k.label}</div>
+              <div className="cv-kpi-v" style={{ color: k.c }}>
+                {k.v}
+              </div>
+              <div className="cv-kpi-s">View list →</div>
+            </span>
           </button>
         ))}
       </div>
@@ -151,7 +160,7 @@ export const CommandCenter: React.FC = () => {
                   style={{ textAlign: 'left', color: 'inherit' }}
                   onClick={() => (a.activityId ? actions.openActivity(a.activityId) : actions.navigate('issues/log'))}
                 >
-                  <span className="cv-sev" style={{ background: a.severity === 'critical' ? '#D92D3F' : '#E8862A' }} />
+                  <span className="cv-sev" style={{ background: a.severity === 'critical' ? '#D92D3F' : '#E0A800' }} />
                   <div className="cv-li-main">
                     <div className="cv-li-t">
                       <span className="cv-chip" style={{ marginRight: 6 }}>

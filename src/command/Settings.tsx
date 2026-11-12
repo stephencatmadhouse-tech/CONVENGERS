@@ -48,7 +48,7 @@ export const Settings: React.FC = () => {
                       : 'Shared collection not reachable (the updated firestore.rules have not been deployed, or the device is offline). New records are kept in this browser only and are flagged “this device only”.'}
                   </div>
                 </div>
-                <Pill label={sharedStorage[k] ? 'Shared' : 'This device only'} color={sharedStorage[k] ? '#22A05A' : '#E8862A'} />
+                <Pill label={sharedStorage[k] ? 'Shared' : 'This device only'} color={sharedStorage[k] ? '#22A05A' : '#E0A800'} />
               </div>
             ))}
             <div className="cv-li">
@@ -56,7 +56,7 @@ export const Settings: React.FC = () => {
                 <div className="cv-li-t">Live presence & typing indicators</div>
                 <div className="cv-li-s">WebSocket presence server (server.ts). Only available when the app is served by the Node server, not on static hosting.</div>
               </div>
-              <Pill label={isLive ? 'Connected' : 'Not connected'} color={isLive ? '#22A05A' : '#9A9AAD'} />
+              <Pill label={isLive ? 'Connected' : 'Not connected'} color={isLive ? '#22A05A' : '#A9A5B2'} />
             </div>
           </div>
           {localCount > 0 && (
@@ -199,7 +199,7 @@ export const Settings: React.FC = () => {
                 {findings.map((f, i) => (
                   <tr key={i} className={f.refId ? 'clickable' : ''} onClick={() => f.refId && actions.openActivity(f.refId)}>
                     <td>
-                      <Pill label={f.severity} color={f.severity === 'error' ? '#D92D3F' : f.severity === 'warning' ? '#E8862A' : '#3A7BEF'} />
+                      <Pill label={f.severity} color={f.severity === 'error' ? '#D92D3F' : f.severity === 'warning' ? '#E0A800' : '#A45BE8'} />
                     </td>
                     <td className="nowrap">{f.area}</td>
                     <td>{f.message}</td>

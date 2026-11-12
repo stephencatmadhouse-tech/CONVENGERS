@@ -186,30 +186,38 @@ reports, issues, snapshots ──────────────├─► b
    concrete pour target date that falls outside its matching scope's dates;
    this occurs in the repository's seed data for the GF tie-beam pour.
 
-## 7. Visual identity — light theme (standard)
+## 7. Visual identity — bright & light Convengers theme (standard)
 
-The dashboard now uses a bright, white-dominant Convengers light theme:
+**White first. Lavender second. Purple as brand accent.** Inspired by the
+Convengers logo's cosmic purple, violet and magenta. The logo's dark
+background is not used as an interface background.
 
-| Role | Colour |
-|---|---|
-| Primary background | `#FFFFFF` |
-| Secondary background (sidebar, inner panels) | `#F7F8FC` |
-| Brand accent (headings, active navigation, actual progress) | Convengers Purple `#7041C8` |
-| Secondary accent (active nav background, planned progress) | Light Purple `#EEE8FA` |
-| Highlight (priority items, milestones, today marker) | Yellow `#FFD43B` |
-| Primary / secondary text | `#252336` / `#777789` |
-| Borders & dividers | `#E8E8EF` |
+| Colour | Hex | Usage |
+|---|---|---|
+| Pure White | `#FFFFFF` | Main background, cards |
+| Soft Off-White | `#FAF9FD` | Sidebar, table headers, secondary background |
+| Light Lavender | `#F3ECFC` | Panels, icon chips, active navigation, secondary buttons |
+| Soft Purple | `#DCC5F5` | Secondary accents, planned progress, baselines |
+| Convengers Purple | `#8746D6` | Primary buttons, headings, actual progress, in-progress status |
+| Electric Violet | `#A45BE8` | Active elements, today marker, progress gradients |
+| Soft Magenta | `#D58BEA` | Decorative accents, milestones, finishing phase |
+| Silver Gray | `#D9D8E0` | Input borders, dividers (card borders use a lavender tint `#EBE3F7`) |
+| Charcoal | `#393442` | Main text |
+| Muted Gray | `#898493` | Secondary text |
 
-Status language: green = completed / on track, purple = in progress, yellow =
-attention, red = delayed / critical, gray = pending / not started.
+Green, yellow and red are used **only** for status indicators: green =
+completed / on track, yellow = needs confirmation / attention, red = delayed /
+critical. Purple marks in-progress items and gray marks pending ones.
 
 How it is built (no data, calculation or reporting logic was changed):
 
-* `src/command/command.css` — Command Center tokens (light default, dark under `html[data-eff='dark']`).
-* `src/theme-palette.css` — generated variables for every theme colour used by
-  the presentation slides, toolbar and modals. The light value is the new
-  palette; the dark value is the exact original colour.
-* `src/theme-status.css` — status pill colours, timeline overlays and bars.
-* The original dark look is still available as a **per-device** preference
-  (toolbar *Theme* button or Settings & Data). It is stored in the browser, not in the
-  shared database, so it never changes what other team members see.
+* `src/command/command.css` — Command Center tokens (light default; dark under `html[data-eff='dark']`).
+* `src/theme-palette.css` — variables for every theme colour used by the
+  presentation slides, toolbar and modals. The light value follows the palette above.
+  The dark value is the exact original colour.
+* `src/theme-status.css` — status colours, timeline overlays and bars, light toolbar.
+* `src/utils/themeColors.ts` — display-only mapping for category colours that
+  are combined in code (for example the structural / finishing bars on the floor slides).
+* Navigation and KPI cards use simple line icons (lucide-react, already a dependency).
+* The original dark look remains a **per-device** preference (toolbar *Theme*
+  button). It is stored in the browser only and never changes what others see.

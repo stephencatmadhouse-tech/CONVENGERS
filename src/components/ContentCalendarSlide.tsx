@@ -259,9 +259,9 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
 
           {/* Legend */}
           <div className="pmbar" style={{ paddingTop: 0, gap: '14px', fontSize: '12px', color: 'var(--sx-text-2)' }}>
-            <span><i className="pmdot" style={{ background: '#5B6BB5' }} />Planned</span>
+            <span><i className="pmdot" style={{ background: 'var(--sxa-bg-8)' }} />Planned</span>
             <span><i className="pmdot" style={{ background: 'var(--sx-bg-12)' }} />For Confirmation</span>
-            <span><i className="pmdot" style={{ background: '#1F6FE0' }} />Scheduled</span>
+            <span><i className="pmdot" style={{ background: 'var(--sxa-bg-9)' }} />Scheduled</span>
             <span><i className="pmdot" style={{ background: '#4BE08A' }} />Completed</span>
             <span><i className="pmdot" style={{ background: 'var(--sx-bg-33)' }} />Rescheduled</span>
             <span>● shoot · ▶ release</span>

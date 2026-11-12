@@ -449,6 +449,8 @@ export default function App() {
   // Action Handlers
   const handleToggleTheme = () => {
     const next = uiTheme === 'light' ? 'dark' : 'light';
+    // Apply immediately so display-only colour mapping uses the new theme on this render
+    document.documentElement.setAttribute('data-eff', next);
     setUiTheme(next);
     showToast(next === 'light' ? 'Light theme (standard)' : 'Dark theme on this device');
   };

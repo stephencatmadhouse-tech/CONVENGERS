@@ -18,6 +18,7 @@ import {
 import { STATUS_COLORS, TYPE_COLORS } from '../constants/assets.ts';
 import { BrandLogo } from './BrandLogo.tsx';
 import { resolveMeta } from '../domain/register.ts';
+import { themed } from '../utils/themeColors.ts';
 import {
   parseDateWindow,
   parseIsoDate,
@@ -486,7 +487,7 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
               <span>Upcoming</span>
             </div>
             <div className="pmk">
-              <b style={{ color: '#1F6FE0' }}>{filteredItems.filter((i) => i.status === 'Ongoing').length}</b>
+              <b style={{ color: 'var(--sxa-text-21)' }}>{filteredItems.filter((i) => i.status === 'Ongoing').length}</b>
               <span>Ongoing</span>
             </div>
             <div className="pmk">
@@ -546,7 +547,8 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
               ) : (
                 filteredItems.map((item) => {
                   const statusColors = STATUS_COLORS[item.status] || STATUS_COLORS['Upcoming'];
-                  const typeInfo = TYPE_COLORS[item.type] || TYPE_COLORS.manual;
+                  const typeInfoRaw = TYPE_COLORS[item.type] || TYPE_COLORS.manual;
+                  const typeInfo = { ...typeInfoRaw, color: themed(typeInfoRaw.color) };
 
                   return (
                     <div
@@ -688,7 +690,8 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
                 <div className="pmempty">Nothing needs immediate attention.</div>
               ) : (
                 attentionItems.map((item) => {
-                  const typeInfo = TYPE_COLORS[item.type] || TYPE_COLORS.manual;
+                  const typeInfoRaw = TYPE_COLORS[item.type] || TYPE_COLORS.manual;
+                  const typeInfo = { ...typeInfoRaw, color: themed(typeInfoRaw.color) };
                   return (
                     <button
                       key={item.key}

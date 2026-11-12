@@ -314,7 +314,7 @@ export const AlignmentView: React.FC = () => {
                   <td style={{ minWidth: 260 }}>
                     {a.alerts.length ? (
                       a.alerts.map((al, i) => (
-                        <div key={i} style={{ fontSize: 12, marginBottom: 3, color: al.severity === 'critical' ? '#D92D3F' : al.severity === 'warn' ? '#E8862A' : undefined }}>
+                        <div key={i} style={{ fontSize: 12, marginBottom: 3, color: al.severity === 'critical' ? '#D92D3F' : al.severity === 'warn' ? '#9A6A00' : undefined }}>
                           {al.severity === 'critical' ? '⛔' : al.severity === 'warn' ? '⚠️' : 'ℹ️'} {al.message}
                         </div>
                       ))

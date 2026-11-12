@@ -6,6 +6,7 @@
  */
 
 import React, { useEffect } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { HealthLevel } from '../domain/metrics.ts';
 import { STATUS_COLORS } from '../constants/assets.ts';
 
@@ -16,10 +17,10 @@ import { STATUS_COLORS } from '../constants/assets.ts';
  */
 export const STATUS_HEX: Record<string, string> = {
   Completed: '#22A05A',
-  Ongoing: '#7041C8',
+  Ongoing: '#8746D6',
   Delayed: '#D92D3F',
-  Upcoming: '#9A9AAD',
-  'On Hold': '#B5B5C5',
+  Upcoming: '#A9A5B2',
+  'On Hold': '#C4C2CC',
 };
 
 export const HEALTH_HEX: Record<HealthLevel, string> = {
@@ -29,17 +30,17 @@ export const HEALTH_HEX: Record<HealthLevel, string> = {
 };
 
 export const STREAM_HEX: Record<string, string> = {
-  Construction: '#3A7BEF',
-  Production: '#D9488A',
-  Milestone: '#FFC21A',
-  Concrete: '#E8862A',
+  Construction: '#8746D6',
+  Production: '#C455B8',
+  Milestone: '#D58BEA',
+  Concrete: '#6C63E0',
 };
 
 export const PRIORITY_HEX: Record<string, string> = {
   Critical: '#D92D3F',
-  High: '#E8862A',
-  Medium: '#7041C8',
-  Low: '#9A9AAD',
+  High: '#C455B8',
+  Medium: '#8746D6',
+  Low: '#A9A5B2',
 };
 
 /** Readable text colour for a status/category colour (mixes toward the ink colour). */
@@ -62,7 +63,7 @@ export const Pill: React.FC<{ label: string; color?: string; title?: string }> =
       </span>
     );
   }
-  const c = color || '#9A9AAD';
+  const c = color || '#A9A5B2';
   return (
     <span className="cv-pill" style={{ background: tintBg(c), color: tintText(c), borderColor: `color-mix(in srgb, ${c} 45%, transparent)` }} title={title}>
       {label}
@@ -71,7 +72,7 @@ export const Pill: React.FC<{ label: string; color?: string; title?: string }> =
 };
 
 export const StatusPill: React.FC<{ status: string }> = ({ status }) => {
-  const c = STATUS_HEX[status] || '#9A9AAD';
+  const c = STATUS_HEX[status] || '#A9A5B2';
   const solid = status === 'Delayed' || status === 'Completed' || status === 'Ongoing';
   return (
     <span className="cv-pill" style={solid ? { background: c, color: '#fff', borderColor: c } : { background: tintBg(c), color: tintText(c), borderColor: `color-mix(in srgb, ${c} 45%, transparent)` }}>
@@ -117,22 +118,41 @@ export const Card: React.FC<{
   </section>
 );
 
-export const Kpi: React.FC<{ label: string; value: React.ReactNode; sub?: React.ReactNode; accent?: boolean; color?: string; title?: string }> = ({
-  label,
-  value,
-  sub,
-  accent,
-  color,
-  title,
-}) => (
-  <div className="cv-kpi" title={title}>
-    <div className="cv-kpi-l">{label}</div>
-    <div className={`cv-kpi-v ${accent ? 'y' : ''}`} style={color ? { color } : undefined}>
-      {value}
+export const Kpi: React.FC<{
+  label: string;
+  value: React.ReactNode;
+  sub?: React.ReactNode;
+  accent?: boolean;
+  color?: string;
+  title?: string;
+  icon?: LucideIcon;
+  iconColor?: string;
+}> = ({ label, value, sub, accent, color, title, icon, iconColor }) => {
+  const body = (
+    <div style={{ minWidth: 0 }}>
+      <div className="cv-kpi-l">{label}</div>
+      <div className={`cv-kpi-v ${accent ? 'y' : ''}`} style={color ? { color } : undefined}>
+        {value}
+      </div>
+      {sub && <div className="cv-kpi-s">{sub}</div>}
     </div>
-    {sub && <div className="cv-kpi-s">{sub}</div>}
-  </div>
-);
+  );
+  if (!icon) {
+    return (
+      <div className="cv-kpi" title={title}>
+        {body}
+      </div>
+    );
+  }
+  return (
+    <div className="cv-kpi has-ico" title={title}>
+      <span className="cv-kpi-ico" style={iconColor ? { color: iconColor, background: tintBg(iconColor) } : undefined} aria-hidden>
+        {React.createElement(icon, { size: 22, strokeWidth: 1.9 })}
+      </span>
+      {body}
+    </div>
+  );
+};
 
 export const ProgressBar: React.FC<{ actual: number; planned?: number; color?: string; title?: string }> = ({ actual, planned, color, title }) => (
   <div className="cv-bar" title={title || `Actual ${Math.round(actual)}%${planned !== undefined ? ` · Planned ${Math.round(planned)}%` : ''}`}>
@@ -301,7 +321,7 @@ export const LineChart: React.FC<{ series: Series[]; height?: number; yMax?: num
       )}
       {markIdx >= 0 && (
         <g>
-          <line x1={xPos(xs[markIdx])} x2={xPos(xs[markIdx])} y1={T} y2={H - B} stroke="#FFC21A" strokeWidth={2} strokeDasharray="4 3" />
+          <line x1={xPos(xs[markIdx])} x2={xPos(xs[markIdx])} y1={T} y2={H - B} stroke="#A45BE8" strokeWidth={2} strokeDasharray="4 3" />
           <text x={xPos(xs[markIdx]) + 4} y={T + 10} style={{ fill: 'var(--cv-accent)' }}>
             Today
           </text>
@@ -353,7 +373,7 @@ export const BarChart: React.FC<{ bars: { label: string; value: number; color?: 
         const y = b.value >= 0 ? zeroY - h : zeroY;
         return (
           <g key={b.label + i}>
-            <rect x={x} y={y} width={bw} height={Math.max(1, h)} rx={3} fill={b.color || (b.value < 0 ? '#D92D3F' : '#7041C8')}>
+            <rect x={x} y={y} width={bw} height={Math.max(1, h)} rx={3} fill={b.color || (b.value < 0 ? '#D92D3F' : '#8746D6')}>
               <title>{b.title || `${b.label}: ${b.value}${unit}`}</title>
             </rect>
             <text x={x + bw / 2} y={b.value >= 0 ? y - 4 : y + h + 12} textAnchor="middle" style={{ fill: 'currentColor' }}>

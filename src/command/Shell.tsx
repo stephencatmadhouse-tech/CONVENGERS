@@ -8,6 +8,21 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import {
+  LayoutDashboard,
+  Presentation,
+  ListChecks,
+  HardHat,
+  Clapperboard,
+  ChartGantt,
+  Flag,
+  FileText,
+  ChartColumn,
+  TriangleAlert,
+  Archive as ArchiveIcon,
+  Settings as SettingsIcon,
+  type LucideIcon,
+} from 'lucide-react';
 import { useCommand } from './context.tsx';
 import { SectionHeader } from './ui.tsx';
 import { CommandCenter } from './CommandCenter.tsx';
@@ -31,6 +46,7 @@ interface Tab {
 interface Section {
   id: string;
   num: string;
+  icon?: LucideIcon;
   label: string;
   title: string;
   sub: string;
@@ -164,6 +180,21 @@ export const SECTIONS: Section[] = [
   },
 ];
 
+const ICONS: Record<string, LucideIcon> = {
+  command: LayoutDashboard,
+  overview: Presentation,
+  tracker: ListChecks,
+  construction: HardHat,
+  production: Clapperboard,
+  timeline: ChartGantt,
+  milestones: Flag,
+  reports: FileText,
+  analytics: ChartColumn,
+  issues: TriangleAlert,
+  archive: ArchiveIcon,
+  settings: SettingsIcon,
+};
+
 export function parseRoute(hash: string): { section: string; tab?: string; param?: string } {
   const h = hash.replace(/^#\/?/, '');
   const [section, tab, ...rest] = h.split('/');
@@ -239,8 +270,9 @@ export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; re
             onClick={() => actions.navigate(s.id)}
             aria-current={s.id === section.id ? 'page' : undefined}
           >
+            {ICONS[s.id] ? React.createElement(ICONS[s.id], { size: 18, strokeWidth: 1.9, className: 'cv-nav-ico', 'aria-hidden': true }) : null}
+            <span className="cv-nav-label">{s.label}</span>
             <span className="cv-nav-num">{s.num}</span>
-            <span>{s.label}</span>
             {s.id === 'issues' && critical > 0 && <span className="cv-nav-badge" title="Critical attention items">{critical}</span>}
           </button>
         ))}

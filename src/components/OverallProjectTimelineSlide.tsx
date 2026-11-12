@@ -405,7 +405,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
         {/* Top KPI Summary Cards */}
         <div style={{ display: 'flex', gap: '12px', flex: 'none' }}>
           {/* Construction KPI */}
-          <div style={{ background: 'var(--sx-bg-14)', border: '2px solid #3A9BFF', borderRadius: '12px', padding: '10px 18px', minWidth: '170px', boxShadow: 'var(--sx-shadow-46)' }}>
+          <div style={{ background: 'var(--sx-bg-14)', border: 'var(--sxa-border-10)', borderRadius: '12px', padding: '10px 18px', minWidth: '170px', boxShadow: 'var(--sx-shadow-46)' }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: '12px', fontWeight: 800, letterSpacing: '1px', color: 'var(--sx-text-11)', textTransform: 'uppercase' }}>
               Construction Track
             </div>
@@ -421,7 +421,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
           </div>
 
           {/* Production KPI */}
-          <div style={{ background: 'var(--sx-bg-14)', border: '2px solid #FF5D8F', borderRadius: '12px', padding: '10px 18px', minWidth: '170px', boxShadow: 'var(--sx-shadow-48)' }}>
+          <div style={{ background: 'var(--sx-bg-14)', border: 'var(--sxa-border-11)', borderRadius: '12px', padding: '10px 18px', minWidth: '170px', boxShadow: 'var(--sx-shadow-48)' }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: '12px', fontWeight: 800, letterSpacing: '1px', color: 'var(--sx-text-34)', textTransform: 'uppercase' }}>
               Production Track
             </div>
@@ -493,10 +493,10 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
               borderRadius: '6px',
               fontSize: '12px',
               fontWeight: 700,
-              background: viewFilter === 'construction' ? '#3A9BFF' : 'var(--sx-bg-53)',
+              background: viewFilter === 'construction' ? 'var(--sxa-bg-3)' : 'var(--sx-bg-53)',
               color: viewFilter === 'construction' ? '#FFFFFF' : 'var(--sx-text-26)',
               border: '1px solid',
-              borderColor: viewFilter === 'construction' ? '#6FA8FF' : 'rgba(58,155,255,0.4)',
+              borderColor: viewFilter === 'construction' ? 'var(--sxa-border-12)' : 'var(--sxa-border-13)',
               cursor: 'pointer',
             }}
           >
@@ -510,10 +510,10 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
               borderRadius: '6px',
               fontSize: '12px',
               fontWeight: 700,
-              background: viewFilter === 'production' ? '#FF5D8F' : 'var(--sx-bg-53)',
+              background: viewFilter === 'production' ? 'var(--sxa-bg-14)' : 'var(--sx-bg-53)',
               color: viewFilter === 'production' ? '#FFFFFF' : 'var(--sx-text-26)',
               border: '1px solid',
-              borderColor: viewFilter === 'production' ? '#FF8FB3' : 'rgba(255,93,143,0.4)',
+              borderColor: viewFilter === 'production' ? 'var(--sxa-border-15)' : 'var(--sxa-border-16)',
               cursor: 'pointer',
             }}
           >
@@ -587,11 +587,11 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ width: '12px', height: '12px', background: 'linear-gradient(90deg, #1F6FE0, #3A9BFF)', borderRadius: '3px', display: 'inline-block' }} />
+              <span style={{ width: '12px', height: '12px', background: 'var(--sxa-bg-17)', borderRadius: '3px', display: 'inline-block' }} />
               <span>Construction Track</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ width: '12px', height: '12px', background: 'linear-gradient(90deg, #D6285A, #FF5D8F)', borderRadius: '3px', display: 'inline-block' }} />
+              <span style={{ width: '12px', height: '12px', background: 'var(--sxa-bg-18)', borderRadius: '3px', display: 'inline-block' }} />
               <span>Production / Episode Shoot</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -775,7 +775,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
                           : m.productionStatus === 'Scheduled'
                           ? 'var(--tl-p-sched)'
                           : 'var(--tl-p-up)',
-                      border: m.id === selectedSyncId ? 'var(--sx-border-49)' : '1px solid rgba(255,93,143,0.4)',
+                      border: m.id === selectedSyncId ? 'var(--sx-border-49)' : 'var(--sxa-border-19)',
                       borderRadius: '5px',
                       padding: '4px 6px',
                       cursor: 'pointer',
@@ -922,7 +922,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span
                       style={{
-                        background: '#FF5D8F',
+                        background: 'var(--sxa-bg-14)',
                         color: 'var(--sx-text-1)',
                         fontWeight: 800,
                         fontSize: '10px',

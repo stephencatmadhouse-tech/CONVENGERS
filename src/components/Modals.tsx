@@ -86,8 +86,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       : currentUser?.role === 'manager'
                       ? 'bg-[var(--sx-bg-12)]/20 text-[#F5C518] border border-[var(--sx-border-4)]'
                       : currentUser?.role === 'staff'
-                      ? 'bg-[#3A9BFF]/20 text-[var(--sx-text-11)] border border-[#3A9BFF]'
-                      : 'bg-[#FF9A1F]/20 text-[var(--sx-text-10)] border border-[#FF9A1F]'
+                      ? 'bg-[var(--sxa-bg-3)]/20 text-[var(--sx-text-11)] border border-[var(--sxa-border-4)]'
+                      : 'bg-[var(--sxa-bg-1)]/20 text-[var(--sx-text-10)] border border-[var(--sxa-border-2)]'
                   }`}
                 >
                   ● {currentUser?.role}
@@ -100,11 +100,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Role explanation */}
               <div className="mt-3 pt-3 border-t border-[var(--sx-border-6)]/30 text-xs leading-relaxed">
                 {isPending ? (
-                  <div className="text-[var(--sx-text-10)] bg-[#FF9A1F]/10 p-3 rounded border border-[#FF9A1F]/30 space-y-2">
+                  <div className="text-[var(--sx-text-10)] bg-[var(--sxa-bg-1)]/10 p-3 rounded border border-[var(--sxa-border-2)]/30 space-y-2">
                     <div>
                       <b>⚠️ Account Pending Approval:</b> Your registration is awaiting administrator approval. You currently have safe read-only viewer access until an administrator approves your account and assigns your team role.
                     </div>
-                    <div className="text-[var(--sx-text-2)] pt-1 border-t border-[#FF9A1F]/20">
+                    <div className="text-[var(--sx-text-2)] pt-1 border-t border-[var(--sxa-border-2)]/20">
                       Setting up for the first time as Project Admin? Click <b>Sign Out &amp; Switch Account</b> below and sign in or register using the designated Administrator account to unlock the Admin Panel.
                     </div>
                   </div>

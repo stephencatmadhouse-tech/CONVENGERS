@@ -159,7 +159,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           <button
             type="button"
             onClick={onOpenAuth}
-            className="flex items-center gap-1.5 border border-[#FF9A1F] bg-[#FF9A1F]/15 hover:bg-[#FF9A1F]/25 text-[var(--sx-text-10)] px-2.5 py-1.5 rounded-md font-bold text-xs transition-all"
+            className="flex items-center gap-1.5 border border-[var(--sxa-border-2)] bg-[var(--sxa-bg-1)]/15 hover:bg-[var(--sxa-bg-1)]/25 text-[var(--sx-text-10)] px-2.5 py-1.5 rounded-md font-bold text-xs transition-all"
             title="Signed in as Pending Approval - click to check status or switch to Administrator account"
           >
             <span>⏳ {user.name} (PENDING)</span>

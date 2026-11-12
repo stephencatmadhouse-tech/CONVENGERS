@@ -1,26 +1,26 @@
 /* Convengers status palette — light (default) and dark (original) */
 :root {
-  --st-upcoming-bg: #E9E9F0; --st-upcoming-fg: #4A4A5E; --st-upcoming-bd: #D5D5E0;
-  --st-in-progress-bg: #7041C8; --st-in-progress-fg: #FFFFFF; --st-in-progress-bd: #7041C8;
-  --st-ongoing-bg: #7041C8; --st-ongoing-fg: #FFFFFF; --st-ongoing-bd: #7041C8;
+  --st-upcoming-bg: #EEEDF2; --st-upcoming-fg: #5C5766; --st-upcoming-bd: #D9D8E0;
+  --st-in-progress-bg: #8746D6; --st-in-progress-fg: #FFFFFF; --st-in-progress-bd: #8746D6;
+  --st-ongoing-bg: #8746D6; --st-ongoing-fg: #FFFFFF; --st-ongoing-bd: #8746D6;
   --st-complete-bg: #22A05A; --st-complete-fg: #FFFFFF; --st-complete-bd: #22A05A;
   --st-completed-bg: #22A05A; --st-completed-fg: #FFFFFF; --st-completed-bd: #22A05A;
   --st-delayed-bg: #D92D3F; --st-delayed-fg: #FFFFFF; --st-delayed-bd: #D92D3F;
-  --st-date-passed-confirm-bg: #FFD43B; --st-date-passed-confirm-fg: #252336; --st-date-passed-confirm-bd: #E8B800;
-  --st-on-hold-bg: #C9C9D6; --st-on-hold-fg: #252336; --st-on-hold-bd: #B5B5C5;
-  --st-not-started-bg: #E9E9F0; --st-not-started-fg: #4A4A5E; --st-not-started-bd: #D5D5E0;
-  --st-on-track-bg: #7041C8; --st-on-track-fg: #FFFFFF; --st-on-track-bd: #7041C8;
-  --st-planned-bg: #E9E9F0; --st-planned-fg: #4A4A5E; --st-planned-bd: #D5D5E0;
-  --st-for-confirmation-bg: #FFD43B; --st-for-confirmation-fg: #252336; --st-for-confirmation-bd: #E8B800;
-  --st-scheduled-bg: #7041C8; --st-scheduled-fg: #FFFFFF; --st-scheduled-bd: #7041C8;
-  --st-rescheduled-bg: #EEE8FA; --st-rescheduled-fg: #5B32AE; --st-rescheduled-bd: #CDBEF0;
-  --st-not-yet-started-bg: #E9E9F0; --st-not-yet-started-fg: #4A4A5E; --st-not-yet-started-bd: #D5D5E0;
-  --st-preparation-ongoing-bg: #7041C8; --st-preparation-ongoing-fg: #FFFFFF; --st-preparation-ongoing-bd: #7041C8;
-  --st-ready-for-pouring-bg: #FFD43B; --st-ready-for-pouring-fg: #252336; --st-ready-for-pouring-bd: #E8B800;
-  --st-scheduled-for-pouring-bg: #7041C8; --st-scheduled-for-pouring-fg: #FFFFFF; --st-scheduled-for-pouring-bd: #7041C8;
-  --st-pouring-ongoing-bg: #7041C8; --st-pouring-ongoing-fg: #FFFFFF; --st-pouring-ongoing-bd: #7041C8;
+  --st-date-passed-confirm-bg: #FFD43B; --st-date-passed-confirm-fg: #393442; --st-date-passed-confirm-bd: #E8B800;
+  --st-on-hold-bg: #C9C9D6; --st-on-hold-fg: #393442; --st-on-hold-bd: #B5B5C5;
+  --st-not-started-bg: #EEEDF2; --st-not-started-fg: #5C5766; --st-not-started-bd: #D9D8E0;
+  --st-on-track-bg: #8746D6; --st-on-track-fg: #FFFFFF; --st-on-track-bd: #8746D6;
+  --st-planned-bg: #EEEDF2; --st-planned-fg: #5C5766; --st-planned-bd: #D9D8E0;
+  --st-for-confirmation-bg: #FFD43B; --st-for-confirmation-fg: #393442; --st-for-confirmation-bd: #E8B800;
+  --st-scheduled-bg: #8746D6; --st-scheduled-fg: #FFFFFF; --st-scheduled-bd: #8746D6;
+  --st-rescheduled-bg: #F3ECFC; --st-rescheduled-fg: #5B32AE; --st-rescheduled-bd: #CDBEF0;
+  --st-not-yet-started-bg: #EEEDF2; --st-not-yet-started-fg: #5C5766; --st-not-yet-started-bd: #D9D8E0;
+  --st-preparation-ongoing-bg: #8746D6; --st-preparation-ongoing-fg: #FFFFFF; --st-preparation-ongoing-bd: #8746D6;
+  --st-ready-for-pouring-bg: #FFD43B; --st-ready-for-pouring-fg: #393442; --st-ready-for-pouring-bd: #E8B800;
+  --st-scheduled-for-pouring-bg: #8746D6; --st-scheduled-for-pouring-fg: #FFFFFF; --st-scheduled-for-pouring-bd: #8746D6;
+  --st-pouring-ongoing-bg: #8746D6; --st-pouring-ongoing-fg: #FFFFFF; --st-pouring-ongoing-bd: #8746D6;
   --st-pouring-completed-bg: #22A05A; --st-pouring-completed-fg: #FFFFFF; --st-pouring-completed-bd: #22A05A;
-  --st-curing-ongoing-bg: #7041C8; --st-curing-ongoing-fg: #FFFFFF; --st-curing-ongoing-bd: #7041C8;
+  --st-curing-ongoing-bg: #8746D6; --st-curing-ongoing-fg: #FFFFFF; --st-curing-ongoing-bd: #8746D6;
   --st-completed-approved-bg: #22A05A; --st-completed-approved-fg: #FFFFFF; --st-completed-approved-bd: #22A05A;
 }
 html[data-eff='dark'] {
@@ -70,12 +70,12 @@ html[data-eff='dark'] {
 :root {
   --tl-c-done: linear-gradient(90deg, #1F9D57, #2FB86C);
   --tl-c-prog: linear-gradient(90deg, #6236B8, #7F55D6);
-  --tl-c-up: #EEE8FA;
+  --tl-c-up: #F3ECFC;
   --tl-p-done: linear-gradient(90deg, #B8326E, #D9488A);
   --tl-p-sched: linear-gradient(90deg, #A2489A, #C266B8);
   --tl-p-up: #FBE9F2;
-  --tl-up-fg: #252336;
-  --tl-up-fg2: #777789;
+  --tl-up-fg: #393442;
+  --tl-up-fg2: #898493;
 }
 html[data-eff='dark'] {
   --tl-c-done: linear-gradient(90deg, #237A4A, #4BE08A);
@@ -90,12 +90,40 @@ html[data-eff='dark'] {
 
 /* Theme ink for Tailwind text classes in slides & modals */
 :root {
-  --sx-ink: #252336;
-  --sx-ink-90: rgba(37, 35, 54, 0.9);
-  --sx-hover: rgba(112, 65, 200, 0.08);
+  --sx-ink: #393442;
+  --sx-ink-90: rgba(57, 52, 66, 0.9);
+  --sx-hover: rgba(135, 70, 214, 0.08);
 }
 html[data-eff='dark'] {
   --sx-ink: #ffffff;
   --sx-ink-90: rgba(255, 255, 255, 0.9);
   --sx-hover: rgba(255, 255, 255, 0.1);
+}
+
+/* Toolbar — light identity (dark theme keeps the original toolbar) */
+html:not([data-eff='dark']) .toolbar {
+  background: #ffffff;
+  border-bottom: 1px solid #ebe3f7;
+  box-shadow: 0 2px 14px rgba(87, 52, 140, 0.06);
+}
+html:not([data-eff='dark']) .toolbar button {
+  background: #f3ecfc;
+  border-color: #e6dbf6;
+  color: #6b35b8;
+  font-weight: 600;
+}
+html:not([data-eff='dark']) .toolbar button:hover {
+  background: #ebdff9;
+  border-color: #dcc5f5;
+}
+html:not([data-eff='dark']) .toolbar button.on {
+  background: #8746d6;
+  border-color: #8746d6;
+  color: #ffffff;
+}
+html:not([data-eff='dark']) .toolbar button.on:hover {
+  background: #7a3cc9;
+}
+html:not([data-eff='dark']) ::selection {
+  background: #dcc5f5;
 }

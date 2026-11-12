@@ -258,7 +258,7 @@ export const ReportsPage: React.FC<{ type: ReportType }> = ({ type }) => {
 };
 
 export const ReportStatusStamp: React.FC<{ report?: ProjectReport }> = ({ report }) => {
-  if (!report) return <span className="cv-stamp" style={{ color: '#9A9AAD', borderColor: '#9A9AAD' }}>Not generated</span>;
+  if (!report) return <span className="cv-stamp" style={{ color: '#A9A5B2', borderColor: '#A9A5B2' }}>Not generated</span>;
   if (report.status === 'approved')
     return (
       <span className="cv-stamp" style={{ color: '#22A05A', borderColor: '#22A05A' }}>
@@ -477,11 +477,11 @@ const MonthlyBody: React.FC<{ c: MonthlyContent; n: ReportNarrative }> = ({ c, n
     <h2>4. Production performance</h2>
     <Narr text={n.production} />
     <div className="cv-row" style={{ marginBottom: 6 }}>
-      <Pill label={`Shoot windows: ${c.production.shoots.length}`} color="#7041C8" />
+      <Pill label={`Shoot windows: ${c.production.shoots.length}`} color="#8746D6" />
       <Pill label={`Completed: ${c.production.completed}`} color="#22A05A" />
-      <Pill label={`Scheduled: ${c.production.scheduled}`} color="#3A7BEF" />
+      <Pill label={`Scheduled: ${c.production.scheduled}`} color="#A45BE8" />
       <Pill label={`Tentative: ${c.production.tentative}`} color="#FFC21A" />
-      <Pill label={`Rescheduled: ${c.production.rescheduled}`} color="#9B7BE0" />
+      <Pill label={`Rescheduled: ${c.production.rescheduled}`} color="#B98BEA" />
     </div>
     <RowsTable rows={c.production.shoots} empty="No shoots this month." showPlanned={false} />
     <h2>5. Weekly accomplishment summary</h2>
@@ -571,7 +571,7 @@ const MonthlyBody: React.FC<{ c: MonthlyContent; n: ReportNarrative }> = ({ c, n
                 <td className="nowrap">{r.workstream}</td>
                 <td className="nowrap">{fmtRange(r.start, r.finish)}</td>
                 <td>
-                  <Pill label={r.outlook} color={r.outlook === 'At risk' ? '#D92D3F' : r.outlook === 'Confirmed' ? '#22A05A' : r.outlook === 'Tentative' ? '#FFC21A' : '#3A7BEF'} />
+                  <Pill label={r.outlook} color={r.outlook === 'At risk' ? '#D92D3F' : r.outlook === 'Confirmed' ? '#22A05A' : r.outlook === 'Tentative' ? '#FFC21A' : '#A45BE8'} />
                 </td>
                 <td>{r.owner}</td>
                 <td className="cv-dim">{r.reasons.join('; ') || '—'}</td>

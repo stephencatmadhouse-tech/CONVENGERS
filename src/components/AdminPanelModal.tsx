@@ -81,9 +81,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const roleColors: Record<string, { bg: string; text: string; border: string }> = {
     admin: { bg: 'rgba(224, 33, 59, 0.2)', text: 'var(--sx-text-13)', border: '#E0213B' },
     manager: { bg: 'var(--sx-bg-15)', text: 'var(--sx-text-3)', border: 'var(--sx-border-4)' },
-    staff: { bg: 'rgba(58, 155, 255, 0.2)', text: 'var(--sx-text-11)', border: '#3A9BFF' },
+    staff: { bg: 'var(--sxa-bg-5)', text: 'var(--sx-text-11)', border: 'var(--sxa-border-4)' },
     viewer: { bg: 'var(--sx-bg-16)', text: 'var(--sx-text-2)', border: 'var(--sx-border-17)' },
-    pending: { bg: 'rgba(255, 154, 31, 0.2)', text: 'var(--sx-text-10)', border: '#FF9A1F' },
+    pending: { bg: 'var(--sxa-bg-6)', text: 'var(--sx-text-10)', border: 'var(--sxa-border-2)' },
   };
 
   const pendingCount = users.filter((u) => u.role === 'pending' || u.status === 'pending').length;
@@ -98,7 +98,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               <span className="text-xl">🛡️</span>
               <h2 className="text-lg font-bold text-[var(--sx-ink)] tracking-wide">Madhouse Admin Panel — Team Roles &amp; Access</h2>
               {pendingCount > 0 && (
-                <span className="bg-[#FF9A1F] text-[var(--sx-text-1)] font-bold text-xs px-2 py-0.5 rounded-full animate-pulse">
+                <span className="bg-[var(--sxa-bg-1)] text-[var(--sx-text-1)] font-bold text-xs px-2 py-0.5 rounded-full animate-pulse">
                   {pendingCount} Pending Approval
                 </span>
               )}
@@ -143,7 +143,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     key={u.id}
                     className={`p-3.5 rounded-lg border transition-all ${
                       isPending
-                        ? 'bg-[#181105] border-[#FF9A1F]/80 shadow-[0_0_12px_rgba(255,154,31,0.2)]'
+                        ? 'bg-[#181105] border-[var(--sxa-border-2)]/80 shadow-[0_0_12px_rgba(255,154,31,0.2)]'
                         : isRevoked
                         ? 'bg-[#150a0f] border-red-900/60 opacity-60'
                         : 'bg-[var(--sx-bg-5)] border-[var(--sx-border-6)]/50 hover:border-[var(--sx-border-6)]'
@@ -205,7 +205,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                   newStatus: 'active',
                                 })
                               }
-                              className="px-2.5 py-1 rounded bg-[#3A9BFF]/20 hover:bg-[#3A9BFF]/40 border border-[#3A9BFF] text-[var(--sx-text-11)] text-xs font-bold transition-all"
+                              className="px-2.5 py-1 rounded bg-[var(--sxa-bg-3)]/20 hover:bg-[var(--sxa-bg-3)]/40 border border-[var(--sxa-border-4)] text-[var(--sx-text-11)] text-xs font-bold transition-all"
                             >
                               Approve as Staff
                             </button>

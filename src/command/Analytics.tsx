@@ -134,17 +134,17 @@ export const Analytics: React.FC = () => {
       <Card title="1–2. Planned vs actual progress (S-curve)" note="Planned = baseline, weekly · Actual = recorded snapshots + today (live)">
         <LineChart
           series={[
-            { name: 'Planned', color: '#C9B8F0', points: plannedSeries, dashed: true },
-            { name: 'Actual', color: '#7041C8', points: actualPoints },
+            { name: 'Planned', color: '#DCC5F5', points: plannedSeries, dashed: true },
+            { name: 'Actual', color: '#8746D6', points: actualPoints },
           ]}
           markX={today}
         />
         <div className="cv-legend">
           <span>
-            <span className="cv-sw" style={{ background: '#C9B8F0' }} /> Planned (baseline)
+            <span className="cv-sw" style={{ background: '#DCC5F5' }} /> Planned (baseline)
           </span>
           <span>
-            <span className="cv-sw" style={{ background: '#7041C8' }} /> Actual (recorded)
+            <span className="cv-sw" style={{ background: '#8746D6' }} /> Actual (recorded)
           </span>
         </div>
       </Card>
@@ -273,7 +273,7 @@ export const Analytics: React.FC = () => {
             <Kpi label="Re-scheduled" value={eps.filter((e) => e.revisionCount > 0 || e.episodeStatus === 'Rescheduled').length} />
             <Kpi label="Tentative" value={eps.filter((e) => e.commitment === 'Tentative' && e.status !== 'Completed').length} />
           </div>
-          <BarChart bars={epStatus.map((s) => ({ ...s, color: s.label === 'Completed' ? '#22A05A' : s.label === 'Scheduled' ? '#3A7BEF' : s.label === 'Rescheduled' ? '#9B7BE0' : '#FFC21A' }))} height={170} />
+          <BarChart bars={epStatus.map((s) => ({ ...s, color: s.label === 'Completed' ? '#22A05A' : s.label === 'Scheduled' ? '#A45BE8' : s.label === 'Rescheduled' ? '#B98BEA' : '#FFC21A' }))} height={170} />
         </Card>
       </div>
     </div>
@@ -289,7 +289,7 @@ function plannedAtFromCurve(register: ReturnType<typeof useCommand>['register'],
 const OUTLOOK_HEX: Record<OutlookClass, string> = {
   Confirmed: '#22A05A',
   Tentative: '#FFC21A',
-  'Management target': '#3A7BEF',
+  'Management target': '#A45BE8',
   'At risk': '#D92D3F',
 };
 
@@ -405,7 +405,7 @@ export const Forecast: React.FC = () => {
                 .filter((i) => i.reasons.some((r) => r.startsWith('Depends on')))
                 .map((i) => (
                   <div key={`d-${i.activity.id}`} className="cv-li">
-                    <span className="cv-sev" style={{ background: '#E8862A' }} />
+                    <span className="cv-sev" style={{ background: '#E0A800' }} />
                     <div className="cv-li-main">
                       <div className="cv-li-t">{i.activity.name}</div>
                       <div className="cv-li-s">{i.reasons.filter((r) => r.startsWith('Depends on')).join(' · ')}</div>

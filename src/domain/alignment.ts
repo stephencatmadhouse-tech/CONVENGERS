@@ -33,10 +33,10 @@ export interface AlignmentRow {
 export const ALIGNMENT_COLORS: Record<AlignmentClass, string> = {
   Confirmed: '#22A05A',
   Tentative: '#FFC21A',
-  'For Coordination': '#3A7BEF',
+  'For Coordination': '#A45BE8',
   Conflict: '#D92D3F',
-  Rescheduled: '#9B7BE0',
-  Completed: '#B5B5C5',
+  Rescheduled: '#B98BEA',
+  Completed: '#C4C2CC',
 };
 
 const STOP_START = toIsoDate(WORK_STOPPAGE_START);
