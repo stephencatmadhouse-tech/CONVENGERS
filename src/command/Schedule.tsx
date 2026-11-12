@@ -146,7 +146,7 @@ export const ScheduleCalendar: React.FC<{ defaultLayers: Layer[]; title?: string
                       type="button"
                       key={r.id}
                       className="cv-cal-ev"
-                      style={{ borderLeftColor: kindColor(r.kind, r.stream), outline: r.status === 'Delayed' ? '1px solid #D92D3F' : cls === 'Conflict' ? '1px solid #D92D3F' : undefined }}
+                      style={{ borderLeftColor: kindColor(r.kind, r.stream), outline: r.status === 'Delayed' ? '1px solid #E5484D' : cls === 'Conflict' ? '1px solid #E5484D' : undefined }}
                       title={`${r.name} · ${r.workstream} · ${fmtRange(r.start, r.finish)} · ${r.status}${cls ? ` · ${cls}` : ''}`}
                       onClick={() => actions.openActivity(r.id)}
                     >
@@ -174,7 +174,7 @@ export const ScheduleCalendar: React.FC<{ defaultLayers: Layer[]; title?: string
           <span className="cv-sw" style={{ background: 'repeating-linear-gradient(135deg,rgba(224,33,59,.35) 0 4px,transparent 4px 8px)' }} /> Non-working (Sunday, holiday, stoppage)
         </span>
         <span>✓ completed</span>
-        <span style={{ color: '#D92D3F' }}>! delayed / conflict (red outline)</span>
+        <span style={{ color: '#E5484D' }}>! delayed / conflict (red outline)</span>
       </div>
       {dayOpen && (
         <Modal title={`Activities on ${fmtDate(dayOpen)}`} onClose={() => setDayOpen(null)} width={640}>
@@ -314,7 +314,7 @@ export const AlignmentView: React.FC = () => {
                   <td style={{ minWidth: 260 }}>
                     {a.alerts.length ? (
                       a.alerts.map((al, i) => (
-                        <div key={i} style={{ fontSize: 12, marginBottom: 3, color: al.severity === 'critical' ? '#D92D3F' : al.severity === 'warn' ? '#9A6A00' : undefined }}>
+                        <div key={i} style={{ fontSize: 12, marginBottom: 3, color: al.severity === 'critical' ? '#E5484D' : al.severity === 'warn' ? '#B36D00' : undefined }}>
                           {al.severity === 'critical' ? '⛔' : al.severity === 'warn' ? '⚠️' : 'ℹ️'} {al.message}
                         </div>
                       ))

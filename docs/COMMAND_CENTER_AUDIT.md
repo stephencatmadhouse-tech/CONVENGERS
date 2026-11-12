@@ -186,38 +186,45 @@ reports, issues, snapshots ──────────────├─► b
    concrete pour target date that falls outside its matching scope's dates;
    this occurs in the repository's seed data for the GF tie-beam pour.
 
-## 7. Visual identity — bright & light Convengers theme (standard)
+## 7. Visual identity — clean white & Convengers purple (standard)
 
-**White first. Lavender second. Purple as brand accent.** Inspired by the
-Convengers logo's cosmic purple, violet and magenta. The logo's dark
-background is not used as an interface background.
+**White is the foundation. Purple is the identity. Silver is the finishing detail.**
+Target balance: ~90% white / neutral surfaces, ~8% purple brand elements,
+~2% other accents. No lavender or pastel purple backgrounds, no dark navy or
+cosmic sections, no decorative gradients. The original Convengers logo is
+preserved.
 
-| Colour | Hex | Usage |
-|---|---|---|
-| Pure White | `#FFFFFF` | Main background, cards |
-| Soft Off-White | `#FAF9FD` | Sidebar, table headers, secondary background |
-| Light Lavender | `#F3ECFC` | Panels, icon chips, active navigation, secondary buttons |
-| Soft Purple | `#DCC5F5` | Secondary accents, planned progress, baselines |
-| Convengers Purple | `#8746D6` | Primary buttons, headings, actual progress, in-progress status |
-| Electric Violet | `#A45BE8` | Active elements, today marker, progress gradients |
-| Soft Magenta | `#D58BEA` | Decorative accents, milestones, finishing phase |
-| Silver Gray | `#D9D8E0` | Input borders, dividers (card borders use a lavender tint `#EBE3F7`) |
-| Charcoal | `#393442` | Main text |
-| Muted Gray | `#898493` | Secondary text |
+| Element | Hex |
+|---|---|
+| Main background — Pure White | `#FFFFFF` |
+| Secondary background — Clean White | `#FCFCFC` |
+| Primary brand — Convengers Purple | `#7026C8` |
+| Secondary purple — Vibrant Violet | `#8B35E8` |
+| Accent purple — Electric Purple | `#A34FEA` |
+| Magenta accent | `#C02AE0` |
+| Metallic accent — Silver | `#C7C7D0` |
+| Primary text — Charcoal | `#303030` |
+| Secondary text — Gray | `#777777` |
+| Borders — Light Gray | `#EAEAEA` |
+| Success — Green | `#22A06B` |
+| Warning — Orange | `#F5A623` |
+| Critical — Red | `#E5484D` |
 
-Green, yellow and red are used **only** for status indicators: green =
-completed / on track, yellow = needs confirmation / attention, red = delayed /
-critical. Purple marks in-progress items and gray marks pending ones.
+Application:
 
-How it is built (no data, calculation or reporting logic was changed):
+* **Surfaces:** white page and cards, light-gray dividers, subtle shadows.
+* **Sidebar:** white, purple line icons, charcoal labels, purple active indicator.
+* **KPI cards:** white with outlined icon chips and purple figures. The green
+  or red trend badge on *Actual physical accomplishment* only appears when a
+  recorded snapshot from 7–10 days earlier exists. It is never estimated.
+* **Charts and timelines:** purple = actual / in progress; silver gray =
+  planned / baseline / not yet started; green = completed; orange =
+  attention-required (tentative, needs confirmation, high priority); red =
+  delayed / critical. Upcoming Gantt bars stay silver rather than orange so the
+  ~2% accent target holds. Orange is reserved for items that need attention.
+* **Buttons:** solid purple primary; white secondary with a purple border; purple hover.
 
-* `src/command/command.css` — Command Center tokens (light default; dark under `html[data-eff='dark']`).
-* `src/theme-palette.css` — variables for every theme colour used by the
-  presentation slides, toolbar and modals. The light value follows the palette above.
-  The dark value is the exact original colour.
-* `src/theme-status.css` — status colours, timeline overlays and bars, light toolbar.
-* `src/utils/themeColors.ts` — display-only mapping for category colours that
-  are combined in code (for example the structural / finishing bars on the floor slides).
-* Navigation and KPI cards use simple line icons (lucide-react, already a dependency).
-* The original dark look remains a **per-device** preference (toolbar *Theme*
-  button). It is stored in the browser only and never changes what others see.
+Implementation files (visual only — no data, calculation or reporting logic changed):
+`src/command/command.css`, `src/theme-palette.css`, `src/theme-status.css`,
+`src/utils/themeColors.ts`. The original dark look remains a per-device option
+(toolbar *Theme* button), stored in the browser only.

@@ -382,7 +382,7 @@ export const ActivityEditor: React.FC<{ activity: RegisterActivity; onClose: () 
       <div className="cv-row">
         <Pill label={`Priority: ${r.priority}`} color={PRIORITY_HEX[r.priority]} />
         <Pill label={`Commitment: ${r.commitment}`} />
-        {r.slipDays !== 0 && <Pill label={`Slip vs baseline: ${r.slipDays > 0 ? '+' : ''}${r.slipDays} d`} color={r.slipDays > 0 ? '#D92D3F' : '#22A05A'} />}
+        {r.slipDays !== 0 && <Pill label={`Slip vs baseline: ${r.slipDays > 0 ? '+' : ''}${r.slipDays} d`} color={r.slipDays > 0 ? '#E5484D' : '#22A06B'} />}
       </div>
     </Modal>
   );

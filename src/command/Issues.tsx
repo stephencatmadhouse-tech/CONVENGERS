@@ -12,8 +12,8 @@ import { ownerAccountability, AttentionCategory } from '../domain/attention.ts';
 import { fmtDate, todayIso } from '../domain/dates.ts';
 import { Card, Empty, Modal, Field, Banner, Pill, ConfirmDialog, Kpi } from './ui.tsx';
 
-const SEV_HEX: Record<string, string> = { Critical: '#D92D3F', High: '#E0A800', Medium: '#A45BE8', Low: '#A9A5B2', critical: '#D92D3F', warn: '#E0A800', info: '#A45BE8' };
-const STATUS_ISSUE_HEX: Record<IssueStatus, string> = { Open: '#D92D3F', 'In Progress': '#A45BE8', Resolved: '#22A05A', Closed: '#C4C2CC' };
+const SEV_HEX: Record<string, string> = { Critical: '#E5484D', High: '#F5A623', Medium: '#A34FEA', Low: '#9A9AA3', critical: '#E5484D', warn: '#F5A623', info: '#A34FEA' };
+const STATUS_ISSUE_HEX: Record<IssueStatus, string> = { Open: '#E5484D', 'In Progress': '#A34FEA', Resolved: '#22A06B', Closed: '#C7C7D0' };
 
 export const AttentionList: React.FC = () => {
   const { attention, actions } = useCommand();
@@ -125,10 +125,10 @@ export const IssueLog: React.FC = () => {
         <Banner kind="warn">Shared issue storage is not available yet — new issues are saved on this device only until the updated Firestore rules are deployed.</Banner>
       )}
       <div className="cv-kpis">
-        <Kpi label="Open" value={issues.filter((i) => i.status === 'Open').length} color="#D92D3F" />
+        <Kpi label="Open" value={issues.filter((i) => i.status === 'Open').length} color="#E5484D" />
         <Kpi label="In progress" value={issues.filter((i) => i.status === 'In Progress').length} />
         <Kpi label="Critical / high open" value={issues.filter((i) => (i.severity === 'Critical' || i.severity === 'High') && i.status !== 'Resolved' && i.status !== 'Closed').length} />
-        <Kpi label="Overdue resolution" value={issues.filter((i) => i.dueDate && i.dueDate < today && i.status !== 'Resolved' && i.status !== 'Closed').length} color="#D92D3F" />
+        <Kpi label="Overdue resolution" value={issues.filter((i) => i.dueDate && i.dueDate < today && i.status !== 'Resolved' && i.status !== 'Closed').length} color="#E5484D" />
         <Kpi label="Decisions pending" value={issues.filter((i) => (i.decisionRequired || i.type === 'Decision') && i.status !== 'Resolved' && i.status !== 'Closed').length} />
       </div>
       <div className="cv-filters">
@@ -370,7 +370,7 @@ export const Accountability: React.FC = () => {
             </thead>
             <tbody>
               {loads.map((l) => (
-                <tr key={l.owner} className="clickable" onClick={() => setOwner(l.owner)} style={owner === l.owner ? { outline: '2px solid #A45BE8' } : undefined}>
+                <tr key={l.owner} className="clickable" onClick={() => setOwner(l.owner)} style={owner === l.owner ? { outline: '2px solid #A34FEA' } : undefined}>
                   <td className={l.owner === 'Unassigned' ? 'cv-late' : 'cv-strong'}>{l.owner}</td>
                   <td className="num">{l.ongoing}</td>
                   <td className={`num ${l.delayed ? 'cv-late' : ''}`}>{l.delayed}</td>

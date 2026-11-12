@@ -9,11 +9,11 @@
  */
 
 const LIGHT_MAP: Record<string, string> = {
-  '#3A9BFF': '#8746D6', // construction / structural
-  '#FF9A1F': '#D58BEA', // finishing / concrete
-  '#F5C518': '#D58BEA', // highlight
-  '#FF5D8F': '#C455B8', // production
-  '#B58CFF': '#A45BE8', // other
+  '#3A9BFF': '#7026C8', // construction / structural
+  '#FF9A1F': '#A34FEA', // finishing / concrete
+  '#F5C518': '#C7C7D0', // highlight
+  '#FF5D8F': '#C02AE0', // production
+  '#B58CFF': '#A34FEA', // other
 };
 
 export function isDarkTheme(): boolean {

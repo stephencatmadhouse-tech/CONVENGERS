@@ -142,29 +142,29 @@ export const Gantt: React.FC = () => {
       )}
       <div className="cv-legend">
         <span>
-          <span className="cv-sw" style={{ background: '#8746D6' }} /> Ongoing
+          <span className="cv-sw" style={{ background: '#7026C8' }} /> Ongoing
         </span>
         <span>
-          <span className="cv-sw" style={{ background: '#22A05A' }} /> Completed
+          <span className="cv-sw" style={{ background: '#22A06B' }} /> Completed
         </span>
         <span>
-          <span className="cv-sw" style={{ background: '#D92D3F' }} /> Delayed
+          <span className="cv-sw" style={{ background: '#E5484D' }} /> Delayed
         </span>
         <span>
-          <span className="cv-sw" style={{ background: '#D9D8E0' }} /> Upcoming
+          <span className="cv-sw" style={{ background: '#D9D9DE' }} /> Upcoming
         </span>
         <span>
           <span className="cv-sw" style={{ height: 4, background: 'var(--cv-baseline)' }} /> Baseline (original plan)
         </span>
         <span>
-          <span className="cv-sw" style={{ height: 3, background: '#22A05A' }} /> Actual
+          <span className="cv-sw" style={{ height: 3, background: '#22A06B' }} /> Actual
         </span>
         <span>◆ Milestone / pour</span>
         <span>
-          <span className="cv-sw" style={{ outline: '2px solid #D58BEA' }} /> Critical path
+          <span className="cv-sw" style={{ outline: '2px solid #C02AE0' }} /> Critical path
         </span>
         <span>
-          <span className="cv-sw" style={{ width: 2, background: '#A45BE8' }} /> Today
+          <span className="cv-sw" style={{ width: 2, background: '#A34FEA' }} /> Today
         </span>
       </div>
       {rows.length === 0 ? (
@@ -221,7 +221,7 @@ const GanttRow: React.FC<{ r: RegisterActivity; x: (iso: string) => number; widt
   const isPoint = r.kind === 'milestone' || r.kind === 'pour';
   const s = r.start || r.plannedStart!;
   const f = r.finish || r.start || r.plannedFinish || s;
-  const color = r.status === 'Completed' ? STATUS_HEX.Completed : r.status === 'Delayed' ? STATUS_HEX.Delayed : r.status === 'Ongoing' ? STATUS_HEX.Ongoing : r.status === 'On Hold' ? '#C4C2CC' : '#D9D8E0';
+  const color = r.status === 'Completed' ? STATUS_HEX.Completed : r.status === 'Delayed' ? STATUS_HEX.Delayed : r.status === 'Ongoing' ? STATUS_HEX.Ongoing : r.status === 'On Hold' ? '#C7C7D0' : '#D9D9DE';
   const tip = `${r.name}\n${r.workstream} · ${r.status}\nBaseline: ${fmtRange(r.plannedStart, r.plannedFinish)}\nCurrent: ${fmtRange(r.start, r.finish)}\nActual: ${fmtRange(r.actualStart, r.actualFinish || (r.actualStart ? todayIso() : undefined))}\nProgress ${r.progress}% (planned ${r.plannedProgress}%)\nOwner: ${r.owner || 'Unassigned'}`;
   return (
     <div className="cv-g-row">
@@ -237,7 +237,7 @@ const GanttRow: React.FC<{ r: RegisterActivity; x: (iso: string) => number; widt
         {isPoint ? (
           <>
             {f !== s && <div className="cv-g-bar" style={{ left: x(s), width: (diffDays(s, f) + 1) * px, background: `${color}66`, top: 12, height: 6 }} />}
-            <div className={`cv-g-diamond ${crit ? 'cv-g-crit' : ''}`} style={{ left: x(f) + px / 2, background: r.kind === 'pour' ? '#6C63E0' : r.status === 'Completed' ? '#22A05A' : r.status === 'Delayed' ? '#D92D3F' : '#D58BEA' }} title={tip} onClick={onOpen} />
+            <div className={`cv-g-diamond ${crit ? 'cv-g-crit' : ''}`} style={{ left: x(f) + px / 2, background: r.kind === 'pour' ? '#8B35E8' : r.status === 'Completed' ? '#22A06B' : r.status === 'Delayed' ? '#E5484D' : '#C02AE0' }} title={tip} onClick={onOpen} />
           </>
         ) : (
           <div className={`cv-g-bar ${crit ? 'cv-g-crit' : ''}`} style={{ left: x(s), width: Math.max(4, (diffDays(s, f) + 1) * px), background: color }} title={tip} onClick={onOpen}>

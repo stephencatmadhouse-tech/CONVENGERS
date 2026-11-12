@@ -16,36 +16,37 @@ import { STATUS_COLORS } from '../constants/assets.ts';
  * red = delayed / critical · gray = pending / not started.
  */
 export const STATUS_HEX: Record<string, string> = {
-  Completed: '#22A05A',
-  Ongoing: '#8746D6',
-  Delayed: '#D92D3F',
-  Upcoming: '#A9A5B2',
-  'On Hold': '#C4C2CC',
+  Completed: '#22A06B',
+  Ongoing: '#7026C8',
+  Delayed: '#E5484D',
+  Upcoming: '#9A9AA3',
+  'On Hold': '#C7C7D0',
 };
 
 export const HEALTH_HEX: Record<HealthLevel, string> = {
-  'On Track': '#22A05A',
-  'At Risk': '#E8B800',
-  Critical: '#D92D3F',
+  'On Track': '#22A06B',
+  'At Risk': '#E0951A',
+  Critical: '#E5484D',
 };
 
 export const STREAM_HEX: Record<string, string> = {
-  Construction: '#8746D6',
-  Production: '#C455B8',
-  Milestone: '#D58BEA',
-  Concrete: '#6C63E0',
+  Construction: '#7026C8',
+  Production: '#C02AE0',
+  Milestone: '#A34FEA',
+  Concrete: '#8B35E8',
 };
 
 export const PRIORITY_HEX: Record<string, string> = {
-  Critical: '#D92D3F',
-  High: '#C455B8',
-  Medium: '#8746D6',
-  Low: '#A9A5B2',
+  Critical: '#E5484D',
+  High: '#F5A623',
+  Medium: '#7026C8',
+  Low: '#9A9AA3',
 };
 
 /** Readable text colour for a status/category colour (mixes toward the ink colour). */
-export const tintText = (c: string) => `color-mix(in srgb, ${c} 72%, var(--cv-ink))`;
-export const tintBg = (c: string) => `color-mix(in srgb, ${c} 13%, transparent)`;
+export const tintText = (c: string) => `color-mix(in srgb, ${c} 78%, var(--cv-ink))`;
+/** Outlined style: pills and icon chips sit on the panel colour (no pastel fills). */
+export const tintBg = (_c: string) => 'var(--cv-panel)';
 
 export function kindColor(kind: string, stream?: string): string {
   if (kind === 'pour') return STREAM_HEX.Concrete;
@@ -63,7 +64,7 @@ export const Pill: React.FC<{ label: string; color?: string; title?: string }> =
       </span>
     );
   }
-  const c = color || '#A9A5B2';
+  const c = color || '#9A9AA3';
   return (
     <span className="cv-pill" style={{ background: tintBg(c), color: tintText(c), borderColor: `color-mix(in srgb, ${c} 45%, transparent)` }} title={title}>
       {label}
@@ -72,7 +73,7 @@ export const Pill: React.FC<{ label: string; color?: string; title?: string }> =
 };
 
 export const StatusPill: React.FC<{ status: string }> = ({ status }) => {
-  const c = STATUS_HEX[status] || '#A9A5B2';
+  const c = STATUS_HEX[status] || '#9A9AA3';
   const solid = status === 'Delayed' || status === 'Completed' || status === 'Ongoing';
   return (
     <span className="cv-pill" style={solid ? { background: c, color: '#fff', borderColor: c } : { background: tintBg(c), color: tintText(c), borderColor: `color-mix(in srgb, ${c} 45%, transparent)` }}>
@@ -86,8 +87,8 @@ export const HealthBadge: React.FC<{ level: HealthLevel; big?: boolean }> = ({ l
     className="cv-health"
     style={{
       color: level === 'At Risk' ? '#252336' : '#FFFFFF',
-      border: `1px solid ${level === 'At Risk' ? '#FFD43B' : HEALTH_HEX[level]}`,
-      background: level === 'At Risk' ? '#FFD43B' : HEALTH_HEX[level],
+      border: `1px solid ${level === 'At Risk' ? '#F5A623' : HEALTH_HEX[level]}`,
+      background: level === 'At Risk' ? '#F5A623' : HEALTH_HEX[level],
       fontSize: big ? 16 : undefined,
     }}
     aria-label={`Project health: ${level}`}
@@ -321,7 +322,7 @@ export const LineChart: React.FC<{ series: Series[]; height?: number; yMax?: num
       )}
       {markIdx >= 0 && (
         <g>
-          <line x1={xPos(xs[markIdx])} x2={xPos(xs[markIdx])} y1={T} y2={H - B} stroke="#A45BE8" strokeWidth={2} strokeDasharray="4 3" />
+          <line x1={xPos(xs[markIdx])} x2={xPos(xs[markIdx])} y1={T} y2={H - B} stroke="#A34FEA" strokeWidth={2} strokeDasharray="4 3" />
           <text x={xPos(xs[markIdx]) + 4} y={T + 10} style={{ fill: 'var(--cv-accent)' }}>
             Today
           </text>
@@ -373,7 +374,7 @@ export const BarChart: React.FC<{ bars: { label: string; value: number; color?: 
         const y = b.value >= 0 ? zeroY - h : zeroY;
         return (
           <g key={b.label + i}>
-            <rect x={x} y={y} width={bw} height={Math.max(1, h)} rx={3} fill={b.color || (b.value < 0 ? '#D92D3F' : '#8746D6')}>
+            <rect x={x} y={y} width={bw} height={Math.max(1, h)} rx={3} fill={b.color || (b.value < 0 ? '#E5484D' : '#7026C8')}>
               <title>{b.title || `${b.label}: ${b.value}${unit}`}</title>
             </rect>
             <text x={x + bw / 2} y={b.value >= 0 ? y - 4 : y + h + 12} textAnchor="middle" style={{ fill: 'currentColor' }}>

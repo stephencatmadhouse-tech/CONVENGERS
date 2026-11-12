@@ -6,52 +6,52 @@
    ===================================================================== */
 
 :root {
-  /* Convengers light palette — WHITE FIRST · LAVENDER SECOND · PURPLE AS BRAND ACCENT */
+  /* Convengers light identity — WHITE IS THE FOUNDATION · PURPLE IS THE IDENTITY · SILVER IS THE FINISHING DETAIL */
   --cv-bg: #ffffff;
-  --cv-bg-2: #faf9fd;
+  --cv-bg-2: #fcfcfc;
   --cv-panel: #ffffff;
-  --cv-panel-2: #f3ecfc;
-  --cv-line: #ebe3f7;
-  --cv-line-soft: #f1ecf8;
-  --cv-silver: #d9d8e0;
-  --cv-purple: #8746d6;
-  --cv-violet: #a45be8;
-  --cv-magenta: #d58bea;
-  --cv-purple-soft: #f3ecfc;
-  --cv-purple-2: #dcc5f5;
-  --cv-yellow: #a45be8; /* highlight markers (today, focus) use violet; yellow is reserved for status */
-  --cv-accent: #8746d6; /* headings, labels, active text */
-  --cv-th: #898493;
-  --cv-text: #393442;
-  --cv-ink: #393442;
-  --cv-muted: #6b6676;
-  --cv-dim: #898493;
-  --cv-red: #d92d3f;
-  --cv-red-text: #c42536;
-  --cv-green: #1f9d57;
-  --cv-blue: #6c63e0;
-  --cv-orange: #c96a00;
-  --cv-pink: #c455b8;
-  --cv-lilac: #b98bea;
-  --cv-glow: 0 1px 2px rgba(87, 52, 140, 0.04), 0 6px 20px rgba(87, 52, 140, 0.05);
-  --cv-track: #f1ecf8;
-  --cv-bar-fill: linear-gradient(90deg, #8746d6, #a45be8);
-  --cv-sidebar-bg: #faf9fd;
-  --cv-nav-on-bg: #f3ecfc;
-  --cv-nav-on-fg: #8746d6;
+  --cv-panel-2: #fcfcfc;
+  --cv-line: #eaeaea;
+  --cv-line-soft: #f0f0f0;
+  --cv-silver: #c7c7d0;
+  --cv-purple: #7026c8;
+  --cv-violet: #8b35e8;
+  --cv-magenta: #c02ae0;
+  --cv-purple-soft: #f7f7f8; /* neutral hover / active surface (no pastel purple) */
+  --cv-purple-2: #c7c7d0;
+  --cv-yellow: #a34fea; /* markers (today, focus) use electric purple */
+  --cv-accent: #7026c8;
+  --cv-th: #777777;
+  --cv-text: #303030;
+  --cv-ink: #303030;
+  --cv-muted: #5c5c5c;
+  --cv-dim: #777777;
+  --cv-red: #e5484d;
+  --cv-red-text: #d13438;
+  --cv-green: #1e8e5e;
+  --cv-blue: #8b35e8;
+  --cv-orange: #b36d00;
+  --cv-pink: #c02ae0;
+  --cv-lilac: #a34fea;
+  --cv-glow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.04);
+  --cv-track: #efeff2;
+  --cv-bar-fill: #7026c8;
+  --cv-sidebar-bg: #ffffff;
+  --cv-nav-on-bg: #f7f7f8;
+  --cv-nav-on-fg: #7026c8;
   --cv-nav-on-bd: transparent;
-  --cv-nav-on-shadow: inset 3px 0 0 #8746d6;
-  --cv-primary-bg: #8746d6;
+  --cv-nav-on-shadow: inset 3px 0 0 #7026c8;
+  --cv-primary-bg: #7026c8;
   --cv-primary-fg: #ffffff;
-  --cv-btn-bg: #f3ecfc;
-  --cv-btn-fg: #6b35b8;
-  --cv-btn-bd: #e6dbf6;
-  --cv-btn-hover: #ebdff9;
-  --cv-scrim: rgba(57, 52, 66, 0.3);
-  --cv-modal-shadow: 0 24px 60px rgba(87, 52, 140, 0.16);
-  --cv-baseline: #dcc5f5;
+  --cv-btn-bg: #ffffff;
+  --cv-btn-fg: #7026c8;
+  --cv-btn-bd: #7026c8;
+  --cv-btn-hover: #ffffff;
+  --cv-scrim: rgba(48, 48, 48, 0.32);
+  --cv-modal-shadow: 0 24px 60px rgba(0, 0, 0, 0.14);
+  --cv-baseline: #c7c7d0;
   --cv-radius: 14px;
-  --cv-sidebar: 252px;
+  --cv-sidebar: 264px;
 }
 
 /* Optional dark theme (per device) — the original Convengers night look */
@@ -398,7 +398,12 @@ html[data-eff='dark'] {
 }
 .cv-btn:hover:not(:disabled) {
   background: var(--cv-btn-hover);
-  border-color: var(--cv-purple-2);
+  border-color: var(--cv-purple);
+  color: var(--cv-purple);
+  box-shadow: 0 0 0 3px rgba(112, 38, 200, 0.12);
+}
+html[data-eff='dark'] .cv-btn:hover:not(:disabled) {
+  box-shadow: none;
 }
 .cv-btn.primary:hover:not(:disabled),
 .cv-btn.purple:hover:not(:disabled) {
@@ -425,7 +430,8 @@ html[data-eff='dark'] {
 }
 .cv-btn.ghost {
   background: var(--cv-panel);
-  border-color: var(--cv-line);
+  border-color: var(--cv-silver);
+  color: var(--cv-text);
 }
 .cv-btn.sm {
   padding: 4px 9px;
@@ -1191,9 +1197,9 @@ html[data-eff='dark'] {
     --cv-text: #0b1033;
     --cv-muted: #3d4670;
     --cv-dim: #5d6690;
-    --cv-accent: #7041c8;
-    --cv-th: #777789;
-    --cv-line: #e8e8ef;
+    --cv-accent: #7026c8;
+    --cv-th: #777777;
+    --cv-line: #eaeaea;
     --cv-red-text: #b0102a;
     --cv-green: #0f7a3d;
     box-shadow: none !important;
@@ -1203,29 +1209,30 @@ html[data-eff='dark'] {
     background: #fff !important;
   }
   body.cv-printing .cv-doc-head {
-    background: #eee8fa !important;
-    color: #252336 !important;
+    background: #ffffff !important;
+    border-top: 1px solid #c7c7d0 !important;
+    color: #303030 !important;
     padding: 14px 16px !important;
     border-radius: 8px;
-    border-bottom: 4px solid #7041c8 !important;
+    border-bottom: 3px solid #7026c8 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
   body.cv-printing .cv-doc-head .cv-h1,
   body.cv-printing .cv-doc-head .cv-dim {
-    color: #252336 !important;
+    color: #303030 !important;
   }
   body.cv-printing .cv-doc-head .cv-kicker {
-    color: #7041c8 !important;
+    color: #7026c8 !important;
   }
   body.cv-printing .cv-table-wrap {
     overflow: visible !important;
-    border-color: #e8e8ef !important;
+    border-color: #eaeaea !important;
   }
   body.cv-printing .cv-table th {
     position: static !important;
-    color: #5f5f73 !important;
-    background: #f7f8fc !important;
+    color: #777777 !important;
+    background: #fcfcfc !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -1234,17 +1241,17 @@ html[data-eff='dark'] {
   }
   body.cv-printing .cv-doc h2 {
     break-after: avoid;
-    color: #7041c8 !important;
+    color: #7026c8 !important;
   }
   body.cv-printing .cv-kpi,
   body.cv-printing .cv-card {
     box-shadow: none !important;
-    border-color: #e8e8ef !important;
+    border-color: #eaeaea !important;
     background: #fff !important;
     break-inside: avoid;
   }
   body.cv-printing .cv-kpi-v {
-    color: #252336 !important;
+    color: #303030 !important;
   }
   body.cv-printing .cv-kpis {
     grid-template-columns: repeat(4, 1fr) !important;
@@ -1258,7 +1265,7 @@ html[data-eff='dark'] {
   background: var(--cv-main-wash, transparent);
 }
 :root {
-  --cv-main-wash: radial-gradient(1100px 360px at 88% -140px, #f3ecfc 0%, rgba(243, 236, 252, 0) 72%), #ffffff;
+  --cv-main-wash: #ffffff;
 }
 html[data-eff='dark'] {
   --cv-main-wash: transparent;
@@ -1311,8 +1318,10 @@ html[data-eff='dark'] .cv-nav-btn.on .cv-nav-ico {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--cv-purple-soft);
+  background: var(--cv-panel);
+  border: 1px solid var(--cv-line);
   color: var(--cv-purple);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 .cv-card,
 .cv-kpi {
@@ -1356,4 +1365,42 @@ html[data-eff='dark'] .cv-nav-btn.on .cv-nav-ico {
   .cv-kpi.has-ico {
     grid-template-columns: 1fr;
   }
+}
+
+.cv-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font: 700 11.5px 'Barlow', sans-serif;
+  border: 1px solid;
+}
+.cv-trend.up {
+  color: #1e8e5e;
+  border-color: #22a06b;
+}
+.cv-trend.down {
+  color: #d13438;
+  border-color: #e5484d;
+}
+.cv-kpi-ico {
+  border-radius: 12px;
+}
+html:not([data-eff='dark']) .cv-banner {
+  background: #ffffff;
+  border-color: var(--cv-line);
+  border-left-width: 4px;
+}
+html:not([data-eff='dark']) .cv-banner.info {
+  border-left-color: var(--cv-purple);
+}
+html:not([data-eff='dark']) .cv-banner.warn {
+  border-left-color: #f5a623;
+}
+html:not([data-eff='dark']) .cv-banner.error {
+  border-left-color: #e5484d;
+}
+html:not([data-eff='dark']) .cv-banner.ok {
+  border-left-color: #22a06b;
 }
