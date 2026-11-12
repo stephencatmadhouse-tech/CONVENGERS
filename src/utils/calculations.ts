@@ -50,28 +50,52 @@ export function parseIsoDate(s: string | undefined): Date | null {
 }
 
 /**
- * Parses date window strings like "Oct 5–6, 2026", "Jan 7–Feb 13, 2027", "Mar 18–Apr 3, 2027"
+ * Parses date window strings like "Oct 5–6, 2026", "Jan 7–Feb 13, 2027", "November 3-10, 2026",
+ * "Nov 16, 2026", "11/03/2026 - 11/10/2026", "2026-11-03 to 2026-11-10", or single dates.
  */
 export function parseDateWindow(text: string): [Date, Date] | null {
   if (!text) return null;
   const cleaned = text.replace(/\s+/g, ' ').trim();
-  
-  if (/^Dec 20\s*[–-]\s*Jan 3/i.test(cleaned)) {
+
+  // Work stoppage shorthand
+  if (/^Dec 20\s*[–—-]|to\s*Jan 3/i.test(cleaned)) {
     return [new Date(2026, 11, 20), new Date(2027, 0, 3)];
   }
 
-  const regex = /^\s*([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2})(?:,\s*(\d{4}))?(?:\s*[–-]\s*(?:([A-Za-z]{3})[a-z]*\.?\s+)?(\d{1,2})(?:,\s*(\d{4}))?)?/i;
+  // ISO format: YYYY-MM-DD or YYYY-MM-DD to YYYY-MM-DD
+  const isoMatch = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:\s*(?:[–—-]|to|through)\s*(\d{4})-(\d{1,2})-(\d{1,2}))?/i.exec(cleaned);
+  if (isoMatch) {
+    const s = new Date(+isoMatch[1], +isoMatch[2] - 1, +isoMatch[3]);
+    const e = isoMatch[4] ? new Date(+isoMatch[4], +isoMatch[5] - 1, +isoMatch[6]) : s;
+    if (!isNaN(s.getTime()) && !isNaN(e.getTime())) return [s, e];
+  }
+
+  // Slash format: MM/DD/YYYY or M/D/YYYY
+  const slashMatch = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?(?:\s*(?:[–—-]|to|through)\s*(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?)?/i.exec(cleaned);
+  if (slashMatch) {
+    const y1 = slashMatch[3] ? (+slashMatch[3] < 100 ? 2000 + +slashMatch[3] : +slashMatch[3]) : (+slashMatch[1] >= 10 ? 2026 : 2027);
+    const y2 = slashMatch[6] ? (+slashMatch[6] < 100 ? 2000 + +slashMatch[6] : +slashMatch[6]) : (slashMatch[4] ? (+slashMatch[4] >= 10 ? 2026 : 2027) : y1);
+    const s = new Date(y1, +slashMatch[1] - 1, +slashMatch[2]);
+    const e = slashMatch[4] ? new Date(y2, +slashMatch[4] - 1, +slashMatch[5]) : s;
+    if (!isNaN(s.getTime()) && !isNaN(e.getTime())) return [s, e];
+  }
+
+  // Standard text format: Month Day[, Year] [–-to Month Day[, Year]]
+  const regex = /^\s*([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,\s*(\d{4}))?(?:\s*(?:[–—-]|to|through)\s*(?:([A-Za-z]{3})[a-z]*\.?\s+)?(\d{1,2})(?:st|nd|rd|th)?(?:,\s*(\d{4}))?)?/i;
   const match = regex.exec(cleaned);
   if (!match) return null;
 
   const m1 = MONTH_MAP[match[1].toLowerCase()];
   if (m1 === undefined) return null;
 
-  const year1 = match[3] ? +match[3] : match[6] ? +match[6] : 2026;
-  const year2 = match[6] ? +match[6] : match[3] ? +match[3] : year1;
+  const defYear1 = m1 >= 9 ? 2026 : 2027; // Oct, Nov, Dec -> 2026; Jan-Sep -> 2027
+  const year1 = match[3] ? +match[3] : match[6] ? +match[6] : defYear1;
 
   const m2 = match[4] ? MONTH_MAP[match[4].toLowerCase()] : m1;
   if (m2 === undefined) return null;
+
+  const defYear2 = m2 >= 9 ? 2026 : 2027;
+  const year2 = match[6] ? +match[6] : match[3] ? (m2 < m1 ? 2027 : +match[3]) : defYear2;
 
   const d1 = +match[2];
   const d2 = match[5] ? +match[5] : d1;
@@ -85,6 +109,7 @@ export function parseDateWindow(text: string): [Date, Date] | null {
 
 /**
  * Counts working days (Monday-Saturday), excluding Sundays, declared holidays, and work stoppage period.
+ * Returns at least 1 for any valid date range (start <= end).
  */
 export function calculateWorkingDays(start: Date, end: Date): number {
   if (start > end) return 0;
@@ -104,6 +129,85 @@ export function calculateWorkingDays(start: Date, end: Date): number {
   }
 
   return count;
+}
+
+export const PHASE_TIMELINE_WINDOWS: Record<string, { start: Date; end: Date; span: number }> = {
+  'GF_Structural': { start: new Date(2026, 9, 5), end: new Date(2027, 0, 20), span: 108 },
+  'GF_Finishing': { start: new Date(2027, 0, 7), end: new Date(2027, 3, 14), span: 98 },
+  '2F_Structural': { start: new Date(2026, 10, 14), end: new Date(2027, 0, 27), span: 75 },
+  '2F_Finishing': { start: new Date(2026, 11, 1), end: new Date(2027, 1, 5), span: 67 },
+  '3F_Structural': { start: new Date(2026, 10, 28), end: new Date(2027, 1, 3), span: 68 },
+  '3F_Finishing': { start: new Date(2027, 1, 8), end: new Date(2027, 3, 7), span: 59 },
+};
+
+/**
+ * Automatically recalculates working days and timeline bar position (leftPct & widthPct)
+ * for a scope item whenever its dates are edited or revised.
+ */
+export function recalculateScopeTimeline(
+  scope: ScopeItem,
+  newDateText?: string,
+  allScopesInPhase?: ScopeItem[]
+): {
+  dateText: string;
+  workingDays: number;
+  leftPct: number;
+  widthPct: number;
+} {
+  const targetDateText = (newDateText !== undefined ? newDateText : scope.dateText || '').trim();
+  const win = parseDateWindow(targetDateText);
+
+  if (!win) {
+    return {
+      dateText: targetDateText || scope.dateText,
+      workingDays: scope.workingDays > 0 ? scope.workingDays : 1,
+      leftPct: scope.leftPct || 0,
+      widthPct: scope.widthPct || 10,
+    };
+  }
+
+  const [startDate, endDate] = win;
+  const rawWorkingDays = calculateWorkingDays(startDate, endDate);
+  const isStoppage = startDate >= WORK_STOPPAGE_START && endDate <= WORK_STOPPAGE_END;
+  const workingDays = isStoppage ? 0 : Math.max(1, rawWorkingDays);
+
+  const phaseKey = `${scope.floor}_${scope.phase}`;
+  const baseline = PHASE_TIMELINE_WINDOWS[phaseKey] || {
+    start: PROJECT_START,
+    end: PROJECT_END,
+    span: Math.max(1, Math.round((PROJECT_END.getTime() - PROJECT_START.getTime()) / 86400000)),
+  };
+
+  let phaseStart = baseline.start.getTime();
+  let phaseEnd = baseline.end.getTime();
+
+  if (allScopesInPhase && allScopesInPhase.length > 0) {
+    allScopesInPhase.forEach((s) => {
+      const sWin = s.id === scope.id ? win : parseDateWindow(s.dateText);
+      if (sWin) {
+        if (sWin[0].getTime() < phaseStart) phaseStart = sWin[0].getTime();
+        if (sWin[1].getTime() > phaseEnd) phaseEnd = sWin[1].getTime();
+      }
+    });
+  } else {
+    if (startDate.getTime() < phaseStart) phaseStart = startDate.getTime();
+    if (endDate.getTime() > phaseEnd) phaseEnd = endDate.getTime();
+  }
+
+  const calculatedSpan = Math.round((phaseEnd - phaseStart) / 86400000);
+  const totalSpan = Math.max(baseline.span, calculatedSpan, 1);
+  const daysFromStart = Math.max(0, Math.round((startDate.getTime() - phaseStart) / 86400000));
+  const durationDays = Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / 86400000) + 1);
+
+  const leftPct = +Math.min(99, (daysFromStart / totalSpan) * 100).toFixed(2);
+  const widthPct = +Math.max(0.8, Math.min(100 - leftPct, (durationDays / totalSpan) * 100)).toFixed(2);
+
+  return {
+    dateText: targetDateText,
+    workingDays,
+    leftPct,
+    widthPct,
+  };
 }
 
 /**

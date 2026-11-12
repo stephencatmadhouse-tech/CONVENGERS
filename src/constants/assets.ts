@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export const LOGO_SVG = '/convengers-logo.png';
+import logoUrl from '../assets/images/convengers_emblem_1794278755119.jpg';
 
+export const LOGO_SVG = logoUrl;
 
 export const STATUS_COLORS: Record<string, [string, string, string]> = {
   'Upcoming': ['rgba(255,255,255,.12)', '#DCE3F7', 'rgba(255,255,255,.3)'],

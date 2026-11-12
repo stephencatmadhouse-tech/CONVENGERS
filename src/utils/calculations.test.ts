@@ -13,6 +13,7 @@ import {
   calculateConcreteCompletion,
   isPourOverdue,
   toIsoDate,
+  recalculateScopeTimeline,
 } from './calculations.ts';
 import { ScopeItem, Milestone, ConcretePour } from '../types/index.ts';
 
@@ -140,3 +141,29 @@ test('calculateConcreteCompletion and isPourOverdue work as expected', () => {
   assert.equal(isPourOverdue(pours[1], todayPast), true);
   assert.equal(isPourOverdue(pours[0], todayPast), false); // already approved
 });
+
+test('recalculateScopeTimeline adjusts working days and timeline positions accordingly', () => {
+  const dummyScope: ScopeItem = {
+    id: 'sc_gf_s_6',
+    floor: 'GF',
+    phase: 'Structural',
+    name: 'Tie beam reinforcement & formworks',
+    dateText: 'November 3-10, 2026',
+    workingDays: 4,
+    percentComplete: 80,
+    sortOrder: 6,
+  };
+
+  const updated = recalculateScopeTimeline(dummyScope, 'November 3-10, 2026');
+  assert.equal(updated.dateText, 'November 3-10, 2026');
+  assert.equal(updated.workingDays, 7); // Mon-Sat, Sunday excluded -> 7 days
+  assert.equal(updated.leftPct, 26.85); // 29 days from Oct 5 / 108 = 26.85%
+  assert.equal(updated.widthPct, 7.41); // 8 calendar days / 108 = 7.41%
+
+  // Single day pour/scope
+  const singleDay = recalculateScopeTimeline(dummyScope, 'November 16, 2026');
+  assert.equal(singleDay.workingDays, 1);
+  assert.equal(singleDay.leftPct, 38.89);
+  assert.equal(singleDay.widthPct, 0.93);
+});
+

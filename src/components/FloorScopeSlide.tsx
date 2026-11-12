@@ -5,7 +5,8 @@
 
 import React, { useState } from 'react';
 import { ScopeItem, Episode, SystemSettings, RemoteFocus } from '../types/index.ts';
-import { LOGO_SVG, STATUS_COLORS } from '../constants/assets.ts';
+import { STATUS_COLORS } from '../constants/assets.ts';
+import { BrandLogo } from './BrandLogo.tsx';
 import { calculateFloorProgress, parseDateWindow, parseIsoDate } from '../utils/calculations.ts';
 import { CollaborativeCell } from './CollaborativeCell.tsx';
 import { realtime } from '../utils/realtime.ts';
@@ -17,8 +18,11 @@ interface FloorScopeSlideProps {
   episodes: Episode[];
   settings: SystemSettings;
   canEdit: boolean;
+  canEditTimeline?: boolean;
+  canDelete?: boolean;
   onUpdateProgress: (id: string, percent: number) => void;
   onUpdateScopeField?: (id: string, field: 'name' | 'dateText', value: string) => void;
+  onUpdateScopeWorkingDays?: (id: string, days: number) => void;
   onAddScope: (scope: Omit<ScopeItem, 'id'>) => void;
   onDeleteScope: (id: string) => void;
   remoteFocusMap?: Record<string, RemoteFocus>;
@@ -32,8 +36,11 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
   episodes,
   settings,
   canEdit,
+  canEditTimeline = canEdit,
+  canDelete = canEdit,
   onUpdateProgress,
   onUpdateScopeField,
+  onUpdateScopeWorkingDays,
   onAddScope,
   onDeleteScope,
   remoteFocusMap = {},
@@ -116,12 +123,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
 
         {/* Header */}
         <div className="hdr" style={{ display: 'flex', alignItems: 'center', gap: '30px', height: '150px', flex: 'none' }}>
-          <img
-            className="logo"
-            src={LOGO_SVG}
-            alt="Logo"
-            style={{ width: '176px', height: '150px', flex: 'none', display: 'block', objectFit: 'contain', borderRadius: '12px', filter: 'drop-shadow(0 0 16px rgba(123,77,255,0.65))' }}
-          />
+          <BrandLogo variant="slide" />
           <div className="ttl" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase' }}>
               Scope of work timeline
@@ -203,7 +205,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
                 {structuralScopes.map((scope) => renderScopeRow(scope))}
 
                 {/* Add Scope Form / Button */}
-                {canEdit && (
+                {canDelete && (
                   <div className="addbar">
                     {addingPhase === 'Structural' ? (
                       <div className="flex flex-col gap-2 p-2 bg-[#060A24] rounded-lg border border-[#F5C518]">
@@ -274,7 +276,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
                 {finishingScopes.map((scope) => renderScopeRow(scope))}
 
                 {/* Add Scope Form / Button */}
-                {canEdit && (
+                {canDelete && (
                   <div className="addbar">
                     {addingPhase === 'Finishing' ? (
                       <div className="flex flex-col gap-2 p-2 bg-[#060A24] rounded-lg border border-[#F5C518]">
@@ -378,15 +380,16 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
       <div
         key={scope.id}
         className={`srow ${scope.isAdded ? 'added' : ''}`}
+        onDoubleClick={!canEdit ? onViewerAttemptEdit : undefined}
         style={{
           padding: '6px 0',
           borderBottom: '1px solid rgba(123,77,255,.38)',
           position: 'relative',
           background: hasHits ? `${hitColor}1F` : undefined,
         }}
-        title={hasHits ? `Content shooting: ${hits.map((e) => `Ep ${e.number} ${e.title}`).join(' · ')}` : undefined}
+        title={hasHits ? `Content shooting: ${hits.map((e) => `${e.episodeLabel || `Ep ${e.number}`} ${e.title}`).join(' · ')}` : undefined}
       >
-        {scope.isAdded && canEdit && (
+        {scope.isAdded && canDelete && (
           <button
             type="button"
             className="delrow"
@@ -415,7 +418,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
               value={scope.name}
               fallbackValue={scope.name}
               remoteFocus={remoteFocusMap[`scope_${scope.id}_name`]}
-              canEdit={canEdit}
+              canEdit={canEditTimeline}
               onViewerAttemptEdit={onViewerAttemptEdit}
               onSave={(val) => {
                 if (onUpdateScopeField) onUpdateScopeField(scope.id, 'name', val);
@@ -438,7 +441,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
               value={scope.dateText}
               fallbackValue={scope.dateText}
               remoteFocus={remoteFocusMap[`scope_${scope.id}_date`]}
-              canEdit={canEdit}
+              canEdit={canEditTimeline}
               onViewerAttemptEdit={onViewerAttemptEdit}
               onSave={(val) => {
                 if (onUpdateScopeField) onUpdateScopeField(scope.id, 'dateText', val);
@@ -446,7 +449,21 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
             />
           </div>
           <div className="dur" style={{ width: '92px', flex: 'none', textAlign: 'right', fontSize: '12px', color: '#BAC4E2', lineHeight: '20px' }}>
-            {scope.workingDays} working day{scope.workingDays > 1 ? 's' : ''}
+            <CollaborativeCell
+              cellId={`scope_${scope.id}_days`}
+              value={`${scope.workingDays}`}
+              fallbackValue={`${scope.workingDays}`}
+              remoteFocus={remoteFocusMap[`scope_${scope.id}_days`]}
+              canEdit={canEditTimeline}
+              onViewerAttemptEdit={onViewerAttemptEdit}
+              displayRenderer={() => `${scope.workingDays} working day${scope.workingDays > 1 ? 's' : ''}`}
+              onSave={(val) => {
+                const num = parseInt(String(val).replace(/\D/g, ''), 10);
+                if (num && num > 0 && onUpdateScopeWorkingDays) {
+                  onUpdateScopeWorkingDays(scope.id, num);
+                }
+              }}
+            />
           </div>
           <div style={{ width: '136px', flex: 'none', textAlign: 'right', lineHeight: '20px' }}>
             <span
@@ -527,7 +544,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
               color: hitColor === '#E0213B' ? '#FFFFFF' : '#060A24',
             }}
           >
-            EP {hits.slice(0, 3).map((e) => e.number).join(', ')}
+            EP {hits.slice(0, 3).map((e) => e.episodeLabel || e.number).join(', ')}
             {hits.length > 3 ? ` +${hits.length - 3}` : ''}
           </span>
         )}

@@ -5,21 +5,24 @@
 
 import React from 'react';
 import { Episode, SystemSettings } from '../types/index.ts';
-import { LOGO_SVG, STATUS_COLORS } from '../constants/assets.ts';
+import { STATUS_COLORS } from '../constants/assets.ts';
+import { BrandLogo } from './BrandLogo.tsx';
 import { calculateScheduleElapsed } from '../utils/calculations.ts';
 
 interface EpisodesTableSlideProps {
   episodes: Episode[];
   settings: SystemSettings;
   canEdit: boolean;
+  canEditTimeline?: boolean;
   onUpdateEpisode: (id: string, updates: Partial<Episode>) => void;
   onViewerAttemptEdit?: () => void;
 }
 
 export const EpisodesTableSlide: React.FC<EpisodesTableSlideProps> = ({
   episodes,
-  settings: _settings,
+  settings,
   canEdit,
+  canEditTimeline = canEdit,
   onUpdateEpisode,
   onViewerAttemptEdit,
 }) => {
@@ -53,15 +56,10 @@ export const EpisodesTableSlide: React.FC<EpisodesTableSlideProps> = ({
 
         {/* Header */}
         <div className="hdr" style={{ display: 'flex', alignItems: 'center', gap: '30px', height: '150px', flex: 'none' }}>
-          <img
-            className="logo"
-            src={LOGO_SVG}
-            alt="Logo"
-            style={{ width: '176px', height: '150px', flex: 'none', display: 'block', objectFit: 'contain', borderRadius: '12px', filter: 'drop-shadow(0 0 16px rgba(123,77,255,0.65))' }}
-          />
+          <BrandLogo variant="slide" />
           <div className="ttl" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase' }}>
-              Content
+              Production
             </div>
             <div className="h1a" style={{ fontFamily: "'Anton','Barlow Condensed',sans-serif", fontSize: '70px', lineHeight: 1.05, color: '#F5C518', textTransform: 'uppercase', textShadow: '0 4px 0 #7a5a00,0 0 30px rgba(245,197,24,.35)' }}>
               Calendar
@@ -125,10 +123,10 @@ export const EpisodesTableSlide: React.FC<EpisodesTableSlideProps> = ({
               </div>
               <div className="chd" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '6px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '25px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                 <span>PRODUCTION CALENDAR ·</span>
-                <span style={{ color: '#4BE08A' }}>24 EPISODES</span>
+                <span style={{ color: '#4BE08A' }}>{episodes.length} EPISODES</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', paddingRight: '10px', fontSize: '13px', color: '#BAC4E2', whiteSpace: 'nowrap' }}>
-                <b style={{ color: '#F5C518', marginRight: '4px' }}>{postedCount}</b> of 24 completed · <b style={{ color: '#FF7A8A', margin: '0 4px' }}>{delayedCount}</b> scopes delayed · dates and scopes are fully editable
+                <b style={{ color: '#F5C518', marginRight: '4px' }}>{postedCount}</b> of {episodes.length} completed · <b style={{ color: '#FF7A8A', margin: '0 4px' }}>{delayedCount}</b> scopes delayed · dates and scopes are fully editable
               </div>
               <div style={{ display: 'flex', alignItems: 'center', paddingRight: '14px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', color: '#F5C518', letterSpacing: '-4px', fontStyle: 'italic' }}>
                 //
@@ -137,7 +135,7 @@ export const EpisodesTableSlide: React.FC<EpisodesTableSlideProps> = ({
 
             <div style={{ padding: '8px 16px 8px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
               <div className="hdrow" style={{ display: 'flex', gap: '10px', padding: '2px 8px 4px', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: '13px', letterSpacing: '1.5px', color: '#BAC4E2', textTransform: 'uppercase' }}>
-                <div style={{ width: '34px', flex: 'none' }}>Ep</div>
+                <div style={{ width: '58px', flex: 'none' }}>Ep</div>
                 <div style={{ flex: 1 }}>Episode · topic</div>
                 <div style={{ width: '300px' }}>Scope of work</div>
                 <div style={{ width: '150px' }}>Shoot window</div>
@@ -149,6 +147,7 @@ export const EpisodesTableSlide: React.FC<EpisodesTableSlideProps> = ({
               {episodes.map((ep, idx) => {
                 const epColors = STATUS_COLORS[ep.status] || STATUS_COLORS['Planned'];
                 const scopeColors = STATUS_COLORS[ep.scopeStatus] || STATUS_COLORS['Not started'];
+                const epTag = ep.episodeLabel || String(ep.number).padStart(2, '0');
 
                 return (
                   <div
@@ -164,37 +163,53 @@ export const EpisodesTableSlide: React.FC<EpisodesTableSlideProps> = ({
                       background: idx % 2 === 0 ? 'rgba(255,255,255,.04)' : 'transparent',
                     }}
                   >
-                    <div style={{ width: '34px', flex: 'none', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '20px', lineHeight: '22px', color: '#F5C518' }}>
-                      {String(ep.number).padStart(2, '0')}
+                    <div style={{ width: '58px', flex: 'none', fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: ep.episodeLabel ? '15px' : '20px', lineHeight: '22px', color: '#F5C518', whiteSpace: 'nowrap' }}>
+                      {epTag}
                     </div>
                     <div className="eti" style={{ flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '13px', lineHeight: '22px' }}>
                       <b>{ep.title}</b> <span style={{ color: '#BAC4E2' }}>· {ep.topic}</span>
                     </div>
                     {canEdit ? (
                       <>
-                        <input
-                          className="ed"
-                          style={{ width: '300px' }}
-                          value={ep.scopeOfWork}
-                          onChange={(e) => onUpdateEpisode(ep.id, { scopeOfWork: e.target.value })}
-                          aria-label="Scope of work"
-                        />
-                        <input
-                          className="ed"
-                          style={{ width: '150px' }}
-                          value={ep.shootStart ? `${ep.shootStart} ${ep.shootEnd && ep.shootEnd !== ep.shootStart ? `– ${ep.shootEnd}` : ''}` : ''}
-                          placeholder="Shoot window"
-                          onChange={(e) => onUpdateEpisode(ep.id, { shootStart: e.target.value })}
-                          aria-label="Shoot window"
-                        />
-                        <input
-                          className="ed"
-                          style={{ width: '108px' }}
-                          value={ep.releaseDate || ''}
-                          placeholder="Post date"
-                          onChange={(e) => onUpdateEpisode(ep.id, { releaseDate: e.target.value })}
-                          aria-label="Post date"
-                        />
+                        {canEditTimeline ? (
+                          <>
+                            <input
+                              className="ed"
+                              style={{ width: '300px' }}
+                              value={ep.scopeOfWork}
+                              onChange={(e) => onUpdateEpisode(ep.id, { scopeOfWork: e.target.value })}
+                              aria-label="Scope of work"
+                            />
+                            <input
+                              className="ed"
+                              style={{ width: '150px' }}
+                              value={ep.shootStart ? `${ep.shootStart} ${ep.shootEnd && ep.shootEnd !== ep.shootStart ? `– ${ep.shootEnd}` : ''}` : ''}
+                              placeholder="Shoot window"
+                              onChange={(e) => onUpdateEpisode(ep.id, { shootStart: e.target.value })}
+                              aria-label="Shoot window"
+                            />
+                            <input
+                              className="ed"
+                              style={{ width: '108px' }}
+                              value={ep.releaseDate || ''}
+                              placeholder="Post date"
+                              onChange={(e) => onUpdateEpisode(ep.id, { releaseDate: e.target.value })}
+                              aria-label="Post date"
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <span style={{ width: '300px' }} className="text-xs text-[#BAC4E2] truncate">
+                              {ep.scopeOfWork || '—'}
+                            </span>
+                            <span style={{ width: '150px' }} className="text-xs text-white/90 truncate font-mono">
+                              {ep.shootStart ? `${ep.shootStart} ${ep.shootEnd && ep.shootEnd !== ep.shootStart ? `– ${ep.shootEnd}` : ''}` : '—'}
+                            </span>
+                            <span style={{ width: '108px' }} className="text-xs text-[#F5C518] truncate font-mono">
+                              {ep.releaseDate || '—'}
+                            </span>
+                          </>
+                        )}
                         <select
                           className="ss"
                           value={ep.scopeStatus}
@@ -223,36 +238,35 @@ export const EpisodesTableSlide: React.FC<EpisodesTableSlideProps> = ({
                       </>
                     ) : (
                       <div
-                        className="flex items-center gap-2.5 cursor-default select-none"
+                        className="flex items-center gap-2.5 cursor-default select-none shrink-0"
                         onDoubleClick={onViewerAttemptEdit}
-                        title="Viewer presentation mode: Double click to sign in"
+                        title={
+                          ep.updatedBy
+                            ? `Last updated by ${ep.updatedBy}${ep.updatedAt ? ` on ${new Date(ep.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}`
+                            : 'Viewer presentation mode: Double click to sign in'
+                        }
                       >
                         <span style={{ width: '300px' }} className="text-xs text-[#BAC4E2] truncate">
                           {ep.scopeOfWork || '—'}
                         </span>
-                        <span style={{ width: '150px' }} className="text-xs text-white/90 truncate font-mono">
+                        <span style={{ width: '150px' }} className="text-xs text-white/90 truncate font-mono tabular-nums">
                           {ep.shootStart ? `${ep.shootStart} ${ep.shootEnd && ep.shootEnd !== ep.shootStart ? `– ${ep.shootEnd}` : ''}` : '—'}
                         </span>
-                        <span style={{ width: '108px' }} className="text-xs text-[#F5C518] truncate font-mono">
+                        <span style={{ width: '108px' }} className="text-xs text-[#F5C518] truncate font-mono tabular-nums">
                           {ep.releaseDate || '—'}
                         </span>
                         <span
                           className="ss text-[11px] font-semibold px-2 py-0.5 rounded text-center"
-                          style={{ width: '100px', background: scopeColors[0], color: scopeColors[1] }}
+                          style={{ width: '106px', background: scopeColors[0], color: scopeColors[1] }}
                         >
                           {ep.scopeStatus}
                         </span>
                         <span
                           className="est text-[11px] font-bold px-2 py-0.5 rounded text-center"
-                          style={{ width: '110px', background: epColors[0], color: epColors[1] }}
+                          style={{ width: '92px', background: epColors[0], color: epColors[1] }}
                         >
                           {ep.status}
                         </span>
-                        {ep.updatedBy && (
-                          <span className="text-[10px] text-[#BAC4E2]/60 italic whitespace-nowrap ml-1">
-                            Updated by {ep.updatedBy}
-                          </span>
-                        )}
                       </div>
                     )}
                   </div>

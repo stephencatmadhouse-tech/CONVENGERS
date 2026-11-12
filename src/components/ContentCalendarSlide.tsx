@@ -11,7 +11,8 @@ import {
   EpisodeProductionStatus,
   EpisodeScopeStatus,
 } from '../types/index.ts';
-import { LOGO_SVG, STATUS_COLORS } from '../constants/assets.ts';
+import { STATUS_COLORS } from '../constants/assets.ts';
+import { BrandLogo } from './BrandLogo.tsx';
 import { parseIsoDate, toIsoDate } from '../utils/calculations.ts';
 
 interface ContentCalendarSlideProps {
@@ -19,12 +20,15 @@ interface ContentCalendarSlideProps {
   characters: Character[];
   settings: SystemSettings;
   canEdit: boolean;
+  canEditTimeline?: boolean;
+  canDelete?: boolean;
   onAddEpisode: (ep: Omit<Episode, 'id'>) => void;
   onUpdateEpisode: (id: string, updates: Partial<Episode>) => void;
   onDeleteEpisode: (id: string) => void;
   onAddCharacter: (name: string) => void;
   onUpdateCharacter: (id: string, name: string) => void;
   onDeleteCharacter: (id: string) => void;
+  onViewerAttemptEdit?: () => void;
 }
 
 export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
@@ -32,12 +36,15 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
   characters,
   settings,
   canEdit,
+  canEditTimeline = canEdit,
+  canDelete = canEdit,
   onAddEpisode,
   onUpdateEpisode,
   onDeleteEpisode,
   onAddCharacter,
   onUpdateCharacter,
   onDeleteCharacter,
+  onViewerAttemptEdit,
 }) => {
   const [view, setView] = useState<'month' | 'week' | 'list'>('month');
   const [currentDate, setCurrentDate] = useState<Date>(new Date(2026, 9, 1)); // Oct 2026
@@ -133,12 +140,7 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
 
         {/* Header */}
         <div className="hdr" style={{ display: 'flex', alignItems: 'center', gap: '30px', height: '150px', flex: 'none' }}>
-          <img
-            className="logo"
-            src={LOGO_SVG}
-            alt="Logo"
-            style={{ width: '176px', height: '150px', flex: 'none', display: 'block', objectFit: 'contain', borderRadius: '12px', filter: 'drop-shadow(0 0 16px rgba(123,77,255,0.65))' }}
-          />
+          <BrandLogo variant="slide" />
           <div className="ttl" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase' }}>
               Convengers
@@ -242,13 +244,13 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
               <option value="Rescheduled">Rescheduled</option>
             </select>
 
-            {canEdit && (
+            {canEditTimeline && (
               <button type="button" className="pmb" onClick={() => setIsCharModalOpen(true)}>
                 Manage characters
               </button>
             )}
 
-            {canEdit && (
+            {canDelete && (
               <button type="button" className="pmb pri" onClick={() => setIsEpisodeModalOpen(true)}>
                 + Add episode
               </button>
@@ -341,11 +343,13 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
                   ? '#4BE08A'
                   : 'transparent';
 
+              const epLabel = ep.episodeLabel || String(ep.number);
+
               return (
                 <React.Fragment key={ep.id}>
                   {start && end && (
                     <div
-                      title={`Ep ${ep.number} shoot: ${ep.title} (${ep.shootStart} - ${ep.shootEnd || ep.shootStart})`}
+                      title={`${ep.episodeLabel ? ep.episodeLabel : `Ep ${ep.number}`} shoot: ${ep.title} (${ep.shootStart} - ${ep.shootEnd || ep.shootStart})`}
                       style={{
                         position: 'absolute',
                         left: `${calcLanePct(start)}%`,
@@ -362,17 +366,24 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
                         lineHeight: '14px',
                         textAlign: 'center',
                         whiteSpace: 'nowrap',
+                        padding: ep.episodeLabel ? '0 4px' : undefined,
                         cursor: 'pointer',
                       }}
-                      onClick={() => setEditingEpisode(ep)}
+                      onClick={() => {
+                        if (!canEdit) {
+                          onViewerAttemptEdit?.();
+                          return;
+                        }
+                        setEditingEpisode(ep);
+                      }}
                     >
-                      {ep.number}
+                      {epLabel}
                     </div>
                   )}
 
                   {rel && (
                     <div
-                      title={`Ep ${ep.number} release: ${ep.releaseDate}`}
+                      title={`${ep.episodeLabel ? ep.episodeLabel : `Ep ${ep.number}`} release: ${ep.releaseDate}`}
                       style={{
                         position: 'absolute',
                         left: `${calcLanePct(rel)}%`,
@@ -382,11 +393,17 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
                         fontWeight: 700,
                         color: '#F5C518',
                         whiteSpace: 'nowrap',
-                        cursor: 'pointer',
+                        cursor: canEdit ? 'pointer' : 'default',
                       }}
-                      onClick={() => setEditingEpisode(ep)}
+                      onClick={() => {
+                        if (!canEdit) {
+                          onViewerAttemptEdit?.();
+                          return;
+                        }
+                        setEditingEpisode(ep);
+                      }}
                     >
-                      ◆{ep.number}
+                      ◆{epLabel}
                     </div>
                   )}
                 </React.Fragment>
@@ -427,10 +444,11 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
       )}
 
       {/* Episode Add / Edit Modal */}
-      {(isEpisodeModalOpen || editingEpisode) && (
+      {(isEpisodeModalOpen || editingEpisode) && canEdit && (
         <EpisodeModal
           episode={editingEpisode}
           characters={characters}
+          canEditTimeline={canEditTimeline}
           nextNumber={episodes.reduce((m, x) => Math.max(m, x.number), 0) + 1}
           onClose={() => {
             setIsEpisodeModalOpen(false);
@@ -445,13 +463,13 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
             setIsEpisodeModalOpen(false);
             setEditingEpisode(null);
           }}
-          onDelete={() => {
+          onDelete={canDelete ? () => {
             if (editingEpisode) {
               onDeleteEpisode(editingEpisode.id);
             }
             setIsEpisodeModalOpen(false);
             setEditingEpisode(null);
-          }}
+          } : undefined}
         />
       )}
     </section>
@@ -497,9 +515,15 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
                 type="button"
                 className="pmit"
                 style={{ borderLeftColor: col, fontSize: '11px', padding: '2px 5px' }}
-                onClick={() => setEditingEpisode(ep)}
+                onClick={() => {
+                  if (!canEdit) {
+                    onViewerAttemptEdit?.();
+                    return;
+                  }
+                  setEditingEpisode(ep);
+                }}
               >
-                ● Ep {ep.number} {ep.title}
+                ● {ep.episodeLabel ? ep.episodeLabel : `Ep ${ep.number}`} {ep.title}
               </button>
             );
           })}
@@ -510,9 +534,15 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
                 type="button"
                 className="pmit"
                 style={{ borderLeftColor: '#F5C518', fontSize: '11px', padding: '2px 5px' }}
-                onClick={() => setEditingEpisode(ep)}
+                onClick={() => {
+                  if (!canEdit) {
+                    onViewerAttemptEdit?.();
+                    return;
+                  }
+                  setEditingEpisode(ep);
+                }}
               >
-                ▶ Release Ep {ep.number}
+                ▶ Release {ep.episodeLabel ? ep.episodeLabel : `Ep ${ep.number}`}
               </button>
             );
           })}
@@ -569,9 +599,15 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
                         type="button"
                         className="pmit"
                         style={{ borderLeftColor: colors[0] }}
-                        onClick={() => setEditingEpisode(ep)}
+                        onClick={() => {
+                          if (!canEdit) {
+                            onViewerAttemptEdit?.();
+                            return;
+                          }
+                          setEditingEpisode(ep);
+                        }}
                       >
-                        <b>Ep {ep.number}: {ep.title}</b>
+                        <b>{ep.episodeLabel ? ep.episodeLabel : `Ep ${ep.number}`}: {ep.title}</b>
                         <small>
                           Characters: {ep.characters.map((cId) => characterMap[cId]).filter(Boolean).join(', ') || 'None'}
                         </small>
@@ -609,13 +645,22 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
           const charNames = ep.characters.map((cId) => characterMap[cId]).filter(Boolean).join(', ');
 
           return (
-            <div key={ep.id} className="pmrow ccrow">
+            <div
+              key={ep.id}
+              onDoubleClick={!canEdit ? onViewerAttemptEdit : undefined}
+              className="pmrow ccrow"
+            >
               <div className="pmc" data-l="Ep">
-                <b>{ep.number}</b>
+                <b>{ep.episodeLabel || ep.number}</b>
               </div>
               <div className="pmc" data-l="Title">
                 <b>{ep.title}</b>
                 <small>{ep.topic}</small>
+                {ep.updatedBy && (
+                  <small className="text-[10px] text-[#BAC4E2]/70 italic block">
+                    Last updated by {ep.updatedBy} {ep.updatedAt ? `on ${new Date(ep.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                  </small>
+                )}
               </div>
               <div className="pmc" data-l="Shoot">
                 {ep.shootStart} {ep.shootEnd && ep.shootEnd !== ep.shootStart ? `– ${ep.shootEnd}` : ''}
@@ -641,13 +686,15 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
                 {ep.remarks || '—'}
               </div>
               <div className="pmc act">
-                <button
-                  type="button"
-                  className="pmb sm"
-                  onClick={() => setEditingEpisode(ep)}
-                >
-                  Edit
-                </button>
+                {canEdit && (
+                  <button
+                    type="button"
+                    className="pmb sm"
+                    onClick={() => setEditingEpisode(ep)}
+                  >
+                    Edit
+                  </button>
+                )}
               </div>
             </div>
           );
@@ -749,11 +796,12 @@ const CharacterManagerModal: React.FC<{
 const EpisodeModal: React.FC<{
   episode: Episode | null;
   characters: Character[];
+  canEditTimeline?: boolean;
   nextNumber: number;
   onClose: () => void;
   onSave: (data: any) => void;
   onDelete?: () => void;
-}> = ({ episode, characters, nextNumber, onClose, onSave, onDelete }) => {
+}> = ({ episode, characters, canEditTimeline = true, nextNumber, onClose, onSave, onDelete }) => {
   const [number, setNumber] = useState(episode?.number || nextNumber);
   const [title, setTitle] = useState(episode?.title || '');
   const [topic, setTopic] = useState(episode?.topic || '');
@@ -769,6 +817,7 @@ const EpisodeModal: React.FC<{
   const [selectedChars, setSelectedChars] = useState<string[]>(episode?.characters || []);
 
   const toggleChar = (id: string) => {
+    if (!canEditTimeline) return;
     if (selectedChars.includes(id)) {
       setSelectedChars(selectedChars.filter((x) => x !== id));
     } else {
@@ -789,7 +838,7 @@ const EpisodeModal: React.FC<{
         <div className="pmf">
           <label>
             <span className="pmlbl">Episode number</span>
-            <input className="pmi" type="number" value={number} onChange={(e) => setNumber(parseInt(e.target.value, 10) || 1)} />
+            <input className="pmi" type="number" disabled={!canEditTimeline} value={number} onChange={(e) => setNumber(parseInt(e.target.value, 10) || 1)} />
           </label>
           <label>
             <span className="pmlbl">Production status</span>
@@ -803,27 +852,27 @@ const EpisodeModal: React.FC<{
           </label>
           <label className="full">
             <span className="pmlbl">Content title *</span>
-            <input className="pmi" value={title} onChange={(e) => setTitle(e.target.value)} required />
+            <input className="pmi" disabled={!canEditTimeline} value={title} onChange={(e) => setTitle(e.target.value)} required />
           </label>
           <label className="full">
             <span className="pmlbl">Topic / brief</span>
-            <input className="pmi" value={topic} onChange={(e) => setTopic(e.target.value)} />
+            <input className="pmi" disabled={!canEditTimeline} value={topic} onChange={(e) => setTopic(e.target.value)} />
           </label>
           <label>
             <span className="pmlbl">Target shoot start</span>
-            <input className="pmi" type="date" value={shootStart} onChange={(e) => setShootStart(e.target.value)} />
+            <input className="pmi" type="date" disabled={!canEditTimeline} value={shootStart} onChange={(e) => setShootStart(e.target.value)} />
           </label>
           <label>
             <span className="pmlbl">Target shoot end</span>
-            <input className="pmi" type="date" value={shootEnd} onChange={(e) => setShootEnd(e.target.value)} />
+            <input className="pmi" type="date" disabled={!canEditTimeline} value={shootEnd} onChange={(e) => setShootEnd(e.target.value)} />
           </label>
           <label>
             <span className="pmlbl">Target release date</span>
-            <input className="pmi" type="date" value={releaseDate} onChange={(e) => setReleaseDate(e.target.value)} />
+            <input className="pmi" type="date" disabled={!canEditTimeline} value={releaseDate} onChange={(e) => setReleaseDate(e.target.value)} />
           </label>
           <label>
             <span className="pmlbl">Location / set</span>
-            <input className="pmi" value={location} onChange={(e) => setLocation(e.target.value)} />
+            <input className="pmi" disabled={!canEditTimeline} value={location} onChange={(e) => setLocation(e.target.value)} />
           </label>
           <label className="full">
             <span className="pmlbl">Characters involved</span>
@@ -833,6 +882,7 @@ const EpisodeModal: React.FC<{
               <label key={c.id}>
                 <input
                   type="checkbox"
+                  disabled={!canEditTimeline}
                   checked={selectedChars.includes(c.id)}
                   onChange={() => toggleChar(c.id)}
                 />
@@ -842,11 +892,11 @@ const EpisodeModal: React.FC<{
           </div>
           <label>
             <span className="pmlbl">Director</span>
-            <input className="pmi" value={director} onChange={(e) => setDirector(e.target.value)} />
+            <input className="pmi" disabled={!canEditTimeline} value={director} onChange={(e) => setDirector(e.target.value)} />
           </label>
           <label>
             <span className="pmlbl">Related scope of work</span>
-            <input className="pmi" value={scopeOfWork} onChange={(e) => setScopeOfWork(e.target.value)} />
+            <input className="pmi" disabled={!canEditTimeline} value={scopeOfWork} onChange={(e) => setScopeOfWork(e.target.value)} />
           </label>
           <label>
             <span className="pmlbl">Scope status</span>
@@ -881,9 +931,18 @@ const EpisodeModal: React.FC<{
             type="button"
             className="shbtn pri"
             onClick={() => {
+              if (!canEditTimeline) {
+                onSave({
+                  status,
+                  scopeStatus,
+                  remarks,
+                });
+                return;
+              }
               if (!title.trim()) return;
               onSave({
                 number,
+                ...(episode?.episodeLabel ? { episodeLabel: episode.episodeLabel } : {}),
                 title: title.trim(),
                 topic,
                 status,

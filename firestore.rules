@@ -100,11 +100,12 @@ service cloud.firestore {
 
     // --- MILESTONES ---
     // Anyone (including unauthenticated viewers) can READ.
-    // Only admin and manager can create/delete or change date/label.
+    // Only admin can delete; admin and manager can create/update all fields.
     // Staff can only update status, updatedAt, updatedBy, and notes.
     match /milestones/{milestoneId} {
       allow read: if true;
-      allow create, delete: if isManager();
+      allow create: if isManager();
+      allow delete: if isAdmin();
       allow update: if isManager() || (
         isStaff() &&
         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt', 'updatedBy', 'notes'])
@@ -114,17 +115,22 @@ service cloud.firestore {
     // --- SCOPES ---
     match /scopes/{scopeId} {
       allow read: if true;
-      allow create, delete: if isManager();
+      allow create: if isManager();
+      allow delete: if isAdmin();
       allow update: if isManager() || (
         isStaff() &&
-        incoming().diff(existing()).affectedKeys().hasOnly(['percentComplete', 'subNote', 'updatedAt', 'updatedBy', 'status'])
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'percentComplete', 'subNote', 'updatedAt', 'updatedBy', 'status',
+          'dateText', 'workingDays', 'leftPct', 'widthPct', 'name'
+        ])
       );
     }
 
     // --- CONCRETE POURS ---
     match /pours/{pourId} {
       allow read: if true;
-      allow create, delete: if isManager();
+      allow create: if isManager();
+      allow delete: if isAdmin();
       allow update: if isManager() || (
         isStaff() &&
         incoming().diff(existing()).affectedKeys().hasOnly(['prepStatus', 'pourStatus', 'cureStatus', 'inspStatus', 'milestoneStatus', 'remarks', 'updatedAt', 'updatedBy'])
@@ -134,7 +140,8 @@ service cloud.firestore {
     // --- PRODUCTION EPISODES ---
     match /episodes/{episodeId} {
       allow read: if true;
-      allow create, delete: if isManager();
+      allow create: if isManager();
+      allow delete: if isAdmin();
       allow update: if isManager() || (
         isStaff() &&
         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'scopeStatus', 'remarks', 'updatedAt', 'updatedBy'])
@@ -144,7 +151,8 @@ service cloud.firestore {
     // --- ACTIVITIES ---
     match /activities/{activityId} {
       allow read: if true;
-      allow create, delete: if isManager();
+      allow create: if isManager();
+      allow delete: if isAdmin();
       allow update: if isManager() || (
         isStaff() &&
         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'notes', 'updatedAt', 'updatedBy'])
@@ -154,7 +162,8 @@ service cloud.firestore {
     // --- CHARACTERS ---
     match /characters/{characterId} {
       allow read: if true;
-      allow create, update, delete: if isManager();
+      allow create, update: if isManager();
+      allow delete: if isAdmin();
     }
 
     // --- OVERRIDES ---

@@ -11,6 +11,7 @@ interface AuthModalProps {
   onClose: () => void;
   onLogin: (email: string, pass: string) => Promise<void>;
   onRegister: (name: string, email: string, pass: string) => Promise<void>;
+  onGoogleLogin?: () => Promise<void>;
   onLogout: () => Promise<void>;
   onOpenAdminPanel?: () => void;
 }
@@ -20,6 +21,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   onLogin,
   onRegister,
+  onGoogleLogin,
   onLogout,
   onOpenAdminPanel,
 }) => {
@@ -98,8 +100,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Role explanation */}
               <div className="mt-3 pt-3 border-t border-[#7B4DFF]/30 text-xs leading-relaxed">
                 {isPending ? (
-                  <div className="text-[#FF9A1F] bg-[#FF9A1F]/10 p-2.5 rounded border border-[#FF9A1F]/30">
-                    <b>⚠️ Account Pending Approval:</b> Your registration is awaiting administrator approval. You currently have safe read-only viewer access until an administrator approves your account and assigns your team role.
+                  <div className="text-[#FF9A1F] bg-[#FF9A1F]/10 p-3 rounded border border-[#FF9A1F]/30 space-y-2">
+                    <div>
+                      <b>⚠️ Account Pending Approval:</b> Your registration is awaiting administrator approval. You currently have safe read-only viewer access until an administrator approves your account and assigns your team role.
+                    </div>
+                    <div className="text-[#BAC4E2] pt-1 border-t border-[#FF9A1F]/20">
+                      Setting up for the first time as Project Admin? Click <b>Sign Out &amp; Switch Account</b> below and sign in or register using the designated Administrator account to unlock the Admin Panel.
+                    </div>
                   </div>
                 ) : isAdmin ? (
                   <div className="text-[#4BE08A]">
@@ -138,10 +145,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 style={{ borderColor: '#E0213B', color: '#FF7A8A' }}
                 onClick={async () => {
                   await onLogout();
-                  onClose();
+                  if (!isPending) onClose();
                 }}
               >
-                Sign Out
+                {isPending ? 'Sign Out & Switch Account' : 'Sign Out'}
               </button>
               <button type="button" className="shbtn pri" onClick={onClose}>
                 Close
@@ -189,8 +196,55 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
 
             {error && (
-              <div className="p-2.5 mb-3 bg-red-950/80 border border-red-500 rounded text-red-200 text-xs">
-                {error}
+              <div className="p-2.5 mb-3 bg-red-950/80 border border-red-500 rounded text-red-200 text-xs leading-relaxed space-y-1.5">
+                <div>{error}</div>
+                {error.toLowerCase().includes('sign-in method') && (
+                  <div>
+                    <a
+                      href="https://console.firebase.google.com/project/fleet-wallaby-73rp2/authentication/providers"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#F5C518] underline font-semibold hover:text-white"
+                    >
+                      Open Firebase Console → Authentication Sign-in methods ↗
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {onGoogleLogin && (
+              <div className="mb-3">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={async () => {
+                    setError('');
+                    setLoading(true);
+                    try {
+                      await onGoogleLogin();
+                      onClose();
+                    } catch (err: any) {
+                      setError(err.message || 'Google sign-in failed');
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  className="w-full py-2.5 px-4 rounded-lg bg-white hover:bg-slate-100 text-[#060A24] font-bold text-xs flex items-center justify-center gap-2.5 border border-[#7B4DFF]/40 shadow transition-colors cursor-pointer disabled:opacity-60"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z" />
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24Z" />
+                    <path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14Z" />
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96Z" />
+                  </svg>
+                  <span>Continue with Google (Recommended)</span>
+                </button>
+                <div className="flex items-center gap-2 my-3 text-[11px] text-[#BAC4E2]/60 uppercase tracking-wider">
+                  <div className="flex-1 h-px bg-[#7B4DFF]/30" />
+                  <span>or email &amp; password</span>
+                  <div className="flex-1 h-px bg-[#7B4DFF]/30" />
+                </div>
               </div>
             )}
 
@@ -250,7 +304,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   {loading
                     ? 'Authenticating...'
                     : mode === 'login'
-                    ? 'Sign In with Firebase'
+                    ? 'Sign In with Email'
                     : 'Submit Registration'}
                 </button>
                 <button type="button" className="shbtn" onClick={onClose}>
@@ -421,15 +475,14 @@ export const ShareModal: React.FC<{
 
             {/* WhatsApp & Quick Share */}
             <div className="shrow justify-between pt-1">
-              <button
-                type="button"
-                className="shbtn pri flex-1"
-                onClick={() => {
-                  window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
-                }}
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shbtn pri flex-1 text-center no-underline"
               >
                 Share Formatted Links via WhatsApp
-              </button>
+              </a>
               <button type="button" className="shbtn" onClick={onClose}>
                 Done
               </button>

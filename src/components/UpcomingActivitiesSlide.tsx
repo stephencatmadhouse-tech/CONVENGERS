@@ -15,7 +15,8 @@ import {
   ActivityStatus,
   ActivityCategory,
 } from '../types/index.ts';
-import { LOGO_SVG, STATUS_COLORS, TYPE_COLORS } from '../constants/assets.ts';
+import { STATUS_COLORS, TYPE_COLORS } from '../constants/assets.ts';
+import { BrandLogo } from './BrandLogo.tsx';
 import {
   parseDateWindow,
   parseIsoDate,
@@ -47,11 +48,14 @@ interface UpcomingActivitiesSlideProps {
   overrides: Record<string, ActivityOverride>;
   settings: SystemSettings;
   canEdit: boolean;
+  canEditTimeline?: boolean;
+  canDelete?: boolean;
   onAddActivity: (act: Omit<Activity, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onUpdateActivity: (id: string, updates: Partial<Activity>) => void;
   onDeleteActivity: (id: string) => void;
   onSetOverride: (key: string, ov: Partial<ActivityOverride>) => void;
   onJumpToRow?: (targetKey: string) => void;
+  onViewerAttemptEdit?: () => void;
 }
 
 export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = ({
@@ -63,11 +67,14 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
   overrides,
   settings,
   canEdit,
+  canEditTimeline = canEdit,
+  canDelete = canEdit,
   onAddActivity,
   onUpdateActivity,
   onDeleteActivity,
   onSetOverride,
   onJumpToRow,
+  onViewerAttemptEdit,
 }) => {
   const [view, setView] = useState<'monthly' | 'weekly' | 'all'>('monthly');
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -80,8 +87,11 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [assigningItem, setAssigningItem] = useState<UnifiedItem | null>(null);
 
-  const today = new Date();
-  const normalizedToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const todayKey = toIsoDate(new Date());
+  const normalizedToday = useMemo(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }, [todayKey]);
 
   // Aggregate all items
   const allItems: UnifiedItem[] = useMemo(() => {
@@ -183,7 +193,7 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
         list.push({
           key,
           type: 'production',
-          title: `Ep ${e.number}: ${e.title} (shoot)`,
+          title: `${e.episodeLabel ? e.episodeLabel : `Ep ${e.number}`}: ${e.title} (shoot)`,
           sub: `${e.location || 'Location set'} · Director: ${e.director || 'Unassigned'}`,
           start: shootStart,
           end: shootEnd || shootStart,
@@ -269,10 +279,12 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
       startLimit = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       endLimit = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59);
     } else if (view === 'weekly') {
-      const day = currentDate.getDay();
-      const diff = currentDate.getDate() - day + (day === 0 ? -6 : 1);
-      startLimit = new Date(currentDate.setDate(diff));
-      endLimit = new Date(startLimit.getTime() + 6 * 86400000);
+      const base = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+      const day = base.getDay();
+      const diff = base.getDate() - day + (day === 0 ? -6 : 1);
+      startLimit = new Date(base.setDate(diff));
+      startLimit.setHours(0, 0, 0, 0);
+      endLimit = new Date(startLimit.getFullYear(), startLimit.getMonth(), startLimit.getDate() + 6, 23, 59, 59);
     } else {
       return allItems;
     }
@@ -349,12 +361,7 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
 
         {/* Header */}
         <div className="hdr" style={{ display: 'flex', alignItems: 'center', gap: '30px', height: '150px', flex: 'none' }}>
-          <img
-            className="logo"
-            src={LOGO_SVG}
-            alt="Logo"
-            style={{ width: '176px', height: '150px', flex: 'none', display: 'block', objectFit: 'contain', borderRadius: '12px', filter: 'drop-shadow(0 0 16px rgba(123,77,255,0.65))' }}
-          />
+          <BrandLogo variant="slide" />
           <div className="ttl" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase' }}>
               Upcoming /
@@ -458,7 +465,7 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
               <option value="manual">Other</option>
             </select>
 
-            {canEdit && (
+            {canEditTimeline && (
               <button type="button" className="pmb pri" onClick={() => setIsAddModalOpen(true)}>
                 + Add activity
               </button>
@@ -537,6 +544,7 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
                   return (
                     <div
                       key={item.key}
+                      onDoubleClick={!canEdit ? onViewerAttemptEdit : undefined}
                       className={`pmrow uarow ${item.overdue ? 'od' : ''} ${
                         item.status !== 'Completed' && item.start <= normalizedToday && item.end >= normalizedToday ? 'td' : ''
                       }`}
@@ -617,7 +625,7 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
                                 Edit
                               </button>
                             )}
-                            {canEdit && (
+                            {canDelete && (
                               <button
                                 type="button"
                                 className="pmb sm dng"
@@ -723,6 +731,7 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
       {(isAddModalOpen || editingActivity) && (
         <ActivityModal
           activity={editingActivity}
+          canEditTimeline={canEditTimeline}
           onClose={() => {
             setIsAddModalOpen(false);
             setEditingActivity(null);
@@ -758,9 +767,10 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
 // Activity Sub-modal
 const ActivityModal: React.FC<{
   activity: Activity | null;
+  canEditTimeline?: boolean;
   onClose: () => void;
   onSave: (data: any) => void;
-}> = ({ activity, onClose, onSave }) => {
+}> = ({ activity, canEditTimeline = true, onClose, onSave }) => {
   const [title, setTitle] = useState(activity?.title || '');
   const [description, setDescription] = useState(activity?.description || '');
   const [category, setCategory] = useState<ActivityCategory>(activity?.category || 'Construction');
@@ -782,15 +792,15 @@ const ActivityModal: React.FC<{
         <div className="pmf">
           <label className="full">
             <span className="pmlbl">Activity title *</span>
-            <input className="pmi" value={title} onChange={(e) => setTitle(e.target.value)} required />
+            <input className="pmi" disabled={!canEditTimeline} value={title} onChange={(e) => setTitle(e.target.value)} required />
           </label>
           <label className="full">
             <span className="pmlbl">Description</span>
-            <textarea className="pmta" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <textarea className="pmta" disabled={!canEditTimeline} value={description} onChange={(e) => setDescription(e.target.value)} />
           </label>
           <label>
             <span className="pmlbl">Type</span>
-            <select className="pms" value={category} onChange={(e) => setCategory(e.target.value as any)}>
+            <select className="pms" disabled={!canEditTimeline} value={category} onChange={(e) => setCategory(e.target.value as any)}>
               <option value="Construction">Construction</option>
               <option value="Production">Production</option>
               <option value="Other">Other</option>
@@ -808,15 +818,15 @@ const ActivityModal: React.FC<{
           </label>
           <label>
             <span className="pmlbl">Start date</span>
-            <input className="pmi" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            <input className="pmi" type="date" disabled={!canEditTimeline} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </label>
           <label>
             <span className="pmlbl">End date</span>
-            <input className="pmi" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            <input className="pmi" type="date" disabled={!canEditTimeline} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
           </label>
           <label className="full">
             <span className="pmlbl">Responsible person / team</span>
-            <input className="pmi" value={owner} onChange={(e) => setOwner(e.target.value)} />
+            <input className="pmi" disabled={!canEditTimeline} value={owner} onChange={(e) => setOwner(e.target.value)} />
           </label>
           <label className="full">
             <span className="pmlbl">Notes</span>
@@ -831,6 +841,10 @@ const ActivityModal: React.FC<{
             type="button"
             className="shbtn pri"
             onClick={() => {
+              if (!canEditTimeline) {
+                onSave({ status, notes });
+                return;
+              }
               if (!title.trim()) return;
               onSave({
                 title,

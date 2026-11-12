@@ -22,14 +22,15 @@ import {
   FullDashboardData,
 } from '../types/index.ts';
 import {
-  INITIAL_USERS,
   INITIAL_SETTINGS,
   INITIAL_MILESTONES,
   INITIAL_SCOPES,
   INITIAL_CONCRETE_POURS,
   INITIAL_CHARACTERS,
   INITIAL_EPISODES,
+  INITIAL_OVERRIDES,
 } from './seedData.ts';
+import { recalculateScopeTimeline } from '../utils/calculations.ts';
 
 interface Session {
   token: string;
@@ -89,15 +90,8 @@ export class DatabaseEngine {
             return m;
           });
 
-          // Self-heal: ensure all INITIAL_USERS (e.g. Stephen Catapang) are always available
           if (!Array.isArray(parsed.users)) {
-            parsed.users = [...INITIAL_USERS];
-          } else {
-            for (const initUser of INITIAL_USERS) {
-              if (!parsed.users.some((u: any) => u.email.toLowerCase() === initUser.email.toLowerCase())) {
-                parsed.users.push({ ...initUser });
-              }
-            }
+            parsed.users = [];
           }
 
           return parsed;
@@ -115,7 +109,7 @@ export class DatabaseEngine {
   public getInitialSchema(): DatabaseSchema {
     return {
       version: 1,
-      users: [...INITIAL_USERS],
+      users: [],
       sessions: [],
       settings: { ...INITIAL_SETTINGS },
       milestones: [...INITIAL_MILESTONES],
@@ -124,7 +118,7 @@ export class DatabaseEngine {
       pours: [...INITIAL_CONCRETE_POURS],
       episodes: [...INITIAL_EPISODES],
       characters: [...INITIAL_CHARACTERS],
-      overrides: {},
+      overrides: { ...INITIAL_OVERRIDES },
       auditLogs: [],
     };
   }
@@ -262,7 +256,7 @@ export class DatabaseEngine {
     return {
       id: 'usr_viewer_guest',
       name: 'Presentation Viewer',
-      email: 'viewer@convengers.ph',
+      email: '',
       role: 'viewer',
       createdAt: '2026-10-01T08:00:00.000Z',
     };
@@ -349,7 +343,16 @@ export class DatabaseEngine {
       } else if (field === 'name' && typeof value === 'string' && value.trim()) {
         s.name = value.trim();
       } else if (field === 'dateText' && typeof value === 'string' && value.trim()) {
-        s.dateText = value.trim();
+        const trimmed = value.trim();
+        const scopesInPhase = this.data.scopes.filter(item => item.floor === s.floor && item.phase === s.phase);
+        const recalculated = recalculateScopeTimeline(s, trimmed, scopesInPhase);
+        s.dateText = trimmed;
+        s.workingDays = recalculated.workingDays;
+        s.leftPct = recalculated.leftPct;
+        s.widthPct = recalculated.widthPct;
+      } else if (field === 'workingDays') {
+        const num = Number(value);
+        if (num > 0) s.workingDays = Math.round(num);
       }
       s.updatedAt = new Date().toISOString();
       s.updatedBy = user.name;
@@ -612,7 +615,7 @@ export class DatabaseEngine {
     this.data.pours = init.pours;
     this.data.episodes = init.episodes;
     this.data.characters = init.characters;
-    this.data.overrides = {};
+    this.data.overrides = init.overrides;
     this.data.settings = {
       ...init.settings,
       version: this.data.settings.version + 1,

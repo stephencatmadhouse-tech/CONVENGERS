@@ -23,7 +23,7 @@ import {
   INITIAL_CONCRETE_POURS,
   INITIAL_EPISODES,
   INITIAL_CHARACTERS,
-  INITIAL_USERS,
+  INITIAL_OVERRIDES,
 } from '../db/seedData.ts';
 
 const TOKEN_KEY = 'convengers_auth_token';
@@ -138,21 +138,14 @@ class ApiClient {
       }
     }
 
-    const viewerUser = INITIAL_USERS.find(u => u.role === 'viewer') || {
-      id: 'usr_viewer',
-      name: 'Presentation Viewer',
-      email: 'viewer@convengers.ph',
-      role: 'viewer' as const,
-      createdAt: '2026-10-01T08:00:00.000Z',
-    };
-
     return {
       user: {
-        id: viewerUser.id,
-        name: viewerUser.name,
-        email: viewerUser.email,
-        role: viewerUser.role,
-        createdAt: viewerUser.createdAt,
+        id: 'viewer_guest',
+        name: 'Presentation Viewer',
+        email: '',
+        role: 'viewer',
+        status: 'active',
+        createdAt: new Date().toISOString(),
       },
       settings: { ...INITIAL_SETTINGS },
       milestones: [...INITIAL_MILESTONES],
@@ -161,39 +154,20 @@ class ApiClient {
       pours: [...INITIAL_CONCRETE_POURS],
       episodes: [...INITIAL_EPISODES],
       characters: [...INITIAL_CHARACTERS],
-      overrides: {},
+      overrides: { ...INITIAL_OVERRIDES },
       auditLogs: [],
     };
   }
 
   // --- AUTH ---
   public async login(email: string, password: string): Promise<{ token: string; user: User }> {
-    try {
-      const res = await this.request<{ token: string; user: User }>('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      });
-      this.setToken(res.token);
-      this.updateCachedDashboard((prev) => ({ ...prev, user: res.user }));
-      return res;
-    } catch (err) {
-      // Local fallback for offline/preview
-      const found = INITIAL_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
-      if (found) {
-        const fakeToken = `local_token_${found.role}`;
-        this.setToken(fakeToken);
-        const user: User = {
-          id: found.id,
-          name: found.name,
-          email: found.email,
-          role: found.role,
-          createdAt: found.createdAt,
-        };
-        this.updateCachedDashboard((prev) => ({ ...prev, user }));
-        return { token: fakeToken, user };
-      }
-      throw err;
-    }
+    const res = await this.request<{ token: string; user: User }>('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    this.setToken(res.token);
+    this.updateCachedDashboard((prev) => ({ ...prev, user: res.user }));
+    return res;
   }
 
   public async register(name: string, email: string, password: string, role?: string): Promise<{ token: string; user: User }> {
@@ -204,31 +178,6 @@ class ApiClient {
     this.setToken(res.token);
     this.updateCachedDashboard((prev) => ({ ...prev, user: res.user }));
     return res;
-  }
-
-  public async switchDemo(email: string): Promise<{ token: string; user: User }> {
-    try {
-      const res = await this.request<{ token: string; user: User }>('/api/auth/switch-demo', {
-        method: 'POST',
-        body: JSON.stringify({ email }),
-      });
-      this.setToken(res.token);
-      this.updateCachedDashboard((prev) => ({ ...prev, user: res.user }));
-      return res;
-    } catch {
-      // Offline fallback
-      const found = INITIAL_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase()) || INITIAL_USERS[0];
-      const user: User = {
-        id: found.id,
-        name: found.name,
-        email: found.email,
-        role: found.role,
-        createdAt: found.createdAt,
-      };
-      this.setToken(`local_demo_${found.role}`);
-      this.updateCachedDashboard((prev) => ({ ...prev, user }));
-      return { token: `local_demo_${found.role}`, user };
-    }
   }
 
   public async getMe(): Promise<{ user: User | null }> {
@@ -247,10 +196,11 @@ class ApiClient {
     } finally {
       this.setToken(null);
       const viewerUser: User = {
-        id: 'usr_viewer_anon',
+        id: 'viewer_guest',
         name: 'Presentation Viewer',
-        email: 'viewer@convengers.ph',
+        email: '',
         role: 'viewer',
+        status: 'active',
         createdAt: new Date().toISOString(),
       };
       this.updateCachedDashboard((prev) => ({ ...prev, user: viewerUser }));

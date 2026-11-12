@@ -128,6 +128,7 @@ export type EpisodeScopeStatus = 'Not started' | 'On-track' | 'Delayed' | 'Compl
 export interface Episode {
   id: string;
   number: number;
+  episodeLabel?: string;
   title: string;
   topic: string;
   scopeOfWork: string;

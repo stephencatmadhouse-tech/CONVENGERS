@@ -12,9 +12,9 @@ import {
   SystemSettings,
   RemoteFocus,
 } from '../types/index.ts';
-import { LOGO_SVG, STATUS_COLORS } from '../constants/assets.ts';
-import { CollaborativeCell } from './CollaborativeCell.tsx';
-import { realtime } from '../utils/realtime.ts';
+import { STATUS_COLORS } from '../constants/assets.ts';
+import { BrandLogo } from './BrandLogo.tsx';
+import { calculateFloorProgress } from '../utils/calculations.ts';
 
 interface OverallProjectTimelineSlideProps {
   milestones: Milestone[];
@@ -52,13 +52,13 @@ interface SyncMilestone {
 export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlideProps> = ({
   milestones,
   scopes,
-  pours: _pours,
+  pours,
   episodes,
   settings: _settings,
   canEdit,
   onUpdateMilestone: _onUpdateMilestone,
-  onUpdateEpisode,
-  remoteFocusMap = {},
+  onUpdateEpisode: _onUpdateEpisode,
+  remoteFocusMap: _remoteFocusMap = {},
   onViewerAttemptEdit,
 }) => {
   const [viewFilter, setViewFilter] = useState<'all' | 'construction' | 'production'>('all');
@@ -92,9 +92,30 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
     };
   }, [episodes]);
 
-  // Unified synchronized milestones
+  // Unified synchronized milestones (live-synced with milestones, scopes, pours, and episodes)
   const syncMilestones: SyncMilestone[] = useMemo(() => {
-    return [
+    const gfPct = calculateFloorProgress(scopes, 'GF');
+    const f2Pct = calculateFloorProgress(scopes, '2F');
+    const f3Pct = calculateFloorProgress(scopes, '3F');
+
+    const epMap = new Map(episodes.map((e) => [e.number, e]));
+    const findMilestoneStatus = (keywords: string[], fallback: string): string => {
+      const m = milestones.find((item) =>
+        keywords.some((kw) => item.label.toLowerCase().includes(kw))
+      );
+      return m ? m.status : fallback;
+    };
+    const findPourProgress = (floor: 'GF' | '2F' | '3F', fallbackPct: number): number => {
+      const floorPours = pours.filter((p) => p.floor === floor);
+      if (!floorPours.length) return fallbackPct;
+      const done = floorPours.filter((p) => p.milestoneStatus === 'Completed / Approved').length;
+      const active = floorPours.filter((p) =>
+        ['Pouring Ongoing', 'Curing Ongoing', 'Preparation Ongoing', 'Pouring Completed', 'Ready for Pouring'].includes(p.milestoneStatus)
+      ).length;
+      return Math.round(((done + active * 0.5) / floorPours.length) * 100);
+    };
+
+    const base: Array<SyncMilestone & { milestoneMatch?: string[] }> = [
       {
         id: 'sync_01',
         phase: 'Mobilization & Layout',
@@ -102,8 +123,8 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
         constructionItem: 'Site mobilization, excavation & layout begins',
         constructionFloor: 'GF',
         constructionDate: 'Oct 5 – Oct 19, 2026',
-        constructionStatus: 'Complete',
-        constructionProgress: 100,
+        constructionStatus: findMilestoneStatus(['mobilization', 'excavation', 'layout'], 'Complete'),
+        constructionProgress: scopes.find((s) => s.floor === 'GF' && s.phase === 'Structural')?.percentComplete ?? 100,
         productionEpisodeNum: 1,
         productionEpisodeTitle: 'Bahay ni Doc: Groundbreaking & Site Clearing',
         productionShootDate: 'Oct 3 – Oct 5, 2026',
@@ -120,8 +141,8 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
         constructionItem: 'Column Footing Pedestals & Tie Beam Rebar',
         constructionFloor: 'GF',
         constructionDate: 'Oct 20 – Nov 7, 2026',
-        constructionStatus: 'In progress',
-        constructionProgress: 75,
+        constructionStatus: findMilestoneStatus(['footing', 'tie beam', 'column'], 'In progress'),
+        constructionProgress: findPourProgress('GF', 75),
         productionEpisodeNum: 3,
         productionEpisodeTitle: 'Buhos ng Pundasyon: Heavy Equipment Arrival',
         productionShootDate: 'Oct 22 – Oct 24, 2026',
@@ -135,11 +156,11 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
         id: 'sync_03',
         phase: 'Ground Floor Slab',
         monthRange: 'Nov 2026',
-        constructionItem: 'GF Slab on Grade & Columns Concrete Pouring (Pour #2)',
+        constructionItem: 'GF Slab on Grade & Columns Concrete Pouring',
         constructionFloor: 'GF',
-        constructionDate: 'Nov 8 – Nov 28, 2026',
-        constructionStatus: 'In progress',
-        constructionProgress: 60,
+        constructionDate: 'Nov 8 – Dec 19, 2026',
+        constructionStatus: gfPct >= 100 ? 'Complete' : gfPct > 0 ? 'In progress' : findMilestoneStatus(['ground floor', 'slab'], 'In progress'),
+        constructionProgress: gfPct || 60,
         productionEpisodeNum: 5,
         productionEpisodeTitle: 'Ang Unang Buhos: Ground Floor Slab Milestone',
         productionShootDate: 'Nov 12 – Nov 14, 2026',
@@ -153,11 +174,11 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
         id: 'sync_04',
         phase: 'Second Floor Framing',
         monthRange: 'Dec 2026',
-        constructionItem: '2F Suspended Beam & Slab Formworks / Rebar (Pour #3)',
+        constructionItem: '2F Suspended Beam & Slab Formworks / Rebar',
         constructionFloor: '2F',
-        constructionDate: 'Dec 1 – Dec 19, 2026',
-        constructionStatus: 'Upcoming',
-        constructionProgress: 20,
+        constructionDate: 'Nov 14 – Nov 28, 2026',
+        constructionStatus: f2Pct >= 100 ? 'Complete' : f2Pct > 0 ? 'In progress' : findMilestoneStatus(['second floor', '2f'], 'Upcoming'),
+        constructionProgress: f2Pct || findPourProgress('2F', 20),
         productionEpisodeNum: 9,
         productionEpisodeTitle: 'Umakyat na sa 2nd Floor: Structural Elevation',
         productionShootDate: 'Dec 8 – Dec 12, 2026',
@@ -174,7 +195,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
         constructionItem: 'Holiday Work Stoppage (Site Closed / Curing Period)',
         constructionFloor: 'ALL',
         constructionDate: 'Dec 20, 2026 – Jan 3, 2027',
-        constructionStatus: 'Scheduled',
+        constructionStatus: findMilestoneStatus(['stoppage', 'holiday'], 'Scheduled'),
         constructionProgress: 0,
         productionEpisodeNum: 10,
         productionEpisodeTitle: 'Year-End House Check & Holiday Special',
@@ -189,11 +210,11 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
         id: 'sync_05',
         phase: 'Third Floor Framing',
         monthRange: 'Jan 2027',
-        constructionItem: '3F Beam & Slab Pouring / Roof Beam Formworks (Pour #4)',
+        constructionItem: '3F Beam & Slab Pouring / Roof Beam Formworks',
         constructionFloor: '3F',
         constructionDate: 'Jan 4 – Jan 28, 2027',
-        constructionStatus: 'Upcoming',
-        constructionProgress: 10,
+        constructionStatus: f3Pct >= 100 ? 'Complete' : f3Pct > 0 ? 'In progress' : findMilestoneStatus(['third floor', '3f'], 'Upcoming'),
+        constructionProgress: f3Pct || findPourProgress('3F', 10),
         productionEpisodeNum: 14,
         productionEpisodeTitle: 'Abot Kamay ang Rooftop: Third Floor Deck',
         productionShootDate: 'Jan 15 – Jan 18, 2027',
@@ -207,11 +228,11 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
         id: 'sync_06',
         phase: 'Structural Completion',
         monthRange: 'Feb 2027',
-        constructionItem: '3F Structural Inspection & Structural Milestone Signoff',
+        constructionItem: '3F Structural Inspection & Milestone Signoff',
         constructionFloor: '3F',
         constructionDate: 'Feb 3, 2027',
-        constructionStatus: 'Upcoming',
-        constructionProgress: 0,
+        constructionStatus: findMilestoneStatus(['structural inspection', 'feb 3'], 'Upcoming'),
+        constructionProgress: f3Pct >= 100 ? 100 : 0,
         productionEpisodeNum: 16,
         productionEpisodeTitle: 'Buo na ang Bahay! Major Structural Milestone',
         productionShootDate: 'Feb 3 – Feb 5, 2027',
@@ -229,7 +250,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
         constructionFloor: 'ALL',
         constructionDate: 'Feb 8 – Mar 5, 2027',
         constructionStatus: 'Upcoming',
-        constructionProgress: 0,
+        constructionProgress: Math.round((gfPct + f2Pct + f3Pct) / 3),
         productionEpisodeNum: 17,
         productionEpisodeTitle: 'Nakatayo Na Ang Mga Pader: Room Walkthrough',
         productionShootDate: 'Feb 18 – Feb 22, 2027',
@@ -247,7 +268,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
         constructionFloor: 'ALL',
         constructionDate: 'Mar 6 – Apr 6, 2027',
         constructionStatus: 'Upcoming',
-        constructionProgress: 0,
+        constructionProgress: Math.round((gfPct + f2Pct + f3Pct) / 3),
         productionEpisodeNum: 19,
         productionEpisodeTitle: 'May Ilaw at Tubig Na! Finishing Details Reveal',
         productionShootDate: 'Mar 25 – Mar 28, 2027',
@@ -264,7 +285,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
         constructionItem: 'Punchlist Inspection, Defect Rectification & Deep Clean',
         constructionFloor: 'ALL',
         constructionDate: 'Apr 7 – Apr 24, 2027',
-        constructionStatus: 'Upcoming',
+        constructionStatus: findMilestoneStatus(['punchlist', 'rectification'], 'Upcoming'),
         constructionProgress: 0,
         productionEpisodeNum: 21,
         productionEpisodeTitle: 'Public Admission: Independent Quality Inspection',
@@ -282,7 +303,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
         constructionItem: 'Move-in Target, Turnover Ceremony & Project Closeout',
         constructionFloor: 'ALL',
         constructionDate: 'Apr 28 – Apr 30, 2027',
-        constructionStatus: 'Upcoming',
+        constructionStatus: findMilestoneStatus(['turnover', 'move-in'], 'Upcoming'),
         constructionProgress: 0,
         productionEpisodeNum: 24,
         productionEpisodeTitle: 'Final Episode: Cinematic Turnover & Key Handover',
@@ -294,7 +315,22 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
         durationPct: 8,
       },
     ];
-  }, []);
+
+    return base.map((item) => {
+      const liveEp = epMap.get(item.productionEpisodeNum);
+      if (!liveEp) return item;
+      const shootRange = liveEp.shootStart
+        ? `${liveEp.shootStart}${liveEp.shootEnd && liveEp.shootEnd !== liveEp.shootStart ? ` – ${liveEp.shootEnd}` : ''}`
+        : item.productionShootDate;
+      return {
+        ...item,
+        productionEpisodeTitle: liveEp.title || item.productionEpisodeTitle,
+        productionShootDate: shootRange,
+        productionPostDate: liveEp.releaseDate || item.productionPostDate,
+        productionStatus: liveEp.status || item.productionStatus,
+      };
+    });
+  }, [milestones, scopes, pours, episodes]);
 
   // Filtered list
   const filteredMilestones = useMemo(() => {
@@ -315,7 +351,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
   }, [syncMilestones, phaseFilter, searchQuery]);
 
   return (
-    <section className="wrap" id="s12">
+    <section className="wrap">
       <div
         className="slide"
         id="slide-master-timeline"
@@ -341,20 +377,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
 
       {/* Header */}
       <div className="hdr" style={{ display: 'flex', alignItems: 'center', gap: '30px', height: '150px', flex: 'none' }}>
-        <img
-          className="logo"
-          src={LOGO_SVG}
-          alt="Convengers Multiverse Logo"
-          style={{
-            width: '176px',
-            height: '150px',
-            flex: 'none',
-            display: 'block',
-            objectFit: 'contain',
-            borderRadius: '12px',
-            filter: 'drop-shadow(0 0 16px rgba(123,77,255,0.65))',
-          }}
-        />
+        <BrandLogo variant="slide" />
         <div className="ttl" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
           <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '28px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase', color: '#BAC4E2' }}>
             Master Integrated Calendar
@@ -409,7 +432,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
               <span style={{ fontSize: '12px', color: '#BAC4E2' }}>content</span>
             </div>
             <div style={{ fontSize: '11px', color: '#8A8FA8', marginTop: '2px' }}>
-              {productionStats.completedCount}/24 episodes delivered
+              {productionStats.completedCount}/{productionStats.totalCount} episodes delivered
             </div>
           </div>
 
@@ -842,6 +865,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
               <div
                 key={m.id}
                 onClick={() => setSelectedSyncId(isSelected ? null : m.id)}
+                onDoubleClick={!canEdit ? onViewerAttemptEdit : undefined}
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '120px 240px 180px 100px 300px 150px 1fr',

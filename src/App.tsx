@@ -8,15 +8,14 @@ import { api } from './api/client.ts';
 import { realtime } from './utils/realtime.ts';
 import {
   FullDashboardData,
-  User,
   Milestone,
   ScopeItem,
   Activity,
   ConcretePour,
   Episode,
+  Character,
   ActivityOverride,
   SystemSettings,
-  AuditLog,
   Collaborator,
   RemoteFocus,
 } from './types/index.ts';
@@ -33,8 +32,11 @@ import { EpisodesTableSlide } from './components/EpisodesTableSlide.tsx';
 import { OverallProjectTimelineSlide } from './components/OverallProjectTimelineSlide.tsx';
 import { AuthModal, ShareModal, AuditLogModal } from './components/Modals.tsx';
 import { AdminPanelModal } from './components/AdminPanelModal.tsx';
+import { PrintReport } from './components/PrintReport.tsx';
 import { authService } from './firebase/authService.ts';
 import { firestoreData } from './firebase/firestoreData.ts';
+import { recalculateScopeTimeline } from './utils/calculations.ts';
+import { exportDashboardAsHtml } from './utils/htmlExporter.ts';
 
 const PAPER_SIZES: Record<string, { size: string; width: number; height: number }> = {
   a4: { size: '297mm 210mm', width: 1122.5, height: 793.7 },
@@ -59,42 +61,41 @@ export default function App() {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isAuditOpen, setIsAuditOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [isAdminPresentationMode, setIsAdminPresentationMode] = useState(false);
+  const [isPrintingReport, setIsPrintingReport] = useState(false);
 
-  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     toastTimerRef.current = setTimeout(() => {
       setToastMessage(null);
-    }, 2400);
+    }, 3200);
   }, []);
 
-  // Fetch full data from server
-  const fetchData = useCallback(async () => {
+  const formatErrorForToast = useCallback((err: unknown, fallback: string): string => {
+    const raw = err instanceof Error ? err.message : String(err || '');
+    if (!raw) return fallback;
     try {
-      const full = await api.getFullDashboard();
-      if (full) {
-        setData((prev) => {
-          if (isEditingTextRef.current) return prev;
-          return {
-            ...full,
-            user: prev?.user || full.user,
-            settings: {
-              ...full.settings,
-              theme: prev?.settings?.theme || full.settings.theme,
-              paper: prev?.settings?.paper || full.settings.paper,
-            },
-          };
-        });
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.error === 'string') {
+        if (parsed.error.includes('No document to update')) {
+          return 'Cloud baseline record is not initialized yet. Ask an Admin or Manager to open the dashboard once to sync.';
+        }
+        if (parsed.error.includes('Missing or insufficient permissions')) {
+          return 'Permission denied: your role can only update status and progress notes.';
+        }
+        return parsed.error;
       }
-    } catch (err: any) {
-      console.warn('Network sync notice:', err);
+    } catch {
+      // Plain string error
     }
+    return raw;
   }, []);
 
-  // Real-Time Google Sheets Style Multi-User Collaboration
+  // Real-Time Google Sheets Style Multi-User Collaboration Presence
   useEffect(() => {
     realtime.init(data.user);
 
@@ -142,41 +143,13 @@ export default function App() {
       });
     });
 
-    const unsubDashboard = realtime.onDashboard((freshData) => {
-      setData((prev) => {
-        if (isEditingTextRef.current) return prev;
-        return {
-          ...freshData,
-          user: prev?.user || freshData.user,
-          settings: {
-            ...freshData.settings,
-            theme: prev?.settings?.theme || freshData.settings.theme,
-            paper: prev?.settings?.paper || freshData.settings.paper,
-          },
-        };
-      });
-    });
-
-    // 6-second polling fallback
-    const pollTimer = setInterval(fetchData, 6000);
-
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        fetchData();
-      }
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-
     return () => {
       unsubConn();
       unsubPresence();
       unsubFocus();
       unsubCellEdit();
-      unsubDashboard();
-      clearInterval(pollTimer);
-      document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [fetchData]);
+  }, []);
 
   // Update user in realtime client when session changes
   useEffect(() => {
@@ -209,12 +182,8 @@ export default function App() {
     }
   }, [data?.settings?.theme]);
 
-  // Paper print style injection
+  // Dual-mode print style injection: Formal A4 Portrait Report vs Landscape Slide PDF
   useEffect(() => {
-    const paperKey = data?.settings?.paper || 'a4';
-    const paper = PAPER_SIZES[paperKey] || PAPER_SIZES.a4;
-    const k = Math.min(paper.width / 1920, paper.height / 1280);
-
     let styleEl = document.getElementById('printstyle') as HTMLStyleElement;
     if (!styleEl) {
       styleEl = document.createElement('style');
@@ -222,39 +191,49 @@ export default function App() {
       document.head.appendChild(styleEl);
     }
 
+    if (isPrintingReport) {
+      styleEl.textContent = `
+        @page { size: A4 portrait; margin: 12mm 14mm; }
+        @media print {
+          html, body { margin: 0 !important; padding: 0 !important; background: #ffffff !important; color: #0f172a !important; }
+        }
+      `;
+      return;
+    }
+
+    const paperKey = data?.settings?.paper || 'a4';
+    const paper = PAPER_SIZES[paperKey] || PAPER_SIZES.a4;
+    const k = Math.min(paper.width / 1920, paper.height / 1280);
+    const offsetX = Math.max(0, Math.floor((paper.width - 1920 * k) / 2));
+    const offsetY = Math.max(0, Math.floor((paper.height - 1280 * k) / 2));
+    const pageBg = data?.settings?.theme === 'light' ? '#eceef8' : '#03051a';
+
     styleEl.textContent = `
       @page { size: ${paper.size}; margin: 0; }
       @media print {
-        html, body { margin: 0 !important; padding: 0 !important; background: #03051a !important; }
-        .wrap { display: flex !important; justify-content: center; align-items: center; width: ${Math.floor(paper.width)}px !important; height: ${Math.floor(paper.height) - 2}px !important; margin: 0 !important; overflow: hidden !important; break-after: auto !important; page-break-after: auto !important; break-inside: avoid; }
-        .wrap + .wrap { break-before: page !important; page-break-before: always !important; }
-        .slide { flex: none; transform: none !important; position: static !important; zoom: ${k}; }
+        html, body { margin: 0 !important; padding: 0 !important; background: ${pageBg} !important; }
+        .stage { padding: 0 !important; margin: 0 !important; overflow: visible !important; }
+        .stage > div { break-inside: avoid !important; page-break-inside: avoid !important; margin: 0 !important; padding: 0 !important; }
+        .stage > div + div { break-before: page !important; page-break-before: always !important; }
+        .stage > div:last-child { break-after: auto !important; page-break-after: auto !important; }
+        .wrap { display: block !important; position: relative !important; width: ${Math.floor(paper.width)}px !important; height: ${Math.floor(paper.height) - 2}px !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; break-inside: avoid !important; page-break-inside: avoid !important; }
+        .slide { position: absolute !important; left: ${offsetX}px !important; top: ${offsetY}px !important; transform: scale(${k}) !important; transform-origin: 0 0 !important; margin: 0 !important; }
       }
     `;
-  }, [data?.settings?.paper]);
-
-  if (!data) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#03051a] text-white">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-4 border-[#F5C518] border-t-transparent rounded-full animate-spin" />
-          <b className="font-['Barlow_Condensed'] text-xl tracking-wider text-[#F5C518]">
-            LOADING CONVENGERS BAHAY BUILD TIMELINE...
-          </b>
-        </div>
-      </div>
-    );
-  }
+  }, [data?.settings?.paper, data?.settings?.theme, isPrintingReport]);
 
   // Real-Time Firebase Auth and Firestore Subscriptions
   useEffect(() => {
     const unsubAuth = authService.onUserChange((fbUser) => {
       setData((prev) => (prev ? { ...prev, user: fbUser } : prev));
+      if (fbUser && (fbUser.role === 'admin' || fbUser.role === 'manager')) {
+        firestoreData.seedInitialDataIfEmpty(fbUser);
+      }
     });
 
     const unsubFirestore = firestoreData.subscribeAll((freshData) => {
       setData((prev) => {
-        if (!prev) return prev;
+        if (!prev || isEditingTextRef.current) return prev;
         return {
           ...prev,
           ...freshData,
@@ -263,7 +242,10 @@ export default function App() {
       });
     });
 
-    firestoreData.seedInitialDataIfEmpty(authService.getCurrentUser());
+    const initialUser = authService.getCurrentUser();
+    if (initialUser.role === 'admin' || initialUser.role === 'manager') {
+      firestoreData.seedInitialDataIfEmpty(initialUser);
+    }
 
     return () => {
       unsubAuth();
@@ -271,12 +253,20 @@ export default function App() {
     };
   }, []);
 
-  const user = data.user || authService.getCurrentUser();
+  const user = data?.user || authService.getCurrentUser();
   const isViewer = !user || user.role === 'viewer' || user.role === 'pending' || isAdminPresentationMode;
   const canEdit = !isViewer;
   const isAdmin = Boolean(user && user.role === 'admin' && !isAdminPresentationMode);
   const isManager = Boolean(user && (user.role === 'admin' || user.role === 'manager') && !isAdminPresentationMode);
-  const isStaff = Boolean(user && (user.role === 'admin' || user.role === 'manager' || user.role === 'staff') && !isAdminPresentationMode);
+
+  // Subscribe to Firestore audit logs for active admins only
+  useEffect(() => {
+    if (user?.role !== 'admin') return;
+    const unsubAudit = firestoreData.subscribeAuditLogs((logs) => {
+      setData((prev) => (prev ? { ...prev, auditLogs: logs } : prev));
+    });
+    return () => unsubAudit();
+  }, [user?.role]);
 
   const handleViewerAttemptEdit = useCallback(() => {
     showToast('Read-only mode. Sign in as a team member to edit.');
@@ -321,23 +311,27 @@ export default function App() {
         : data.settings.theme === 'light'
         ? 'dark'
         : 'auto';
-    try {
-      const updated = await api.updateSettings({ theme: nextTheme });
-      setData((prev) => (prev ? { ...prev, settings: updated } : prev));
-      showToast(`Theme changed to ${nextTheme}`);
-    } catch {
-      showToast('Theme update failed');
+    setData((prev) => (prev ? { ...prev, settings: { ...prev.settings, theme: nextTheme } } : prev));
+    if (isManager) {
+      try {
+        await firestoreData.updateSettings({ theme: nextTheme });
+      } catch {
+        // non-blocking
+      }
     }
+    showToast(`Theme changed to ${nextTheme}`);
   };
 
   const handleChangePaper = async (paper: SystemSettings['paper']) => {
-    try {
-      const updated = await api.updateSettings({ paper });
-      setData((prev) => (prev ? { ...prev, settings: updated } : prev));
-      showToast(`Paper size set to ${paper.toUpperCase()}`);
-    } catch {
-      showToast('Paper update failed');
+    setData((prev) => (prev ? { ...prev, settings: { ...prev.settings, paper } } : prev));
+    if (isManager) {
+      try {
+        await firestoreData.updateSettings({ paper });
+      } catch {
+        // non-blocking
+      }
     }
+    showToast(`Paper size set to ${paper.toUpperCase()}`);
   };
 
   const handleUpdateMilestone = async (id: string, status: Milestone['status']) => {
@@ -345,25 +339,23 @@ export default function App() {
       handleViewerAttemptEdit();
       return;
     }
-    // Optimistic: preserve all existing fields
+    const stamp = new Date().toISOString();
     setData((prev) => {
       if (!prev) return prev;
       return {
         ...prev,
         milestones: prev.milestones.map((m) =>
-          m.id === id ? { ...m, status, updatedBy: user.name, updatedAt: new Date().toISOString() } : m
+          m.id === id ? { ...m, status, updatedBy: user.name, updatedAt: stamp } : m
         ),
       };
     });
-    // Broadcast instant real-time edit to all teammates' screens
     realtime.editCell('milestone', id, 'status', status);
     try {
       await firestoreData.updateMilestone(id, { status }, user.name);
-      await api.updateMilestone(id, { status });
+      await firestoreData.logAudit(user, 'UPDATE_MILESTONE', 'Milestone', id, `Status -> ${status}`);
       showToast('Milestone status saved & synced');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to update milestone');
-      fetchData();
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to update milestone'));
     }
   };
 
@@ -378,26 +370,25 @@ export default function App() {
     }
     const trimmed = value.trim();
     if (!trimmed) return;
+    const stamp = new Date().toISOString();
 
-    // Optimistic local update
     setData((prev) => {
       if (!prev) return prev;
       return {
         ...prev,
         milestones: prev.milestones.map((m) =>
-          m.id === id ? { ...m, [field]: trimmed, updatedBy: user.name, updatedAt: new Date().toISOString() } : m
+          m.id === id ? { ...m, [field]: trimmed, updatedBy: user.name, updatedAt: stamp } : m
         ),
       };
     });
 
-    // Realtime broadcast to all teammate screens immediately (<30ms)
     realtime.editCell('milestone', id, field, trimmed);
 
     try {
       await firestoreData.updateMilestone(id, { [field]: trimmed }, user.name);
-      await api.updateMilestone(id, { [field]: trimmed });
-    } catch (err: any) {
-      console.warn('Milestone field sync error:', err);
+      await firestoreData.logAudit(user, 'UPDATE_MILESTONE', 'Milestone', id, `${field} -> ${trimmed}`);
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to save milestone change'));
     }
   };
 
@@ -406,23 +397,22 @@ export default function App() {
       handleViewerAttemptEdit();
       return;
     }
+    const stamp = new Date().toISOString();
     setData((prev) => {
       if (!prev) return prev;
       return {
         ...prev,
         scopes: prev.scopes.map((s) =>
-          s.id === id ? { ...s, percentComplete: percent, updatedBy: user.name, updatedAt: new Date().toISOString() } : s
+          s.id === id ? { ...s, percentComplete: percent, updatedBy: user.name, updatedAt: stamp } : s
         ),
       };
     });
-    // Realtime broadcast to all teammates
     realtime.editCell('scope', id, 'percentComplete', percent);
     try {
       await firestoreData.updateScope(id, { percentComplete: percent }, user.name);
-      await api.updateScopeProgress(id, percent);
-    } catch (err: any) {
-      showToast(err.message || 'Failed to update progress');
-      fetchData();
+      await firestoreData.logAudit(user, 'UPDATE_SCOPE', 'Scope', id, `Progress -> ${percent}%`);
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to update progress'));
     }
   };
 
@@ -437,22 +427,78 @@ export default function App() {
     }
     const trimmed = value.trim();
     if (!trimmed) return;
+    const stamp = new Date().toISOString();
+
+    const targetScope = data?.scopes?.find((s) => s.id === id);
+    let timelineUpdates: Partial<ScopeItem> = { [field]: trimmed };
+
+    if (field === 'dateText' && targetScope) {
+      const scopesInPhase = data?.scopes?.filter(
+        (s) => s.floor === targetScope.floor && s.phase === targetScope.phase
+      );
+      const recalculated = recalculateScopeTimeline(targetScope, trimmed, scopesInPhase);
+      timelineUpdates = {
+        dateText: trimmed,
+        workingDays: recalculated.workingDays,
+        leftPct: recalculated.leftPct,
+        widthPct: recalculated.widthPct,
+      };
+    }
 
     setData((prev) => {
       if (!prev) return prev;
       return {
         ...prev,
         scopes: prev.scopes.map((s) =>
-          s.id === id ? { ...s, [field]: trimmed, updatedBy: user.name, updatedAt: new Date().toISOString() } : s
+          s.id === id ? { ...s, ...timelineUpdates, updatedBy: user.name, updatedAt: stamp } : s
         ),
       };
     });
 
     realtime.editCell('scope', id, field, trimmed);
     try {
-      await firestoreData.updateScope(id, { [field]: trimmed }, user.name);
-    } catch (err: any) {
-      console.warn('Scope field sync error:', err);
+      await firestoreData.updateScope(id, timelineUpdates, user.name);
+      const logDetail =
+        field === 'dateText' && timelineUpdates.workingDays !== undefined
+          ? `Date -> ${trimmed} (${timelineUpdates.workingDays} working days, bar left: ${timelineUpdates.leftPct}%, width: ${timelineUpdates.widthPct}%)`
+          : `${field} -> ${trimmed}`;
+      await firestoreData.logAudit(user, 'UPDATE_SCOPE', 'Scope', id, logDetail);
+      if (field === 'dateText' && timelineUpdates.workingDays !== undefined) {
+        showToast(`Adjusted: ${trimmed} · ${timelineUpdates.workingDays} working day${timelineUpdates.workingDays > 1 ? 's' : ''}`);
+      }
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to save scope update'));
+    }
+  };
+
+  const handleUpdateScopeWorkingDays = async (id: string, days: number) => {
+    if (!canEdit) {
+      handleViewerAttemptEdit();
+      return;
+    }
+    if (!isManager) {
+      showToast('Only Admins and Managers can edit scope working days.');
+      return;
+    }
+    if (days <= 0) return;
+    const stamp = new Date().toISOString();
+
+    setData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        scopes: prev.scopes.map((s) =>
+          s.id === id ? { ...s, workingDays: days, updatedBy: user.name, updatedAt: stamp } : s
+        ),
+      };
+    });
+
+    try {
+      await firestoreData.updateScope(id, { workingDays: days }, user.name);
+      await firestoreData.logAudit(user, 'UPDATE_SCOPE', 'Scope', id, `Working Days -> ${days}`);
+      showToast(`Updated to ${days} working day${days > 1 ? 's' : ''}`);
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to update working days'));
     }
   };
 
@@ -461,13 +507,26 @@ export default function App() {
       showToast('Only Administrators can add new scope items.');
       return;
     }
+    const recalculated = recalculateScopeTimeline(
+      { ...scope, id: 'temp' } as ScopeItem,
+      scope.dateText
+    );
+    const newScope: ScopeItem = {
+      ...scope,
+      id: `sc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      workingDays: recalculated.workingDays || scope.workingDays || 1,
+      leftPct: recalculated.leftPct,
+      widthPct: recalculated.widthPct,
+      updatedBy: user.name,
+      updatedAt: new Date().toISOString(),
+    };
     try {
-      const created = await api.addScope(scope);
-      await firestoreData.addScope(created, user.name);
-      setData((prev) => (prev ? { ...prev, scopes: [...prev.scopes, created] } : prev));
+      await firestoreData.addScope(newScope, user.name);
+      await firestoreData.logAudit(user, 'ADD_SCOPE', 'Scope', newScope.id, newScope.name);
+      setData((prev) => (prev ? { ...prev, scopes: [...prev.scopes, newScope] } : prev));
       showToast('Scope added and persisted');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to add scope');
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to add scope'));
     }
   };
 
@@ -478,27 +537,35 @@ export default function App() {
     }
     try {
       await firestoreData.deleteScope(id);
-      await api.deleteScope(id);
+      await firestoreData.logAudit(user, 'DELETE_SCOPE', 'Scope', id);
       setData((prev) => (prev ? { ...prev, scopes: prev.scopes.filter((s) => s.id !== id) } : prev));
       showToast('Scope removed');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to delete scope');
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to delete scope'));
     }
   };
 
   // Activities
   const handleAddActivity = async (act: Omit<Activity, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (!canEdit) {
-      handleViewerAttemptEdit();
+    if (!isManager) {
+      if (!canEdit) handleViewerAttemptEdit();
+      else showToast('Only Admins and Managers can add activities.');
       return;
     }
+    const now = new Date().toISOString();
+    const newActivity: Activity = {
+      ...act,
+      id: `act_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      createdAt: now,
+      updatedAt: now,
+    };
     try {
-      const created = await api.addActivity(act);
-      await firestoreData.addActivity(created, user.name);
-      setData((prev) => (prev ? { ...prev, activities: [...prev.activities, created] } : prev));
+      await firestoreData.addActivity(newActivity, user.name);
+      await firestoreData.logAudit(user, 'ADD_ACTIVITY', 'Activity', newActivity.id, newActivity.title);
+      setData((prev) => (prev ? { ...prev, activities: [...prev.activities, newActivity] } : prev));
       showToast('Activity created and saved');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to create activity');
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to create activity'));
     }
   };
 
@@ -507,13 +574,28 @@ export default function App() {
       handleViewerAttemptEdit();
       return;
     }
+    const safeUpdates = isManager
+      ? updates
+      : {
+          ...(updates.status !== undefined ? { status: updates.status } : {}),
+          ...(updates.notes !== undefined ? { notes: updates.notes } : {}),
+        };
     try {
-      await firestoreData.updateActivity(id, updates, user.name);
-      const updated = await api.updateActivity(id, updates);
-      setData((prev) => (prev ? { ...prev, activities: prev.activities.map((a) => (a.id === id ? { ...a, ...updated, updatedBy: user.name, updatedAt: new Date().toISOString() } : a)) } : prev));
+      await firestoreData.updateActivity(id, safeUpdates, user.name);
+      await firestoreData.logAudit(user, 'UPDATE_ACTIVITY', 'Activity', id);
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              activities: prev.activities.map((a) =>
+                a.id === id ? { ...a, ...safeUpdates, updatedAt: new Date().toISOString() } : a
+              ),
+            }
+          : prev
+      );
       showToast('Activity updated');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to update activity');
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to update activity'));
     }
   };
 
@@ -524,11 +606,11 @@ export default function App() {
     }
     try {
       await firestoreData.deleteActivity(id);
-      await api.deleteActivity(id);
+      await firestoreData.logAudit(user, 'DELETE_ACTIVITY', 'Activity', id);
       setData((prev) => (prev ? { ...prev, activities: prev.activities.filter((a) => a.id !== id) } : prev));
       showToast('Activity deleted');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to delete activity');
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to delete activity'));
     }
   };
 
@@ -538,13 +620,19 @@ export default function App() {
       showToast('Only Admins and Managers can add pour milestones.');
       return;
     }
+    const newPour: ConcretePour = {
+      ...pour,
+      id: `pour_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      updatedBy: user.name,
+      updatedAt: new Date().toISOString(),
+    };
     try {
-      const created = await api.addPour(pour);
-      await firestoreData.addPour(created, user.name);
-      setData((prev) => (prev ? { ...prev, pours: [...prev.pours, created] } : prev));
+      await firestoreData.addPour(newPour, user.name);
+      await firestoreData.logAudit(user, 'ADD_POUR', 'ConcretePour', newPour.id, `${newPour.floor} ${newPour.component}`);
+      setData((prev) => (prev ? { ...prev, pours: [...prev.pours, newPour] } : prev));
       showToast('Pour milestone created');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to create pour');
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to create pour'));
     }
   };
 
@@ -553,12 +641,35 @@ export default function App() {
       handleViewerAttemptEdit();
       return;
     }
+    const safeUpdates: Partial<ConcretePour> = isManager
+      ? updates
+      : {
+          ...(updates.prepStatus !== undefined ? { prepStatus: updates.prepStatus } : {}),
+          ...(updates.pourStatus !== undefined ? { pourStatus: updates.pourStatus } : {}),
+          ...(updates.cureStatus !== undefined ? { cureStatus: updates.cureStatus } : {}),
+          ...(updates.inspStatus !== undefined ? { inspStatus: updates.inspStatus } : {}),
+          ...(updates.milestoneStatus !== undefined ? { milestoneStatus: updates.milestoneStatus } : {}),
+          ...(updates.remarks !== undefined ? { remarks: updates.remarks } : {}),
+        };
+    if (Object.keys(safeUpdates).length === 0) {
+      showToast('Only Admins and Managers can edit concrete pour dates or components.');
+      return;
+    }
     try {
-      await firestoreData.updatePour(id, updates, user.name);
-      const updated = await api.updatePour(id, updates);
-      setData((prev) => (prev ? { ...prev, pours: prev.pours.map((p) => (p.id === id ? { ...p, ...updated, updatedBy: user.name, updatedAt: new Date().toISOString() } : p)) } : prev));
-    } catch (err: any) {
-      showToast(err.message || 'Failed to update pour');
+      await firestoreData.updatePour(id, safeUpdates, user.name);
+      await firestoreData.logAudit(user, 'UPDATE_POUR', 'ConcretePour', id);
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              pours: prev.pours.map((p) =>
+                p.id === id ? { ...p, ...safeUpdates, updatedBy: user.name, updatedAt: new Date().toISOString() } : p
+              ),
+            }
+          : prev
+      );
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to update pour'));
     }
   };
 
@@ -569,11 +680,11 @@ export default function App() {
     }
     try {
       await firestoreData.deletePour(id);
-      await api.deletePour(id);
+      await firestoreData.logAudit(user, 'DELETE_POUR', 'ConcretePour', id);
       setData((prev) => (prev ? { ...prev, pours: prev.pours.filter((p) => p.id !== id) } : prev));
       showToast('Pour deleted');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to delete pour');
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to delete pour'));
     }
   };
 
@@ -583,13 +694,19 @@ export default function App() {
       showToast('Only Administrators can create new episodes.');
       return;
     }
+    const newEpisode: Episode = {
+      ...ep,
+      id: `ep_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      updatedBy: user.name,
+      updatedAt: new Date().toISOString(),
+    };
     try {
-      const created = await api.addEpisode(ep);
-      await firestoreData.addEpisode(created, user.name);
-      setData((prev) => (prev ? { ...prev, episodes: [...prev.episodes, created] } : prev));
+      await firestoreData.addEpisode(newEpisode, user.name);
+      await firestoreData.logAudit(user, 'ADD_EPISODE', 'Episode', newEpisode.id, `Ep ${newEpisode.number}: ${newEpisode.title}`);
+      setData((prev) => (prev ? { ...prev, episodes: [...prev.episodes, newEpisode] } : prev));
       showToast('Episode saved to database');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to create episode');
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to create episode'));
     }
   };
 
@@ -598,12 +715,28 @@ export default function App() {
       handleViewerAttemptEdit();
       return;
     }
+    const safeUpdates = isManager
+      ? updates
+      : {
+          ...(updates.status !== undefined ? { status: updates.status } : {}),
+          ...(updates.scopeStatus !== undefined ? { scopeStatus: updates.scopeStatus } : {}),
+          ...(updates.remarks !== undefined ? { remarks: updates.remarks } : {}),
+        };
     try {
-      await firestoreData.updateEpisode(id, updates, user.name);
-      const updated = await api.updateEpisode(id, updates);
-      setData((prev) => (prev ? { ...prev, episodes: prev.episodes.map((e) => (e.id === id ? { ...e, ...updated, updatedBy: user.name, updatedAt: new Date().toISOString() } : e)) } : prev));
-    } catch (err: any) {
-      showToast(err.message || 'Failed to update episode');
+      await firestoreData.updateEpisode(id, safeUpdates, user.name);
+      await firestoreData.logAudit(user, 'UPDATE_EPISODE', 'Episode', id);
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              episodes: prev.episodes.map((e) =>
+                e.id === id ? { ...e, ...safeUpdates, updatedBy: user.name, updatedAt: new Date().toISOString() } : e
+              ),
+            }
+          : prev
+      );
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to update episode'));
     }
   };
 
@@ -614,40 +747,49 @@ export default function App() {
     }
     try {
       await firestoreData.deleteEpisode(id);
-      await api.deleteEpisode(id);
+      await firestoreData.logAudit(user, 'DELETE_EPISODE', 'Episode', id);
       setData((prev) => (prev ? { ...prev, episodes: prev.episodes.filter((e) => e.id !== id) } : prev));
       showToast('Episode removed');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to delete episode');
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to delete episode'));
     }
   };
 
   const handleAddCharacter = async (name: string) => {
-    if (!canEdit) {
-      handleViewerAttemptEdit();
+    if (!isManager) {
+      if (!canEdit) handleViewerAttemptEdit();
+      else showToast('Only Admins and Managers can add characters.');
       return;
     }
+    const newChar: Character = {
+      id: `ch_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      name,
+      createdAt: new Date().toISOString().split('T')[0],
+    };
     try {
-      const created = await api.addCharacter(name);
-      await firestoreData.addCharacter(created);
-      setData((prev) => (prev ? { ...prev, characters: [...prev.characters, created] } : prev));
+      await firestoreData.addCharacter(newChar);
+      setData((prev) => (prev ? { ...prev, characters: [...prev.characters, newChar] } : prev));
       showToast(`Character "${name}" added`);
-    } catch (err: any) {
-      showToast(err.message || 'Failed to add character');
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to add character'));
     }
   };
 
   const handleUpdateCharacter = async (id: string, name: string) => {
-    if (!canEdit) {
-      handleViewerAttemptEdit();
+    if (!isManager) {
+      if (!canEdit) handleViewerAttemptEdit();
+      else showToast('Only Admins and Managers can rename characters.');
       return;
     }
     try {
-      const updated = await api.updateCharacter(id, name);
       await firestoreData.updateCharacter(id, name);
-      setData((prev) => (prev ? { ...prev, characters: prev.characters.map((c) => (c.id === id ? updated : c)) } : prev));
-    } catch (err: any) {
-      showToast(err.message || 'Failed to update character');
+      setData((prev) =>
+        prev
+          ? { ...prev, characters: prev.characters.map((c) => (c.id === id ? { ...c, name } : c)) }
+          : prev
+      );
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to update character'));
     }
   };
 
@@ -658,7 +800,6 @@ export default function App() {
     }
     try {
       await firestoreData.deleteCharacter(id);
-      await api.deleteCharacter(id);
       setData((prev) => {
         if (!prev) return prev;
         return {
@@ -671,8 +812,8 @@ export default function App() {
         };
       });
       showToast('Character removed from all episodes');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to delete character');
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to delete character'));
     }
   };
 
@@ -683,7 +824,7 @@ export default function App() {
     }
     try {
       await firestoreData.setOverride(key, ov, user.name);
-      await api.setOverride(key, ov);
+      await firestoreData.logAudit(user, 'SET_OVERRIDE', 'ActivityOverride', key);
       setData((prev) => {
         if (!prev) return prev;
         return {
@@ -695,59 +836,167 @@ export default function App() {
         };
       });
       showToast('Assignment & notes saved');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to save assignment');
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to save assignment'));
     }
   };
 
   // Backups and Reset
   const handleExportBackup = () => {
-    window.location.href = '/api/backup/export';
-    showToast('Exporting JSON backup...');
+    const backup = {
+      app: 'convengers-bahay-build',
+      format: 1,
+      exportedAt: new Date().toISOString(),
+      settings: data.settings,
+      milestones: data.milestones,
+      scopes: data.scopes,
+      activities: data.activities,
+      pours: data.pours,
+      episodes: data.episodes,
+      characters: data.characters,
+      overrides: data.overrides,
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Convengers_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Exported JSON backup');
   };
 
   const handleImportBackup = async (file: File) => {
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        const json = JSON.parse(reader.result as string);
-        await api.importBackup(json);
-        showToast('Backup successfully imported! Reloading...');
-        await fetchData();
-      } catch (err: any) {
-        showToast(err.message || 'Invalid backup file');
+    if (!isManager) {
+      showToast('Only Admins and Managers can import project backups.');
+      return;
+    }
+    showToast('Importing JSON backup...');
+    try {
+      const text = await file.text();
+      if (!text || !text.trim()) {
+        throw new Error('The selected JSON file is empty.');
       }
-    };
-    reader.readAsText(file);
+      const cleanText = text.replace(/^\uFEFF/, '').trim();
+      let json: unknown;
+      try {
+        json = JSON.parse(cleanText);
+      } catch {
+        throw new Error('Invalid JSON syntax in the selected backup file.');
+      }
+      const imported = await firestoreData.importBackup(json, user);
+      setIsEditingText(false);
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              ...imported,
+              settings: imported.settings ? { ...prev.settings, ...imported.settings } : prev.settings,
+              overrides: imported.overrides ?? prev.overrides,
+            }
+          : prev
+      );
+      showToast('Backup imported and synced to Firestore!');
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to import JSON backup'));
+    }
   };
 
-  const handleReset = async () => {
+  const handleReset = () => {
     if (!isAdmin) {
       showToast('Only an Administrator can reset the project database.');
       return;
     }
-    if (confirm('Are you sure you want to reset all milestones, scopes, pours, and episodes back to the original baseline?')) {
-      try {
-        await api.resetToBaseline();
-        showToast('Project reset to factory baseline');
-        await fetchData();
-      } catch (err: any) {
-        showToast(err.message || 'Reset failed');
-      }
+    setIsResetConfirmOpen(true);
+  };
+
+  const executeReset = async () => {
+    setIsResetConfirmOpen(false);
+    try {
+      await firestoreData.resetToBaseline(user);
+      showToast('Project reset to factory baseline');
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Reset failed'));
     }
   };
 
-  // Print PDF & Formal Report
-  const handlePrintPdf = () => {
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#03051a] text-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-[#F5C518] border-t-transparent rounded-full animate-spin" />
+          <b className="font-['Barlow_Condensed'] text-xl tracking-wider text-[#F5C518]">
+            LOADING CONVENGERS BAHAY BUILD TIMELINE...
+          </b>
+        </div>
+      </div>
+    );
+  }
+
+  const handleJumpToRow = useCallback((targetKey: string) => {
+    let targetSlide = 's1';
+    if (targetKey.startsWith('c|GF|')) targetSlide = 's3';
+    else if (targetKey.startsWith('c|2F|')) targetSlide = 's4';
+    else if (targetKey.startsWith('c|3F|')) targetSlide = 's5';
+    else if (targetKey.startsWith('m|')) targetSlide = 's1';
+    else if (targetKey.startsWith('p|')) targetSlide = 's6';
+    else if (targetKey.startsWith('e|')) targetSlide = 's7';
+    const el = document.getElementById(targetSlide);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
+  const waitForImagesAndPrint = useCallback(async () => {
+    const imgs = Array.from(document.images);
+    await Promise.all(
+      imgs.map(async (img) => {
+        if (!img.complete) {
+          await new Promise<void>((resolve) => {
+            const done = () => resolve();
+            img.addEventListener('load', done, { once: true });
+            img.addEventListener('error', done, { once: true });
+            setTimeout(done, 1500);
+          });
+        }
+        if (typeof img.decode === 'function') {
+          await img.decode().catch(() => {});
+        }
+      })
+    );
     window.print();
+  }, []);
+
+  // Print PDF & Formal Report
+  const handlePrintPdf = async () => {
+    document.body.classList.remove('pmrep-active');
+    setIsPrintingReport(false);
+    await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+    await waitForImagesAndPrint();
   };
 
-  const handlePrintReport = () => {
+  const handlePrintReport = async () => {
+    setIsPrintingReport(true);
     document.body.classList.add('pmrep-active');
-    setTimeout(() => {
-      window.print();
+    const cleanup = () => {
       document.body.classList.remove('pmrep-active');
-    }, 100);
+      setIsPrintingReport(false);
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    await new Promise<void>((r) => setTimeout(r, 140));
+    await waitForImagesAndPrint();
+    cleanup();
+  };
+
+  const handleDownloadHtml = () => {
+    showToast('Preparing standalone HTML presentation...');
+    try {
+      exportDashboardAsHtml();
+      showToast('Downloaded HTML presentation!');
+    } catch (err: unknown) {
+      showToast(formatErrorForToast(err, 'Failed to export HTML'));
+    }
   };
 
   return (
@@ -772,6 +1021,7 @@ export default function App() {
         onChangePaper={handleChangePaper}
         onPrintPdf={handlePrintPdf}
         onPrintReport={handlePrintReport}
+        onDownloadHtml={handleDownloadHtml}
         onExportBackup={handleExportBackup}
         onImportBackup={handleImportBackup}
         onOpenAuditLogs={() => setIsAuditOpen(true)}
@@ -801,7 +1051,7 @@ export default function App() {
       </header>
 
       {/* Slide Navigation Jump Bar */}
-      <nav className="max-w-[1920px] mx-auto px-4 py-2 sticky top-[48px] z-30 flex items-center justify-between gap-2 overflow-x-auto bg-[#0A1140]/95 backdrop-blur border-y border-[#7B4DFF]/60 shadow-[0_4px_16px_rgba(0,0,0,0.5)] mb-4 rounded-b-lg">
+      <nav className="jumpnav max-w-[1920px] mx-auto px-4 py-2 sticky top-[48px] z-30 flex items-center justify-between gap-2 overflow-x-auto bg-[#0A1140]/95 backdrop-blur border-y border-[#7B4DFF]/60 shadow-[0_4px_16px_rgba(0,0,0,0.5)] mb-4 rounded-b-lg">
         <div className="flex items-center gap-2">
           <span className="text-[#F5C518] font-bold text-xs uppercase tracking-wider whitespace-nowrap">
             Jump to Slide:
@@ -855,6 +1105,7 @@ export default function App() {
             episodes={data.episodes}
             settings={data.settings}
             canEdit={canEdit}
+            canEditTimeline={isManager}
             onUpdateMilestone={handleUpdateMilestone}
             onUpdateMilestoneField={handleUpdateMilestoneField}
             onViewerAttemptEdit={handleViewerAttemptEdit}
@@ -873,10 +1124,14 @@ export default function App() {
             overrides={data.overrides}
             settings={data.settings}
             canEdit={canEdit}
+            canEditTimeline={isManager}
+            canDelete={isAdmin}
             onAddActivity={handleAddActivity}
             onUpdateActivity={handleUpdateActivity}
             onDeleteActivity={handleDeleteActivity}
             onSetOverride={handleSetOverride}
+            onJumpToRow={handleJumpToRow}
+            onViewerAttemptEdit={handleViewerAttemptEdit}
           />
         </div>
 
@@ -889,8 +1144,11 @@ export default function App() {
             episodes={data.episodes}
             settings={data.settings}
             canEdit={canEdit}
+            canEditTimeline={isManager}
+            canDelete={isAdmin}
             onUpdateProgress={handleUpdateScopeProgress}
             onUpdateScopeField={handleUpdateScopeField}
+            onUpdateScopeWorkingDays={handleUpdateScopeWorkingDays}
             onAddScope={handleAddScope}
             onDeleteScope={handleDeleteScope}
             onViewerAttemptEdit={handleViewerAttemptEdit}
@@ -907,8 +1165,11 @@ export default function App() {
             episodes={data.episodes}
             settings={data.settings}
             canEdit={canEdit}
+            canEditTimeline={isManager}
+            canDelete={isAdmin}
             onUpdateProgress={handleUpdateScopeProgress}
             onUpdateScopeField={handleUpdateScopeField}
+            onUpdateScopeWorkingDays={handleUpdateScopeWorkingDays}
             onAddScope={handleAddScope}
             onDeleteScope={handleDeleteScope}
             onViewerAttemptEdit={handleViewerAttemptEdit}
@@ -925,8 +1186,11 @@ export default function App() {
             episodes={data.episodes}
             settings={data.settings}
             canEdit={canEdit}
+            canEditTimeline={isManager}
+            canDelete={isAdmin}
             onUpdateProgress={handleUpdateScopeProgress}
             onUpdateScopeField={handleUpdateScopeField}
+            onUpdateScopeWorkingDays={handleUpdateScopeWorkingDays}
             onAddScope={handleAddScope}
             onDeleteScope={handleDeleteScope}
             onViewerAttemptEdit={handleViewerAttemptEdit}
@@ -940,6 +1204,8 @@ export default function App() {
             pours={data.pours}
             settings={data.settings}
             canEdit={canEdit}
+            canEditTimeline={isManager}
+            canDelete={isAdmin}
             onAddPour={handleAddPour}
             onUpdatePour={handleUpdatePour}
             onDeletePour={handleDeletePour}
@@ -954,12 +1220,15 @@ export default function App() {
             characters={data.characters}
             settings={data.settings}
             canEdit={canEdit}
+            canEditTimeline={isManager}
+            canDelete={isAdmin}
             onAddEpisode={handleAddEpisode}
             onUpdateEpisode={handleUpdateEpisode}
             onDeleteEpisode={handleDeleteEpisode}
             onAddCharacter={handleAddCharacter}
             onUpdateCharacter={handleUpdateCharacter}
             onDeleteCharacter={handleDeleteCharacter}
+            onViewerAttemptEdit={handleViewerAttemptEdit}
           />
         </div>
 
@@ -969,6 +1238,7 @@ export default function App() {
             episodes={data.episodes}
             settings={data.settings}
             canEdit={canEdit}
+            canEditTimeline={isManager}
             onUpdateEpisode={handleUpdateEpisode}
             onViewerAttemptEdit={handleViewerAttemptEdit}
           />
@@ -1007,110 +1277,66 @@ export default function App() {
       </main>
 
       {/* Printable Report View (shown during Print Report) */}
-      <div className="pmrep-container" id="pmreport">
-        <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Convengers Bahay Build — Status Report</h1>
-        <p style={{ fontSize: '13px', color: '#555' }}>Report Date: {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-
-        <h2 style={{ fontSize: '16px', fontWeight: 800, marginTop: '16px', borderBottom: '2px solid #333' }}>Executive Milestones</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Milestone Target</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.milestones.map((m) => (
-              <tr key={m.id}>
-                <td>{m.dateText}</td>
-                <td>{m.label}</td>
-                <td>{m.status}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <h2 style={{ fontSize: '16px', fontWeight: 800, marginTop: '16px', borderBottom: '2px solid #333' }}>Concrete Pouring Status</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Floor</th>
-              <th>Component</th>
-              <th>Activity</th>
-              <th>Target Pour</th>
-              <th>Actual Pour</th>
-              <th>Milestone Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.pours.map((p) => (
-              <tr key={p.id}>
-                <td>{p.floor}</td>
-                <td>{p.component}</td>
-                <td>{p.activity}</td>
-                <td>{p.targetPour || '—'}</td>
-                <td>{p.actualPour || '—'}</td>
-                <td>{p.milestoneStatus}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <h2 style={{ fontSize: '16px', fontWeight: 800, marginTop: '16px', borderBottom: '2px solid #333' }}>Production Calendar (24 Episodes)</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Ep #</th>
-              <th>Title</th>
-              <th>Topic</th>
-              <th>Shoot Window</th>
-              <th>Release Date</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.episodes.map((e) => (
-              <tr key={e.id}>
-                <td>{e.number}</td>
-                <td>{e.title}</td>
-                <td>{e.topic}</td>
-                <td>{e.shootStart}</td>
-                <td>{e.releaseDate || '—'}</td>
-                <td>{e.status}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <PrintReport data={data} />
 
       {/* Modals */}
       {isAuthOpen && (
         <AuthModal
-          currentUser={data.user}
+          currentUser={user}
           onClose={() => setIsAuthOpen(false)}
           onLogin={async (email, pass) => {
-            const res = await api.login(email, pass);
-            setData((prev) => (prev ? { ...prev, user: res.user } : prev));
-            showToast(`Welcome to Madhouse Team, ${res.user.name} (${res.user.role.toUpperCase()})`);
+            const signedInUser = await authService.signIn(email, pass);
+            setData((prev) => (prev ? { ...prev, user: signedInUser } : prev));
+            setIsAdminPresentationMode(false);
+            if (signedInUser.role === 'pending') {
+              showToast('Signed in! Your account is awaiting administrator approval.');
+            } else {
+              showToast(`Welcome to Madhouse Team, ${signedInUser.name} (${signedInUser.role.toUpperCase()})`);
+            }
+            if (signedInUser.role === 'admin' || signedInUser.role === 'manager') {
+              firestoreData.seedInitialDataIfEmpty(signedInUser);
+            }
           }}
-          onRegister={async (name, email, pass, role) => {
-            const res = await api.register(name, email, pass, role);
-            setData((prev) => (prev ? { ...prev, user: res.user } : prev));
-            showToast(`Team account created as ${res.user.role.toUpperCase()}`);
+          onRegister={async (name, email, pass) => {
+            const registeredUser = await authService.register(name, email, pass);
+            setData((prev) => (prev ? { ...prev, user: registeredUser } : prev));
+            setIsAdminPresentationMode(false);
+            if (registeredUser.role === 'admin') {
+              showToast(`Administrator bootstrapped: Welcome ${registeredUser.name}!`);
+              firestoreData.seedInitialDataIfEmpty(registeredUser);
+            } else {
+              showToast('Account registered as PENDING. Awaiting administrator approval.');
+            }
           }}
-          onSwitchDemo={async (email) => {
-            const res = await api.switchDemo(email);
-            setData((prev) => (prev ? { ...prev, user: res.user } : prev));
-            showToast(`Madhouse Access: ${res.user.name} (${res.user.role.toUpperCase()})`);
+          onGoogleLogin={async () => {
+            const signedInUser = await authService.signInWithGoogle();
+            setData((prev) => (prev ? { ...prev, user: signedInUser } : prev));
+            setIsAdminPresentationMode(false);
+            if (signedInUser.role === 'pending') {
+              showToast('Signed in! Your account is awaiting administrator approval.');
+            } else {
+              showToast(`Welcome to Madhouse Team, ${signedInUser.name} (${signedInUser.role.toUpperCase()})`);
+            }
+            if (signedInUser.role === 'admin' || signedInUser.role === 'manager') {
+              firestoreData.seedInitialDataIfEmpty(signedInUser);
+            }
           }}
           onLogout={async () => {
-            await api.logout();
+            await authService.signOut();
             setIsEditingText(false);
-            const initial = api.getInitialDashboard();
-            setData((prev) => (prev ? { ...prev, user: initial.user } : prev));
-            showToast('Switched to Viewer (Read-only) presentation mode');
+            setIsAdminPresentationMode(false);
+            setIsAdminPanelOpen(false);
+            showToast('Signed out · Viewing in Presentation (Read-Only) mode');
           }}
+          onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
+        />
+      )}
+
+      {isAdminPanelOpen && user.role === 'admin' && (
+        <AdminPanelModal
+          currentUser={user}
+          onClose={() => setIsAdminPanelOpen(false)}
+          onShowToast={showToast}
         />
       )}
 
@@ -1130,6 +1356,37 @@ export default function App() {
           logs={data.auditLogs}
           onClose={() => setIsAuditOpen(false)}
         />
+      )}
+
+      {isResetConfirmOpen && isAdmin && (
+        <div className="shm">
+          <div className="shbox" style={{ maxWidth: '460px' }}>
+            <div className="shhead">
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <span>⚠️</span> Confirm Project Baseline Reset
+              </h2>
+              <button type="button" className="shx" onClick={() => setIsResetConfirmOpen(false)}>
+                ×
+              </button>
+            </div>
+            <p className="text-xs text-[#BAC4E2] leading-relaxed mb-4">
+              Are you sure you want to reset all milestones, scopes, concrete pours, and production episodes in Firestore back to the original baseline?
+            </p>
+            <div className="shrow justify-end">
+              <button type="button" className="shbtn" onClick={() => setIsResetConfirmOpen(false)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="shbtn"
+                style={{ borderColor: '#E0213B', background: '#E0213B', color: '#fff' }}
+                onClick={executeReset}
+              >
+                Yes, Reset Baseline
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Toast Notification */}

@@ -5,7 +5,8 @@
 
 import React, { useState } from 'react';
 import { ConcretePour, SystemSettings } from '../types/index.ts';
-import { LOGO_SVG, STATUS_COLORS } from '../constants/assets.ts';
+import { STATUS_COLORS } from '../constants/assets.ts';
+import { BrandLogo } from './BrandLogo.tsx';
 import {
   calculateConcreteCompletion,
   isPourOverdue,
@@ -17,18 +18,24 @@ interface ConcretePourSlideProps {
   pours: ConcretePour[];
   settings: SystemSettings;
   canEdit: boolean;
+  canEditTimeline?: boolean;
+  canDelete?: boolean;
   onAddPour: (pour: Omit<ConcretePour, 'id'>) => void;
   onUpdatePour: (id: string, updates: Partial<ConcretePour>) => void;
   onDeletePour: (id: string) => void;
+  onViewerAttemptEdit?: () => void;
 }
 
 export const ConcretePourSlide: React.FC<ConcretePourSlideProps> = ({
   pours,
   settings,
   canEdit,
+  canEditTimeline = canEdit,
+  canDelete = canEdit,
   onAddPour,
   onUpdatePour,
   onDeletePour,
+  onViewerAttemptEdit,
 }) => {
   const [addingFloor, setAddingFloor] = useState<'GF' | '2F' | '3F' | null>(null);
   const [newComponent, setNewComponent] = useState('');
@@ -115,12 +122,7 @@ export const ConcretePourSlide: React.FC<ConcretePourSlideProps> = ({
 
         {/* Header */}
         <div className="hdr" style={{ display: 'flex', alignItems: 'center', gap: '30px', height: '150px', flex: 'none' }}>
-          <img
-            className="logo"
-            src={LOGO_SVG}
-            alt="Logo"
-            style={{ width: '176px', height: '150px', flex: 'none', display: 'block', objectFit: 'contain', borderRadius: '12px', filter: 'drop-shadow(0 0 16px rgba(123,77,255,0.65))' }}
-          />
+          <BrandLogo variant="slide" />
           <div className="ttl" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase' }}>
               Structural
@@ -198,7 +200,7 @@ export const ConcretePourSlide: React.FC<ConcretePourSlideProps> = ({
                   <span style={{ fontSize: '14px', color: '#F5C518', fontWeight: 700 }}>
                     {stat.percent}% complete
                   </span>
-                  {canEdit && (
+                  {canEditTimeline && (
                     <button
                       type="button"
                       className="pmb sm pri"
@@ -212,7 +214,7 @@ export const ConcretePourSlide: React.FC<ConcretePourSlideProps> = ({
               </div>
 
               {/* Add Pour Inline Form */}
-              {addingFloor === floor && canEdit && (
+              {addingFloor === floor && canEditTimeline && (
                 <div className="flex gap-2 p-2 bg-[#060A24] border-b border-[#F5C518]">
                   <input
                     className="pmi flex-1"
@@ -268,10 +270,11 @@ export const ConcretePourSlide: React.FC<ConcretePourSlideProps> = ({
                     return (
                       <div
                         key={p.id}
+                        onDoubleClick={!canEdit ? onViewerAttemptEdit : undefined}
                         className={`pmrow cmrow ${isOver ? 'od' : isDone ? 'ok' : ''}`}
                       >
                         <div className="pmc" data-l="Component / area">
-                          {canEdit ? (
+                          {canEditTimeline ? (
                             <input
                               className="pmi"
                               value={p.component}
@@ -283,7 +286,7 @@ export const ConcretePourSlide: React.FC<ConcretePourSlideProps> = ({
                           )}
                         </div>
                         <div className="pmc" data-l="Pouring activity">
-                          {canEdit ? (
+                          {canEditTimeline ? (
                             <input
                               className="pmi"
                               value={p.activity}
@@ -300,7 +303,7 @@ export const ConcretePourSlide: React.FC<ConcretePourSlideProps> = ({
                           )}
                         </div>
                         <div className="pmc" data-l="Target pour">
-                          {canEdit ? (
+                          {canEditTimeline ? (
                             <input
                               className="pmi"
                               type="date"
@@ -312,7 +315,7 @@ export const ConcretePourSlide: React.FC<ConcretePourSlideProps> = ({
                           )}
                         </div>
                         <div className="pmc" data-l="Actual pour">
-                          {canEdit ? (
+                          {canEditTimeline ? (
                             <input
                               className="pmi"
                               type="date"
@@ -324,7 +327,7 @@ export const ConcretePourSlide: React.FC<ConcretePourSlideProps> = ({
                           )}
                         </div>
                         <div className="pmc" data-l="Target compl.">
-                          {canEdit ? (
+                          {canEditTimeline ? (
                             <input
                               className="pmi"
                               type="date"
@@ -336,7 +339,7 @@ export const ConcretePourSlide: React.FC<ConcretePourSlideProps> = ({
                           )}
                         </div>
                         <div className="pmc" data-l="Actual compl.">
-                          {canEdit ? (
+                          {canEditTimeline ? (
                             <input
                               className="pmi"
                               type="date"
@@ -449,7 +452,7 @@ export const ConcretePourSlide: React.FC<ConcretePourSlideProps> = ({
                           )}
                         </div>
                         <div className="pmc act">
-                          {canEdit && (
+                          {canDelete && (
                             <button
                               type="button"
                               className="pmb sm dng"
@@ -595,6 +598,36 @@ export const ConcretePourSlide: React.FC<ConcretePourSlideProps> = ({
                     </React.Fragment>
                   );
                 })}
+                {/* Live Today Marker */}
+                {normalizedToday >= timelineStart &&
+                  normalizedToday <= new Date(2027, 3, 30) && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: `${calcTimelinePct(normalizedToday)}%`,
+                        top: '14px',
+                        bottom: 0,
+                        width: '2px',
+                        background: '#F5C518',
+                        zIndex: 6,
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: '-14px',
+                          left: '4px',
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          color: '#F5C518',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        Today
+                      </span>
+                    </div>
+                  )}
               </div>
             </div>
 

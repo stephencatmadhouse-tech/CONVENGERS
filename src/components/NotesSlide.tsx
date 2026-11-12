@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { SystemSettings } from '../types/index.ts';
-import { LOGO_SVG } from '../constants/assets.ts';
+import { BrandLogo } from './BrandLogo.tsx';
 import { calculateScheduleElapsed } from '../utils/calculations.ts';
 
 export const NotesSlide: React.FC<{ settings: SystemSettings }> = ({ settings }) => {
@@ -94,12 +94,7 @@ export const NotesSlide: React.FC<{ settings: SystemSettings }> = ({ settings })
 
         {/* Header */}
         <div className="hdr" style={{ display: 'flex', alignItems: 'center', gap: '30px', height: '150px', flex: 'none' }}>
-          <img
-            className="logo"
-            src={LOGO_SVG}
-            alt="Logo"
-            style={{ width: '176px', height: '150px', flex: 'none', display: 'block', objectFit: 'contain', borderRadius: '12px', filter: 'drop-shadow(0 0 16px rgba(123,77,255,0.65))' }}
-          />
+          <BrandLogo variant="slide" />
           <div className="ttl" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase' }}>
               Schedule

@@ -5,7 +5,8 @@
 
 import React from 'react';
 import { Milestone, ScopeItem, ConcretePour, Episode, SystemSettings, RemoteFocus } from '../types/index.ts';
-import { LOGO_SVG, STATUS_COLORS } from '../constants/assets.ts';
+import { STATUS_COLORS } from '../constants/assets.ts';
+import { BrandLogo } from './BrandLogo.tsx';
 import { INITIAL_MILESTONES } from '../db/seedData.ts';
 import { CollaborativeCell } from './CollaborativeCell.tsx';
 import { realtime } from '../utils/realtime.ts';
@@ -25,6 +26,7 @@ interface OverviewSlideProps {
   episodes: Episode[];
   settings: SystemSettings;
   canEdit: boolean;
+  canEditTimeline?: boolean;
   onUpdateMilestone: (id: string, status: Milestone['status']) => void;
   onUpdateMilestoneField?: (id: string, field: 'label' | 'dateText', value: string) => void;
   remoteFocusMap?: Record<string, RemoteFocus>;
@@ -38,6 +40,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
   episodes,
   settings,
   canEdit,
+  canEditTimeline = canEdit,
   onUpdateMilestone,
   onUpdateMilestoneField,
   remoteFocusMap = {},
@@ -86,12 +89,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
 
         {/* Header */}
         <div className="hdr" style={{ display: 'flex', alignItems: 'center', gap: '30px', height: '150px', flex: 'none' }}>
-          <img
-            className="logo"
-            src={LOGO_SVG}
-            alt="Convengers Multiverse Logo"
-            style={{ width: '176px', height: '150px', flex: 'none', display: 'block', objectFit: 'contain', borderRadius: '12px', filter: 'drop-shadow(0 0 16px rgba(123,77,255,0.65))' }}
-          />
+          <BrandLogo variant="slide" />
           <div className="ttl" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '30px', lineHeight: 1.1, letterSpacing: '2px', textTransform: 'uppercase' }}>
               Scope of work
@@ -248,7 +246,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                         value={safeDate}
                         fallbackValue={initial?.dateText}
                         remoteFocus={dateFocus}
-                        canEdit={canEdit}
+                        canEdit={canEditTimeline}
                         onViewerAttemptEdit={onViewerAttemptEdit}
                         onSave={(val) => {
                           if (onUpdateMilestoneField) {
@@ -264,7 +262,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                         value={safeLabel}
                         fallbackValue={initial?.label}
                         remoteFocus={labelFocus}
-                        canEdit={canEdit}
+                        canEdit={canEditTimeline}
                         onViewerAttemptEdit={onViewerAttemptEdit}
                         onSave={(val) => {
                           if (onUpdateMilestoneField) {
@@ -330,7 +328,8 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                         </select>
                       ) : (
                         <span
-                          className="mst inline-flex items-center justify-center font-bold px-3 py-1 text-xs rounded-full border shadow-xs"
+                          className="mst inline-flex items-center justify-center font-bold px-3 py-1 text-xs rounded-full border shadow-xs cursor-default"
+                          onDoubleClick={onViewerAttemptEdit}
                           style={{ background: colors[0], color: colors[1], borderColor: colors[2] }}
                         >
                           {m.status}
@@ -483,7 +482,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                     return (
                       <React.Fragment key={ep.id}>
                         <div
-                          title={`Ep ${ep.number}: ${ep.title}`}
+                          title={`${ep.episodeLabel ? ep.episodeLabel : `Ep ${ep.number}`}: ${ep.title}`}
                           style={{
                             position: 'absolute',
                             left: `${l}%`,
@@ -497,7 +496,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                           }}
                         />
                         <div
-                          title={`Ep ${ep.number}: ${ep.title} (${ep.status})`}
+                          title={`${ep.episodeLabel ? ep.episodeLabel : `Ep ${ep.number}`}: ${ep.title} (${ep.status})`}
                           style={{
                             position: 'absolute',
                             left: `${(l + r) / 2}%`,
@@ -516,7 +515,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          {ep.number}
+                          {ep.episodeLabel || ep.number}
                         </div>
                       </React.Fragment>
                     );

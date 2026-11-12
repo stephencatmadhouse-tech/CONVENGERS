@@ -6,6 +6,7 @@
 import React from 'react';
 import { User, SystemSettings, Collaborator } from '../types/index.ts';
 import { CollaboratorBar } from './CollaboratorBar.tsx';
+import { BrandLogo } from './BrandLogo.tsx';
 
 interface ToolbarProps {
   user: User | null;
@@ -18,6 +19,7 @@ interface ToolbarProps {
   onChangePaper: (paper: SystemSettings['paper']) => void;
   onPrintPdf: () => void;
   onPrintReport: () => void;
+  onDownloadHtml?: () => void;
   onExportBackup: () => void;
   onImportBackup: (file: File) => void;
   onOpenAuditLogs: () => void;
@@ -40,6 +42,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onChangePaper,
   onPrintPdf,
   onPrintReport,
+  onDownloadHtml,
   onExportBackup,
   onImportBackup,
   onOpenAuditLogs,
@@ -69,12 +72,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
   return (
     <div className="toolbar">
-      <div className="flex items-center gap-2 mr-2">
-        <img
-          src="/convengers-logo.png"
-          alt="Convengers Logo"
-          className="w-7 h-7 rounded-md object-contain border border-[#7B4DFF]/60 shadow-[0_0_8px_rgba(123,77,255,0.6)]"
-        />
+      <div className="flex items-center gap-2.5 mr-2">
+        <BrandLogo variant="toolbar" />
         <b>CONVENGERS ASSEMBLE</b>
         <span
           className="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono tracking-wide text-[#F5C518] bg-[#060A24] border border-[#7B4DFF]/60 select-all"
@@ -105,7 +104,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             title="Signed in to Madhouse Team - click to view profile or sign out"
           >
             <span
-              className="w-2 h-2 rounded-full inline-block animate-pulse"
+              className="w-2 h-2 rounded-full inline-block"
               style={{ background: roleColors[user.role] || '#4BE08A' }}
             />
             <span>{user.name} ({user.role.toUpperCase()})</span>
@@ -140,6 +139,24 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               <span>Presentation Mode: {isAdminPresentationMode ? 'ON' : 'OFF'}</span>
             </button>
           )}
+        </div>
+      ) : user && user.role === 'pending' ? (
+        <div className="flex items-center gap-2">
+          <span
+            className="flex items-center gap-1.5 border border-[#BAC4E2]/50 bg-[#060A24] text-[#BAC4E2] px-2.5 py-1 rounded-md font-bold text-xs uppercase tracking-wider"
+            title="Viewing in presentation mode. Timeline cells, milestone statuses, and production dates are locked to prevent accidental edits."
+          >
+            <span className="w-2 h-2 rounded-full inline-block bg-[#BAC4E2]" />
+            <span>VIEWER (READ-ONLY)</span>
+          </span>
+          <button
+            type="button"
+            onClick={onOpenAuth}
+            className="flex items-center gap-1.5 border border-[#FF9A1F] bg-[#FF9A1F]/15 hover:bg-[#FF9A1F]/25 text-[#FF9A1F] px-2.5 py-1.5 rounded-md font-bold text-xs transition-all"
+            title="Signed in as Pending Approval - click to check status or switch to Administrator account"
+          >
+            <span>⏳ {user.name} (PENDING)</span>
+          </button>
         </div>
       ) : (
         <div className="flex items-center gap-2">
@@ -212,6 +229,18 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         Print report
       </button>
 
+      {onDownloadHtml && (
+        <button
+          id="dlhtml"
+          type="button"
+          onClick={onDownloadHtml}
+          className="border border-[#F5C518]/70 hover:border-[#F5C518] text-[#F5C518] font-bold"
+          title="Download the full 12-slide presentation as a standalone offline HTML file"
+        >
+          Download HTML
+        </button>
+      )}
+
       <button id="pmexp" type="button" onClick={onExportBackup}>
         Export backup
       </button>
@@ -225,14 +254,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           <input
             ref={fileInputRef}
             type="file"
-            accept=".json,application/json"
+            accept=".json,.JSON,application/json,text/json"
             style={{ display: 'none' }}
             onChange={handleFileChange}
           />
         </>
       )}
 
-      {user && (user.role === 'admin' || user.role === 'manager') && !isAdminPresentationMode && (
+      {user && user.role === 'admin' && !isAdminPresentationMode && (
         <button type="button" onClick={onOpenAuditLogs} className="bg-[#121C5A]">
           Audit Logs
         </button>

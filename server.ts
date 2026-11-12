@@ -319,18 +319,6 @@ app.post('/api/auth/logout', (req, res) => {
   return res.json({ ok: true });
 });
 
-// Switch role (convenience for demo / testing accounts)
-app.post('/api/auth/switch-demo', (req, res) => {
-  const { email } = req.body;
-  const userCreds = db.getUserByEmail(email);
-  if (!userCreds) {
-    return res.status(404).json({ error: 'Demo user not found.' });
-  }
-  const token = db.createSession(userCreds.id);
-  const { passwordHash, salt, ...safeUser } = userCreds;
-  return res.json({ token, user: safeUser });
-});
-
 // --- REAL-TIME SSE STREAM ---
 app.get('/api/events', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
