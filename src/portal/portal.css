@@ -179,17 +179,16 @@
 }
 .pt-nav {
   display: flex;
-  gap: 4px;
-  overflow-x: auto;
+  flex-wrap: wrap;
+  gap: 0 4px;
   margin-top: 10px;
-  scrollbar-width: thin;
 }
 .pt-tab {
   border: none;
   background: transparent;
   color: var(--pt-text);
-  font: 600 14px 'Barlow', sans-serif;
-  padding: 10px 12px;
+  font: 600 13.5px 'Barlow', sans-serif;
+  padding: 10px 9px;
   border-bottom: 3px solid transparent;
   cursor: pointer;
   white-space: nowrap;
@@ -514,6 +513,16 @@
 }
 
 @media (max-width: 860px) {
+  /* Phones: one swipeable row of tabs with the scrollbar hidden */
+  .pt-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .pt-nav::-webkit-scrollbar {
+    display: none;
+  }
   .pt-g2,
   .pt-g3 {
     grid-template-columns: minmax(0, 1fr);

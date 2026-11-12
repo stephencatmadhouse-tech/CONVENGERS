@@ -1416,3 +1416,18 @@ html:not([data-eff='dark']) .cv-banner.ok {
   border: 1px dashed var(--cv-silver);
   text-decoration: none;
 }
+/* Tabs wrap on desktop (no scrollbar); single swipeable row on phones */
+.cv-tabs {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+@media (max-width: 900px) {
+  .cv-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .cv-tabs::-webkit-scrollbar {
+    display: none;
+  }
+}

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Collaborator, User } from '../types/index.ts';
 import { realtime } from '../utils/realtime.ts';
 
@@ -20,6 +20,17 @@ export const CollaboratorBar: React.FC<CollaboratorBarProps> = ({
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(() => realtime.getDisplayName());
+  // After a short grace period, stop claiming "connecting" when the presence server is unavailable
+  const [presenceTimedOut, setPresenceTimedOut] = useState(false);
+  useEffect(() => {
+    if (isLiveConnected) {
+      setPresenceTimedOut(false);
+      return;
+    }
+    const t = setTimeout(() => setPresenceTimedOut(true), 6000);
+    return () => clearTimeout(t);
+  }, [isLiveConnected]);
+  const offline = !isLiveConnected && presenceTimedOut;
 
   const currentClientId = realtime.clientId;
   const myColor = realtime.userColor;
@@ -43,21 +54,23 @@ export const CollaboratorBar: React.FC<CollaboratorBarProps> = ({
       <div
         className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold"
         style={{
-          background: isLiveConnected ? 'rgba(75, 224, 138, 0.15)' : 'var(--sxa-bg-7)',
-          border: `1px solid ${isLiveConnected ? '#4BE08A' : 'var(--sxa-border-2)'}`,
-          color: isLiveConnected ? 'var(--sx-text-8)' : 'var(--sx-text-10)',
+          background: isLiveConnected ? 'rgba(75, 224, 138, 0.15)' : offline ? 'transparent' : 'var(--sxa-bg-7)',
+          border: `1px solid ${isLiveConnected ? '#4BE08A' : offline ? 'var(--sx-border-17)' : 'var(--sxa-border-2)'}`,
+          color: isLiveConnected ? 'var(--sx-text-8)' : offline ? 'var(--sx-text-2)' : 'var(--sx-text-10)',
         }}
         title={
           isLiveConnected
             ? 'Connected live. Instant real-time cell sync active across laptops and phones.'
-            : 'Connecting real-time sync stream...'
+            : offline
+            ? 'Project data still syncs through the shared database. Live presence (who is online, typing indicators) needs the Node presence server, which is not reachable on this host.'
+            : 'Connecting real-time presence…'
         }
       >
         <span
           className={`w-2 h-2 rounded-full inline-block ${isLiveConnected ? 'animate-pulse' : ''}`}
-          style={{ background: isLiveConnected ? '#4BE08A' : 'var(--sxa-bg-1)' }}
+          style={{ background: isLiveConnected ? '#4BE08A' : offline ? '#C7C7D0' : 'var(--sxa-bg-1)' }}
         />
-        <span>{isLiveConnected ? 'LIVE SYNC' : 'CONNECTING...'}</span>
+        <span>{isLiveConnected ? 'LIVE SYNC' : offline ? 'PRESENCE OFFLINE' : 'CONNECTING...'}</span>
       </div>
 
       {/* Collaborators Avatar Stack (Google Sheets style) */}

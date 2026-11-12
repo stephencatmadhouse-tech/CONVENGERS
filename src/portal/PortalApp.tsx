@@ -21,13 +21,13 @@ import { addDays, diffDays, fmtDate, fmtRange, monthLabel, todayIso } from '../d
 const TABS = [
   { id: 'overview', label: 'Executive Overview' },
   { id: 'progress', label: 'Construction Progress' },
-  { id: 'timeline', label: 'Project Timeline' },
-  { id: 'milestones', label: 'Key Milestones' },
+  { id: 'timeline', label: 'Timeline' },
+  { id: 'milestones', label: 'Milestones' },
   { id: 'monthly', label: 'Monthly Accomplishments' },
   { id: 'weekly', label: 'Weekly Highlights' },
-  { id: 'gallery', label: 'Progress Gallery' },
-  { id: 'considerations', label: 'Major Considerations' },
-  { id: 'reports', label: 'Reports & Downloads' },
+  { id: 'gallery', label: 'Gallery' },
+  { id: 'considerations', label: 'Considerations' },
+  { id: 'reports', label: 'Reports' },
 ];
 
 const STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
@@ -146,12 +146,21 @@ export const PortalApp: React.FC<{ user: User; mode: 'external' | 'preview' }> =
           <Empty>Loading published project information…</Empty>
         ) : portal.error === 'unreachable' && !portal.items.length ? (
           <Empty>The project database cannot be reached right now. Check your internet connection and refresh the page.</Empty>
-        ) : portal.error === 'permission-denied' ? (
+        ) : portal.error === 'permission-denied' && mode === 'external' ? (
           <Empty>
-            Your account does not have access to the project portal yet. Please contact the project&apos;s System Administrator.
+            The client portal could not be loaded because the server refused access. If your access was granted recently, sign out and sign in again;
+            otherwise please contact the project&apos;s System Administrator.
           </Empty>
         ) : (
           <>
+            {mode === 'preview' && portal.error === 'permission-denied' && (
+              <div className="pt-note pt-noprint" style={{ borderLeftColor: '#F5A623', marginBottom: 16 }}>
+                <b>Shared portal storage is not active yet.</b> The database security rules on the server have not been updated, so the shared{' '}
+                <code>portal</code> collection cannot be read — by anyone, including administrators. Deploy the updated <code>firestore.rules</code> (see{' '}
+                <i>docs/COMMAND_CENTER_AUDIT.md</i>, section 8). Until then this preview shows only items published from this device, and external users
+                cannot see any published content.
+              </div>
+            )}
             {tab === 'overview' && <Overview {...ctx} />}
             {tab === 'progress' && <Progress {...ctx} />}
             {tab === 'timeline' && <Timeline {...ctx} />}

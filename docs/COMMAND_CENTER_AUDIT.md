@@ -264,7 +264,9 @@ Procurement & Materials (with delayed-delivery detection), Manpower schedules, B
 
 ### Actions required to go live
 
-1. **Deploy `firestore.rules`.** This is required for the internal/external separation, publishing and all new modules to work across users. Until then:
+1. **Deploy `firestore.rules`.** This is required for the internal/external separation, publishing and all new modules to work across users. With the Firebase CLI, from the repository root (`firebase.json` already targets the project's named database):
+   `firebase deploy --only firestore:rules` (add `,storage` to also deploy `storage.rules`).
+   Or in the Firebase Console: **Firestore → select database `ai-studio-convengersbahayb-…` → Rules**, paste `firestore.rules`, then **Publish**. Until then:
    * new records stay on the device that created them;
    * the old public-read rules still apply on the server.
 2. **Enable Firebase Storage and deploy `storage.rules`** for file uploads. The rules read user roles from the project's named Firestore database. If cross-service rules are not supported for that database, uploads are refused and files can be attached as links instead.
