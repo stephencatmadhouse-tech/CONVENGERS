@@ -7,6 +7,9 @@ import React from 'react';
 import { User, SystemSettings, Collaborator } from '../types/index.ts';
 import { CollaboratorBar } from './CollaboratorBar.tsx';
 import { BrandLogo } from './BrandLogo.tsx';
+import { Settings2, Share2, SunMoon, PenLine, Printer, FileText, UserCog, Presentation, ShieldCheck, Hourglass } from 'lucide-react';
+
+const ico = { size: 15, strokeWidth: 2, 'aria-hidden': true } as const;
 
 interface ToolbarProps {
   user: User | null;
@@ -81,7 +84,19 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   };
 
   return (
-    <div className="toolbar">
+    <div className={`toolbar ${compact ? 'cb-toolbar' : ''}`}>
+      {compact && onOpenSettings && (
+        <button type="button" onClick={onOpenSettings} title="Backup, import, export, baseline, audit log and administration">
+          <Settings2 {...ico} /> Data & settings
+        </button>
+      )}
+      {compact && (
+        <>
+          <span className="cb-tver" id="tver">Version {settings.version}</span>
+          <span className="cb-site" title="Custom website address: www.ConvengersAssemble.com">www.ConvengersAssemble.com · Shared database</span>
+        </>
+      )}
+      {!compact && (
       <div className="flex items-center gap-2.5 mr-2">
         <BrandLogo variant="toolbar" />
         <b>CONVENGERS ASSEMBLE</b>
@@ -92,6 +107,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           www.ConvengersAssemble.com
         </span>
       </div>
+      )}
 
       {/* Google Sheets Live Collaborator Bar */}
       <CollaboratorBar
@@ -128,7 +144,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               className="flex items-center gap-1 border border-[#E0213B] bg-[#E0213B]/20 hover:bg-[#E0213B]/35 text-[var(--sx-text-13)] px-2.5 py-1.5 rounded-md font-bold text-xs shadow-sm transition-all"
               title="Open Admin User Management Panel to approve and assign roles"
             >
-              <span>⚙️</span>
+              <UserCog {...ico} />
               <span>Admin Panel</span>
             </button>
           )}
@@ -145,7 +161,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               }`}
               title="Temporarily hide all editing controls to present to clients without signing out"
             >
-              <span>👁️</span>
+              <Presentation {...ico} />
               <span>Presentation Mode: {isAdminPresentationMode ? 'ON' : 'OFF'}</span>
             </button>
           )}
@@ -165,7 +181,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             className="flex items-center gap-1.5 border border-[var(--sxa-border-2)] bg-[var(--sxa-bg-1)]/15 hover:bg-[var(--sxa-bg-1)]/25 text-[var(--sx-text-10)] px-2.5 py-1.5 rounded-md font-bold text-xs transition-all"
             title="Signed in as Pending Approval - click to check status or switch to Administrator account"
           >
-            <span>⏳ {user.name} (PENDING)</span>
+            <Hourglass {...ico} /><span>{user.name} (PENDING)</span>
           </button>
         </div>
       ) : (
@@ -183,7 +199,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             className="flex items-center gap-1 border border-[var(--sx-border-4)] bg-[var(--sx-bg-12)]/20 hover:bg-[var(--sx-bg-12)]/35 text-[#F5C518] px-2.5 py-1.5 rounded-md font-bold text-xs transition-all shadow-[0_0_8px_rgba(245,197,24,0.35)]"
             title="Sign in as a Madhouse team member or administrator"
           >
-            <span>🛡️ Admin Sign In</span>
+            <ShieldCheck {...ico} /><span>Admin Sign In</span>
           </button>
         </div>
       )}
@@ -191,11 +207,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       {extra}
 
       <button id="share" type="button" className="on" onClick={onOpenShare} title="Generate presentation or team links">
-        Share
+        <Share2 {...ico} /> Share
       </button>
 
       <button id="theme" type="button" onClick={onToggleTheme}>
-        Theme: {(themeLabel || settings.theme).charAt(0).toUpperCase() + (themeLabel || settings.theme).slice(1)}
+        <SunMoon {...ico} /> Theme: {(themeLabel || settings.theme).charAt(0).toUpperCase() + (themeLabel || settings.theme).slice(1)}
       </button>
 
       {/* In-browser text editing toggle - completely HIDDEN in viewer mode or admin presentation mode */}
@@ -207,7 +223,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           onClick={onToggleEditing}
           title="Toggle in-browser text editing"
         >
-          {isEditing ? 'Editing text: on' : 'Edit text: off'}
+          <PenLine {...ico} /> {isEditing ? 'Editing text: on' : 'Edit text: off'}
         </button>
       )}
 
@@ -236,18 +252,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       )}
 
       <button id="print" type="button" onClick={onPrintPdf}>
-        Print / save PDF
+        <Printer {...ico} /> Print / save PDF
       </button>
 
       <button id="pmrep" type="button" onClick={onPrintReport}>
-        Print report
+        <FileText {...ico} /> Print report
       </button>
-
-      {compact && onOpenSettings && (
-        <button type="button" onClick={onOpenSettings} title="Backup, import, export, baseline, audit log and administration">
-          Data & settings
-        </button>
-      )}
 
       {!compact && onDownloadHtml && (
         <button
@@ -296,10 +306,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         </button>
       )}
 
+      {!compact && (
       <span id="tver">
         Version {settings.version}
       </span>
-      <span className={`text-[12px] leading-tight ${compact ? 'hidden 2xl:inline' : ''}`}>
+      )}
+      <span className={`text-[12px] leading-tight ${compact ? 'hidden' : ''}`}>
         {user && user.role !== 'viewer' && user.role !== 'pending' && !isAdminPresentationMode
           ? `Madhouse ${user.role.toUpperCase()} Editor Active · Real-time sync.`
           : 'Viewing in presentation mode. Timeline cells, milestone statuses, and production dates are locked to prevent accidental edits.'}

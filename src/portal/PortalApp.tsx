@@ -9,6 +9,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { BrandHeader } from '../components/BrandHeader.tsx';
 import { User } from '../types/index.ts';
 import { portalStore } from '../firebase/opsStores.ts';
 import { useStore } from '../firebase/useStore.ts';
@@ -169,16 +170,9 @@ export const PortalApp: React.FC<{ user: User; mode: 'external' | 'preview' }> =
           <b>Internal preview of the Executive &amp; Client Portal.</b> External users see exactly this — only Published content.
         </div>
       )}
-      <header className="pt-header">
-        <div className="pt-header-in">
-          <div className="pt-brand">
-            <div>
-              <div className="pt-brand-name">Convengers Bahay Build</div>
-              <div className="pt-brand-sub">Executive &amp; Client Reporting Portal</div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <div className="pt-header pt-header-brand">
+        <BrandHeader subtitle="Executive & Client Reporting Portal" />
+      </div>
       <main className="pt-main">
         {!portal.loaded ? (
           <Empty>Loading published project information…</Empty>

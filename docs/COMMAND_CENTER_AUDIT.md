@@ -292,3 +292,12 @@ New sidebar pages (Operations group): **Executive Dashboard**, **Notifications**
 - Chart.js 4.4.1 loads from cdnjs; if unreachable, charts fall back to plain lists.
 - **Deploy the updated `firestore.rules`** (new `events` and `userPrefs` matches). Until then, read state, preferences and calendar entries are kept in the browser and flagged.
 - Code: `src/domain/notifications.ts`, `calendarEvents.ts`, `executive.ts`; `src/command/Notifications.tsx`, `ExecutiveDashboard.tsx`, `CalendarPage.tsx`, `charts.tsx`, `exec.css`; `src/firebase/userPrefsStore.ts`.
+
+## 10. Unified Convengers brand layer (reference-based redesign)
+
+Visual only — no data, calculations, schedules or modules changed.
+
+- **Branding header** (`src/components/BrandHeader.tsx`): purple band with the Convengers wordmark (cropped from the existing emblem), "Convengers Assemble / Bahay Build ///", "Project Management System" (portal: "Executive & Client Reporting Portal"), golden stripes. Hidden in print.
+- **Toolbar**: same existing controls, reordered (Data & settings, version, sync, user, admin, presentation, notifications, share, theme, edit, print) with one icon set (lucide).
+- **All modules** (`src/theme-brand.css`, loaded last): navy section titles with golden `///`, purple banner card headers, white KPI cards with navy figures, solid status badges (green completed · purple ongoing · red delayed · blue upcoming · gray on hold), clean table headers with alternating rows, consistent button heights. Light theme; the optional dark theme keeps working.
+- **Command Center**: solid status summary cards (green / purple / red / blue / navy / orange), yellow health-summary strip, management-attention cards showing status, schedule, workstream, owner and dependencies.

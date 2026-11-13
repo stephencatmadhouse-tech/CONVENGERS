@@ -23,6 +23,7 @@ import {
   ProjectReport,
 } from './types/index.ts';
 import { Toolbar } from './components/Toolbar.tsx';
+import { BrandHeader } from './components/BrandHeader.tsx';
 import { OverviewSlide } from './components/OverviewSlide.tsx';
 import { UpcomingActivitiesSlide } from './components/UpcomingActivitiesSlide.tsx';
 import { FloorScopeSlide } from './components/FloorScopeSlide.tsx';
@@ -1664,6 +1665,7 @@ export default function App() {
     <div className={isEditingText ? 'editing' : ''}>
       <CommandProvider value={commandState}>
       <NotificationsProvider>
+      <BrandHeader />
       {/* Sticky Toolbar */}
       <Toolbar
         extra={<NotificationBell />}

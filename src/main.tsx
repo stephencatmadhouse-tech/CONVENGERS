@@ -3,5 +3,6 @@ import Root from './Root.tsx';
 import './index.css';
 import './theme-palette.css';
 import './theme-status.css';
+import './theme-brand.css';
 
 createRoot(document.getElementById('root')!).render(<Root />);

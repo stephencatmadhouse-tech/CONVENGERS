@@ -6,7 +6,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { TrendingUp, Target, Activity, CalendarCheck, CalendarClock, Gauge, CircleCheck, Hourglass, CircleAlert, CalendarDays, ShieldAlert, Siren } from 'lucide-react';
+import { TrendingUp, Target, Activity, CalendarCheck, CalendarClock, Gauge, CircleCheck, Hourglass, CircleAlert, CalendarDays, ShieldAlert, Siren, User as UserIcon, ChevronRight } from 'lucide-react';
 import { useCommand } from './context.tsx';
 import { Card, Kpi, HealthBadge, StatusPill, ProgressBar, Empty, Pill, pct, kindColor, HEALTH_HEX, tintBg } from './ui.tsx';
 import { addDays, diffDays, fmtDate, fmtRange } from '../domain/dates.ts';
@@ -73,7 +73,7 @@ export const CommandCenter: React.FC = () => {
           </>
         }
       >
-        <div className="cv-kpis">
+        <div className="cv-kpis cc-hk">
           <Kpi
             icon={TrendingUp}
             label="Actual physical accomplishment"
@@ -122,13 +122,14 @@ export const CommandCenter: React.FC = () => {
             sub={m.paceCompletion ? 'Projection only: remaining time ÷ SPI' : 'Not computed (on/above plan or no plan yet)'}
           />
         </div>
-        <div className="cv-row" style={{ marginTop: 12, gap: 6 }}>
+        <div className="cc-chips">
           {m.healthReasons.map((r) => (
-            <span key={r} className="cv-chip" style={{ borderColor: HEALTH_HEX[m.health], color: 'inherit' }}>
+            <span key={r} className="cc-chip">
+              <i style={{ background: HEALTH_HEX[m.health] }} />
               {r}
             </span>
           ))}
-          <span className="cv-dim">Schedule elapsed {m.elapsedPct}% · Milestones {m.milestonesComplete}/{m.milestonesTotal} complete · Episodes {m.episodesCompleted}/{m.episodesTotal} completed</span>
+          <span className="cc-chip muted">Schedule elapsed {m.elapsedPct}% · Milestones {m.milestonesComplete}/{m.milestonesTotal} complete · Episodes {m.episodesCompleted}/{m.episodesTotal} completed</span>
         </div>
         {(!sharedStorage.reports || !sharedStorage.snapshots) && (
           <div className="cv-dim" style={{ marginTop: 8 }}>
@@ -138,32 +139,26 @@ export const CommandCenter: React.FC = () => {
       </Card>
 
       {/* Current operations */}
-      <div className="cv-kpis">
+      <div className="cc-stats">
         {[
-          { label: 'Completed', v: m.counts.completed, c: '#22A06B', f: 'Completed', i: CircleCheck },
-          { label: 'Ongoing', v: m.counts.ongoing, c: '#7026C8', f: 'Ongoing', i: Hourglass },
-          { label: 'Delayed', v: m.counts.delayed, c: '#E5484D', f: 'Delayed', i: CircleAlert },
-          { label: 'Upcoming (next 14 days)', v: ops.upcoming.length, c: '#A34FEA', f: 'Upcoming', i: CalendarDays },
-          { label: 'Open issues & risks', v: openIssues.length, c: '#A34FEA', f: '', i: ShieldAlert },
-          { label: 'Critical pending actions', v: attention.filter((a) => a.severity === 'critical').length, c: '#E5484D', f: '', i: Siren },
+          { label: 'Completed', v: m.counts.completed, c: 'green', f: 'Completed', i: CircleCheck },
+          { label: 'Ongoing', v: m.counts.ongoing, c: 'purple', f: 'Ongoing', i: Hourglass },
+          { label: 'Delayed', v: m.counts.delayed, c: 'red', f: 'Delayed', i: CircleAlert },
+          { label: 'Upcoming (next 14 days)', v: ops.upcoming.length, c: 'blue', f: 'Upcoming', i: CalendarDays },
+          { label: 'Open issues & risks', v: openIssues.length, c: 'navy', f: '', r: 'issues/log', i: ShieldAlert },
+          { label: 'Critical pending actions', v: attention.filter((a) => a.severity === 'critical').length, c: 'orange', f: '', r: 'issues/attention', i: Siren },
         ].map((k) => (
           <button
             type="button"
             key={k.label}
-            className="cv-kpi has-ico"
-            style={{ textAlign: 'left', cursor: 'pointer', color: 'inherit' }}
-            onClick={() => actions.navigate(k.f ? `tracker/register/status=${k.f}` : 'issues/attention')}
+            className={`cc-stat ${k.c}`}
+            onClick={() => actions.navigate(k.f ? `tracker/register/status=${k.f}` : k.r!)}
             title="Open the filtered list"
           >
-            <span className="cv-kpi-ico" style={{ color: k.c, background: tintBg(k.c) }} aria-hidden>
-              <k.i size={22} strokeWidth={1.9} />
-            </span>
-            <span style={{ minWidth: 0 }}>
-              <div className="cv-kpi-l">{k.label}</div>
-              <div className="cv-kpi-v" style={{ color: k.c }}>
-                {k.v}
-              </div>
-              <div className="cv-kpi-s">View list →</div>
+            <k.i className="cc-stat-ico" size={34} strokeWidth={1.8} aria-hidden />
+            <span className="cc-stat-b">
+              <span className="cc-stat-l">{k.label}</span>
+              <span className="cc-stat-v">{k.v}</span>
             </span>
           </button>
         ))}
@@ -181,28 +176,36 @@ export const CommandCenter: React.FC = () => {
           }
         >
           {topAttention.length ? (
-            <div className="cv-list">
-              {topAttention.map((a) => (
-                <button
-                  type="button"
-                  key={a.id}
-                  className="cv-li clickable"
-                  style={{ textAlign: 'left', color: 'inherit' }}
-                  onClick={() => (a.activityId ? actions.openActivity(a.activityId) : actions.navigate('issues/log'))}
-                >
-                  <span className="cv-sev" style={{ background: a.severity === 'critical' ? '#E5484D' : '#F5A623' }} />
-                  <div className="cv-li-main">
-                    <div className="cv-li-t">
-                      <span className="cv-chip" style={{ marginRight: 6 }}>
-                        {a.category}
-                      </span>
-                      {a.title}
-                    </div>
-                    <div className="cv-li-s">{a.detail}</div>
-                    <div className="cv-li-s">Owner: {a.owner || <b className="cv-late">Unassigned</b>}</div>
-                  </div>
-                </button>
-              ))}
+            <div className="cc-att-list">
+              {topAttention.map((a) => {
+                const act = a.activityId ? register.find((x) => x.id === a.activityId) : undefined;
+                const deps = act ? act.dependsOn.map((id) => register.find((x) => x.id === id)).filter(Boolean) : [];
+                const tone = a.category === 'Unassigned' ? 'warn' : a.severity === 'critical' ? 'crit' : 'high';
+                return (
+                  <button
+                    type="button"
+                    key={a.id}
+                    className={`cc-att ${tone}`}
+                    onClick={() => (a.activityId ? actions.openActivity(a.activityId) : actions.navigate('issues/log'))}
+                  >
+                    <span className="cc-att-top">
+                      <span className={`cc-att-tag ${tone}`}>{a.category}</span>
+                      <b className="cc-att-t">{a.title}</b>
+                    </span>
+                    <span className="cc-att-line">
+                      <CalendarDays size={14} aria-hidden />
+                      <span>{a.detail}</span>
+                      {act && <span className="cc-att-sep">Workstream: {act.workstream}</span>}
+                    </span>
+                    <span className="cc-att-line">
+                      <UserIcon size={14} aria-hidden />
+                      <span>Owner: {a.owner || <b className="cv-late">Unassigned</b>}</span>
+                      {deps.length > 0 && <span className="cc-att-sep">Dependency: {deps.map((d) => `${d!.name} (${d!.status})`).join('; ')}</span>}
+                    </span>
+                    <ChevronRight className="cc-att-go" size={16} aria-hidden />
+                  </button>
+                );
+              })}
             </div>
           ) : (
             <Empty>No critical or warning items. Everything recorded is on schedule.</Empty>

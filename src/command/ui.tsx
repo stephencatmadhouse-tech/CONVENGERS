@@ -7,6 +7,7 @@
 
 import React, { useEffect } from 'react';
 import type { LucideIcon } from 'lucide-react';
+import { TriangleAlert, CircleCheck, OctagonAlert } from 'lucide-react';
 import { HealthLevel } from '../domain/metrics.ts';
 import { STATUS_COLORS } from '../constants/assets.ts';
 
@@ -19,8 +20,8 @@ export const STATUS_HEX: Record<string, string> = {
   Completed: '#22A06B',
   Ongoing: '#7026C8',
   Delayed: '#E5484D',
-  Upcoming: '#9A9AA3',
-  'On Hold': '#C7C7D0',
+  Upcoming: '#2563EB',
+  'On Hold': '#8A8A99',
 };
 
 export const HEALTH_HEX: Record<HealthLevel, string> = {
@@ -74,28 +75,27 @@ export const Pill: React.FC<{ label: string; color?: string; title?: string }> =
 
 export const StatusPill: React.FC<{ status: string }> = ({ status }) => {
   const c = STATUS_HEX[status] || '#9A9AA3';
-  const solid = status === 'Delayed' || status === 'Completed' || status === 'Ongoing';
+  // Solid status badges (Convengers status language): green / purple / red / blue / gray
   return (
-    <span className="cv-pill" style={solid ? { background: c, color: '#fff', borderColor: c } : { background: tintBg(c), color: tintText(c), borderColor: `color-mix(in srgb, ${c} 45%, transparent)` }}>
+    <span className="cv-pill cv-status" style={{ background: c, color: '#fff', borderColor: c }}>
       {status}
     </span>
   );
 };
 
-export const HealthBadge: React.FC<{ level: HealthLevel; big?: boolean }> = ({ level, big }) => (
-  <span
-    className="cv-health"
-    style={{
-      color: level === 'At Risk' ? '#252336' : '#FFFFFF',
-      border: `1px solid ${level === 'At Risk' ? '#F5A623' : HEALTH_HEX[level]}`,
-      background: level === 'At Risk' ? '#F5A623' : HEALTH_HEX[level],
-      fontSize: big ? 16 : undefined,
-    }}
-    aria-label={`Project health: ${level}`}
-  >
-    <i /> {level}
-  </span>
-);
+export const HealthBadge: React.FC<{ level: HealthLevel; big?: boolean }> = ({ level, big }) => {
+  const Ico = level === 'On Track' ? CircleCheck : level === 'At Risk' ? TriangleAlert : OctagonAlert;
+  const bg = level === 'At Risk' ? '#FFC21A' : HEALTH_HEX[level];
+  return (
+    <span
+      className={`cv-health ${big ? 'big' : ''}`}
+      style={{ color: level === 'At Risk' ? '#1E1B4B' : '#FFFFFF', border: `1px solid ${bg}`, background: bg }}
+      aria-label={`Project health: ${level}`}
+    >
+      <Ico size={big ? 18 : 13} strokeWidth={2.4} aria-hidden /> {level}
+    </span>
+  );
+};
 
 export const Card: React.FC<{
   title?: React.ReactNode;
@@ -267,9 +267,11 @@ export function SectionHeader({
               ☰ Sections
             </button>
           )}
-          <span className="cv-kicker">{num} — Convengers Bahay Build</span>
+          <span className="cv-kicker">{num} – Convengers Bahay Build</span>
         </div>
-        <h1 className="cv-h1">{title}</h1>
+        <h1 className="cv-h1">
+          {title} <span className="cb-slashes" aria-hidden />
+        </h1>
         {sub && <div className="cv-sub">{sub}</div>}
       </div>
       {actions && <div className="cv-row">{actions}</div>}
