@@ -9,7 +9,7 @@
  *   to THIS BROWSER ONLY and are flagged `localOnly` so the UI can say so.
  */
 
-import { collection, doc, onSnapshot, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot, setDoc, deleteDoc, query, QueryConstraint } from 'firebase/firestore';
 import { db } from './config.ts';
 
 type Rec = { id: string; localOnly?: boolean; [k: string]: any };
@@ -56,7 +56,12 @@ export class CollectionStore<T extends { id: string }> {
   private listeners = new Set<(s: StoreState<T>) => void>();
   private unsub: (() => void) | null = null;
 
-  constructor(public readonly col: string, private sortFn?: (a: T, b: T) => number) {}
+  constructor(
+    public readonly col: string,
+    private sortFn?: (a: T, b: T) => number,
+    /** Optional query constraints (e.g. the public portal reads only public kinds). */
+    private constraints?: QueryConstraint[]
+  ) {}
 
   private lsKey() {
     return `convengers_cs_${this.col}`;
@@ -105,7 +110,7 @@ export class CollectionStore<T extends { id: string }> {
         }
       }, 8000);
       this.unsub = onSnapshot(
-        collection(db, this.col),
+        this.constraints?.length ? query(collection(db, this.col), ...this.constraints) : collection(db, this.col),
         { includeMetadataChanges: true },
         (snap) => {
           // A cache-only result (offline) is not confirmation that shared storage works

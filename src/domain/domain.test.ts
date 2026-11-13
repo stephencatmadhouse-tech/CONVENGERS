@@ -306,3 +306,49 @@ test('forecast: 60-day window, Monday weeks, counts are cumulative and no-owner 
   const past = buildForecast(items, TODAY, true);
   assert.equal(past.to, TODAY);
 });
+
+// ---------------- Client-first platform: roles, modules, portal tiers ----------------
+import { canOpenModule, landingModule, canReadPortalDocuments } from '../auth/roles.ts';
+import { PUBLIC_PORTAL_KINDS } from './portal.ts';
+import { readFileSync } from 'node:fs';
+
+const mkUser = (role: any, id = 'u1') => ({ id, name: 'U', email: 'u@example.com', role, status: 'active' as const, createdAt: '2026-01-01' });
+
+test('roles: internal users land on their dashboard and see only their modules', () => {
+  assert.equal(landingModule('admin'), 'command');
+  assert.equal(landingModule('manager'), 'command');
+  assert.equal(landingModule('engineer'), 'construction');
+  assert.equal(landingModule('production'), 'production');
+  assert.equal(landingModule('staff'), 'tracker');
+  assert.ok(canOpenModule('admin', 'finance') && canOpenModule('manager', 'publishing'));
+  assert.ok(!canOpenModule('engineer', 'finance') && !canOpenModule('engineer', 'production') && canOpenModule('engineer', 'procurement'));
+  assert.ok(!canOpenModule('production', 'construction') && canOpenModule('production', 'calendar'));
+  assert.ok(!canOpenModule('staff', 'finance') && !canOpenModule('staff', 'publishing'));
+  assert.ok(!canOpenModule('viewer', 'finance') && !canOpenModule('viewer', 'publishing'));
+  for (const r of ['owner', 'executive', 'client', 'stakeholder', 'pending'] as const) assert.ok(!canOpenModule(r, 'command'));
+});
+
+test('portal tiers: public sees dashboard content, Owner/Executive/internal also see documents', () => {
+  assert.ok(!PUBLIC_PORTAL_KINDS.includes('document'));
+  assert.equal(audienceOf({ ...mkUser('viewer'), id: 'viewer_guest' }), 'guest');
+  assert.ok(!canReadPortalDocuments({ ...mkUser('viewer'), id: 'viewer_guest' }));
+  assert.ok(!canReadPortalDocuments(mkUser('client')));
+  assert.ok(!canReadPortalDocuments(mkUser('stakeholder')));
+  assert.ok(canReadPortalDocuments(mkUser('owner')));
+  assert.ok(canReadPortalDocuments(mkUser('executive')));
+  assert.ok(canReadPortalDocuments(mkUser('engineer')));
+  assert.ok(!canReadPortalDocuments({ ...mkUser('owner'), status: 'pending' as any }));
+});
+
+test('firestore.rules public portal kinds match the app and internal collections stay private', () => {
+  const rules = readFileSync(new URL('../../firestore.rules', import.meta.url), 'utf8');
+  const m = rules.match(/match \/portal\/\{id\} \{\s*allow read: if resource\.data\.kind in \[([^\]]+)\]/);
+  assert.ok(m, 'portal read rule found');
+  const kinds = m![1].split(',').map((x) => x.trim().replace(/'/g, ''));
+  assert.deepEqual([...kinds].sort(), [...PUBLIC_PORTAL_KINDS].sort());
+  for (const col of ['procurement', 'documents', 'publications', 'events', 'reports', 'issues']) {
+    const block = rules.slice(rules.indexOf(`match /${col}/`));
+    const read = block.match(/allow read[^;]*;/)![0];
+    assert.ok(!/if true/.test(read), `${col} must not be public`);
+  }
+});

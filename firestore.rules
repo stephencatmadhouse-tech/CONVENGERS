@@ -88,6 +88,11 @@ service cloud.firestore {
         getUserRole() in ['owner', 'executive', 'client', 'stakeholder'];
     }
 
+    // Project Owner and Executives: client-facing dashboard + approved documents
+    function isPortalDocumentReader() {
+      return isSignedIn() && getUserStatus() == 'active' && getUserRole() in ['owner', 'executive'];
+    }
+
     // --- USERS COLLECTION ---
     // Only admin can read or write the users collection and change roles.
     // Self-registration: bootstrap Stephen as 'admin', anyone else is 'pending'.
@@ -267,8 +272,13 @@ service cloud.firestore {
     }
 
     // --- EXTERNAL PORTAL: sanitized, PUBLISHED content only ---
+    // Public client-facing dashboard: anyone (no sign-in) may read published
+    // records of the public kinds. Approved project documents ('document')
+    // are readable only by the Project Owner, Executives and internal users.
+    // Only Project Managers / Administrators publish (write).
     match /portal/{id} {
-      allow read: if isInternal() || isExternal();
+      allow read: if resource.data.kind in ['snapshot', 'report', 'photo', 'consideration', 'update']
+        || isInternal() || isPortalDocumentReader();
       allow write: if isManager();
     }
 

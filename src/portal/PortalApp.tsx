@@ -2,21 +2,25 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * EXECUTIVE & CLIENT PORTAL
+ * EXECUTIVE & CLIENT REPORTING PORTAL — the default, client-facing view.
  * Reads ONLY the `portal` collection — sanitized content that an authorized
  * internal user has Approved and Published. Nothing here is computed from
  * internal records, so unpublished or draft information can never appear.
+ *
+ * Tiers (enforced by firestore.rules):
+ *   public / client / stakeholder → published dashboard content (no documents)
+ *   project owner / executive / internal → + approved project documents
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { BrandHeader } from '../components/BrandHeader.tsx';
 import { User } from '../types/index.ts';
-import { portalStore } from '../firebase/opsStores.ts';
+import { portalStore, publicPortalStore } from '../firebase/opsStores.ts';
 import { useStore } from '../firebase/useStore.ts';
 import { authService } from '../firebase/authService.ts';
-import { ROLE_LABEL } from '../auth/roles.ts';
+import { ROLE_LABEL, audienceOf, canReadPortalDocuments, landingModule } from '../auth/roles.ts';
 import { LOGO_SVG } from '../constants/assets.ts';
-import { PortalRecord, PortalSnapshot, PortalReport, PortalReportRow, NOT_PROVIDED, fmtOrPending } from '../domain/portal.ts';
+import { PortalRecord, PortalSnapshot, PortalReport, PortalReportRow, NOT_PROVIDED, PUBLIC_PORTAL_KINDS, fmtOrPending } from '../domain/portal.ts';
 import { addDays, diffDays, fmtDate, fmtRange, monthLabel, todayIso } from '../domain/dates.ts';
 import {
   LayoutDashboard,
@@ -29,7 +33,8 @@ import {
   MessageSquareWarning,
   FileDown,
   LogOut,
-  ArrowLeft,
+  Lock,
+  ArrowRight,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -54,7 +59,7 @@ const TABS = [
   { id: 'weekly', label: 'Weekly Highlights' },
   { id: 'gallery', label: 'Progress Gallery' },
   { id: 'considerations', label: 'Major Considerations' },
-  { id: 'reports', label: 'Reports & Downloads' },
+  { id: 'reports', label: 'Reports & Documents' },
 ];
 
 const STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
@@ -110,12 +115,15 @@ const Bar: React.FC<{ value: number; planned?: number }> = ({ value, planned }) 
 
 const Empty: React.FC<{ children: React.ReactNode }> = ({ children }) => <div className="pt-empty">{children}</div>;
 
-export const PortalApp: React.FC<{ user: User; mode: 'external' | 'preview' }> = ({ user, mode }) => {
-  const portal = useStore(portalStore);
+export const PortalApp: React.FC<{ user: User; authReady: boolean; onLogin: () => void }> = ({ user, authReady, onLogin }) => {
+  const audience = audienceOf(user);
+  const internal = audience === 'internal';
+  const full = canReadPortalDocuments(user);
+  const portal = useStore(full ? portalStore : publicPortalStore);
   const [tab, param, go] = usePortalRoute();
 
   const byKind = useMemo(() => {
-    const items = portal.items.filter((r) => !r.localOnly || mode === 'preview');
+    const items = portal.items.filter((r) => (!r.localOnly || internal) && (full || PUBLIC_PORTAL_KINDS.includes(r.kind)));
     const sort = (a: PortalRecord, b: PortalRecord) => b.publishedAt.localeCompare(a.publishedAt);
     return {
       snapshot: items.filter((r) => r.kind === 'snapshot').sort(sort)[0],
@@ -125,10 +133,31 @@ export const PortalApp: React.FC<{ user: User; mode: 'external' | 'preview' }> =
       considerations: items.filter((r) => r.kind === 'consideration').sort(sort),
       updates: items.filter((r) => r.kind === 'update').sort((a, b) => (b.content?.date || '').localeCompare(a.content?.date || '')),
     };
-  }, [portal.items, mode]);
+  }, [portal.items, internal, full]);
 
   const snap = byKind.snapshot?.content as PortalSnapshot | undefined;
-  const ctx = { snap, snapRec: byKind.snapshot, ...byKind, go, param };
+  const ctx = { snap, snapRec: byKind.snapshot, ...byKind, go, param, full, onLogin };
+
+  // Small, secondary header controls (upper-right)
+  const headerRight = !authReady ? null : audience === 'guest' ? (
+    <button type="button" className="cb-login" onClick={onLogin} title="Internal login for authorized users">
+      <Lock size={13} strokeWidth={2.2} aria-hidden /> Internal Login
+    </button>
+  ) : (
+    <>
+      <span className="cb-user">
+        <b>{user.name}</b> · {audience === 'pending' ? (user.status === 'revoked' ? 'Access revoked' : 'Awaiting approval') : ROLE_LABEL[user.role]}
+      </span>
+      {internal && (
+        <a className="cb-login" href={`#/${landingModule(user.role)}`} title="Open the Convengers Overall Master Project Tracker">
+          Master Tracker <ArrowRight size={13} aria-hidden />
+        </a>
+      )}
+      <button type="button" className="cb-login" onClick={() => authService.signOut()}>
+        <LogOut size={13} aria-hidden /> Sign out
+      </button>
+    </>
+  );
 
   return (
     <div className="pt pt-layout">
@@ -139,6 +168,8 @@ export const PortalApp: React.FC<{ user: User; mode: 'external' | 'preview' }> =
             <div className="pt-side-name">Convengers</div>
             <div className="pt-side-sub">Bahay Build · Client Portal</div>
           </div>
+          {/* Phones: the brand header is hidden, so the discreet login sits here */}
+          {headerRight && <div className="pt-side-actions">{headerRight}</div>}
         </div>
         <nav className="pt-side-nav" aria-label="Portal sections">
           {TABS.map((t) => (
@@ -150,47 +181,29 @@ export const PortalApp: React.FC<{ user: User; mode: 'external' | 'preview' }> =
         </nav>
         <div className="pt-side-foot">
           <div className="pt-side-user">
-            <b>{user.name}</b>
-            <span>{ROLE_LABEL[user.role]}</span>
+            <b>Official project portal</b>
+            <span>Approved &amp; published information</span>
           </div>
-          {mode === 'external' ? (
-            <button type="button" className="pt-side-out" onClick={() => authService.signOut()}>
-              <LogOut size={16} aria-hidden /> Sign out
-            </button>
-          ) : (
-            <a className="pt-side-out" href="#/command">
-              <ArrowLeft size={16} aria-hidden /> Project Management System
-            </a>
-          )}
         </div>
       </aside>
       <div className="pt-body">
-      {mode === 'preview' && (
-        <div className="pt-preview pt-noprint">
-          <b>Internal preview of the Executive &amp; Client Portal.</b> External users see exactly this — only Published content.
-        </div>
-      )}
       <div className="pt-header pt-header-brand">
-        <BrandHeader subtitle="Executive & Client Reporting Portal" />
+        <BrandHeader subtitle="Executive & Client Reporting Portal" right={headerRight} />
       </div>
       <main className="pt-main">
         {!portal.loaded ? (
           <Empty>Loading published project information…</Empty>
         ) : portal.error === 'unreachable' && !portal.items.length ? (
           <Empty>The project database cannot be reached right now. Check your internet connection and refresh the page.</Empty>
-        ) : portal.error === 'permission-denied' && mode === 'external' ? (
-          <Empty>
-            The client portal could not be loaded because the server refused access. If your access was granted recently, sign out and sign in again;
-            otherwise please contact the project&apos;s System Administrator.
-          </Empty>
+        ) : portal.error === 'permission-denied' && !internal && !portal.items.length ? (
+          <Empty>Published project information is not available at the moment. Please check back later.</Empty>
         ) : (
           <>
-            {mode === 'preview' && portal.error === 'permission-denied' && (
+            {internal && portal.error === 'permission-denied' && (
               <div className="pt-note pt-noprint" style={{ borderLeftColor: '#F5A623', marginBottom: 16 }}>
                 <b>Shared portal storage is not active yet.</b> The database security rules on the server have not been updated, so the shared{' '}
-                <code>portal</code> collection cannot be read — by anyone, including administrators. Deploy the updated <code>firestore.rules</code> (see{' '}
-                <i>docs/COMMAND_CENTER_AUDIT.md</i>, section 8). Until then this preview shows only items published from this device, and external users
-                cannot see any published content.
+                <code>portal</code> collection cannot be read. Deploy the updated <code>firestore.rules</code> (see <i>docs/COMMAND_CENTER_AUDIT.md</i>). Until then
+                this view shows only items published from this device, and visitors cannot see any published content.
               </div>
             )}
             {tab === 'overview' && <Overview {...ctx} />}
@@ -225,6 +238,9 @@ type Ctx = {
   updates: PortalRecord[];
   go: (t: string, p?: string) => void;
   param?: string;
+  /** Owner / Executive / internal: approved documents are visible. */
+  full: boolean;
+  onLogin: () => void;
 };
 
 const NoSnapshot = () => (
@@ -826,9 +842,9 @@ const Considerations: React.FC<Ctx> = ({ considerations }) => (
   </div>
 );
 
-const Downloads: React.FC<Ctx> = ({ reports, documents, go }) => (
+const Downloads: React.FC<Ctx> = ({ reports, documents, go, full, onLogin }) => (
   <div className="pt-grid">
-    <h1 className="pt-h1">Reports &amp; downloads</h1>
+    <h1 className="pt-h1">Reports &amp; documents</h1>
     <div className="pt-card">
       <h2 className="pt-h2">Published reports</h2>
       {reports.length ? (
@@ -853,7 +869,15 @@ const Downloads: React.FC<Ctx> = ({ reports, documents, go }) => (
     </div>
     <div className="pt-card">
       <h2 className="pt-h2">Project documentation</h2>
-      {documents.length ? (
+      {!full ? (
+        <div className="pt-empty" style={{ textAlign: 'left' }}>
+          Approved project documents are available to the Project Owner and Executives.{' '}
+          <button type="button" className="pt-linkbtn" onClick={onLogin}>
+            Sign in
+          </button>{' '}
+          to view them.
+        </div>
+      ) : documents.length ? (
         <div className="pt-list">
           {documents.map((d) => (
             <div key={d.id} className="pt-li">

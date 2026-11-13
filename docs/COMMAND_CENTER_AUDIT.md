@@ -303,3 +303,22 @@ Visual only — no data, calculations, schedules or modules changed.
 - **Command Center**: solid status summary cards (green / purple / red / blue / navy / orange), yellow health-summary strip, management-attention cards showing status, schedule, workstream, owner and dependencies.
 
 - Update: the branding header uses the same deep indigo palette as the left side panel (internal system and portal); all golden diagonal stripes and `///` accents were removed.
+
+## 10. Client-first platform — portal is the default view
+
+| Step | Behaviour |
+|---|---|
+| Open the website | Everyone (no sign-in) sees the **Executive & Client Reporting Portal** — published, approved content only |
+| Header | Small **Internal Login** link (upper-right; in the top bar on phones) |
+| After login | Internal roles go to their dashboard: Admin / Project Manager → Command Center · Site Engineer → Construction · Production Coordinator → Production · Team member → Master Tracker. External roles stay on the portal |
+| Internal URL without access | Guests are returned to the portal with the login dialog; external accounts are returned to the portal |
+| Sign out | Returns to the public portal |
+
+Access (server-enforced in `firestore.rules`):
+
+- **Public / Client / Stakeholder** — portal records of kinds `snapshot`, `report`, `photo`, `consideration`, `update`.
+- **Project Owner / Executive** — the above + approved project documents (`document`).
+- **Internal roles** — Master Project Tracker; every internal collection remains `isInternal()` (finance: manager only).
+- Module navigation per internal role: `allowedModules()` in `src/auth/roles.ts`.
+
+**Deploy `firestore.rules`** — until then visitors cannot read the portal (they see "not available at the moment").

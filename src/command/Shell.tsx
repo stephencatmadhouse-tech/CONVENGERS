@@ -31,7 +31,7 @@ import {
   CalendarDays,
   type LucideIcon,
 } from 'lucide-react';
-import { ROLE_LABEL } from '../auth/roles.ts';
+import { ROLE_LABEL, canOpenModule, landingModule } from '../auth/roles.ts';
 import { Procurement, Manpower } from './Operations.tsx';
 import { Finance } from './Finance.tsx';
 import { Documents } from './Documents.tsx';
@@ -333,7 +333,15 @@ export function useHashRoute() {
 export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; renderDeck: () => React.ReactNode }> = ({ renderSlide, renderDeck }) => {
   const { route, actions, attention, user, metrics } = useCommand();
   const [navOpen, setNavOpen] = useState(false);
-  const section = SECTIONS.find((s) => s.id === route.section) || SECTIONS[0];
+  // Modules available to this role (navigation level; data is protected server-side)
+  const visible = SECTIONS.filter((s) => canOpenModule(user.role, s.id));
+  const allowed = canOpenModule(user.role, route.section);
+  const home = landingModule(user.role);
+  const section = (allowed ? SECTIONS.find((s) => s.id === route.section) : undefined) || SECTIONS.find((s) => s.id === home) || visible[0] || SECTIONS[0];
+
+  useEffect(() => {
+    if (!allowed) window.location.replace(`#/${home}`);
+  }, [allowed, home]);
   const tab = section.tabs ? section.tabs.find((t) => t.id === route.tab) || section.tabs[0] : undefined;
 
   useEffect(() => {
@@ -395,9 +403,9 @@ export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; re
       <div className="cv-backdrop" onClick={() => setNavOpen(false)} />
       <nav className="cv-sidebar" aria-label="Command Center sections">
         <div className="cv-side-title">Project Management System</div>
-        {SECTIONS.map((s, i) => (
+        {visible.map((s, i) => (
           <React.Fragment key={s.id}>
-          {s.group !== SECTIONS[i - 1]?.group && <div className="cv-side-group">{s.group}</div>}
+          {s.group !== visible[i - 1]?.group && <div className="cv-side-group">{s.group}</div>}
           <button
             key={s.id}
             type="button"
@@ -415,7 +423,7 @@ export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; re
         ))}
         <a className="cv-nav-btn cv-portal-link" href="#/portal/overview">
           <ExternalLink size={18} strokeWidth={1.9} className="cv-nav-ico" aria-hidden />
-          <span className="cv-nav-label">Preview client portal</span>
+          <span className="cv-nav-label">Client portal (public view)</span>
         </a>
         <div className="cv-side-foot">
           <div>

@@ -12,6 +12,7 @@
  *   portal — ONLY sanitized, approved & published content is ever written here.
  */
 
+import { where } from 'firebase/firestore';
 import { CollectionStore } from './collectionStore.ts';
 import {
   ProcurementItem,
@@ -22,7 +23,7 @@ import {
   Publication,
   CalendarEvent,
 } from '../types/index.ts';
-import type { PortalRecord } from '../domain/portal.ts';
+import { PUBLIC_PORTAL_KINDS, type PortalRecord } from '../domain/portal.ts';
 
 const byDateDesc = (k: string) => (a: any, b: any) => String(b[k] || '').localeCompare(String(a[k] || ''));
 
@@ -37,6 +38,8 @@ export const publicationStore = new CollectionStore<Publication>('publications',
 /** Manually added calendar entries (server rules: internal read; admin / manager write). */
 export const eventStore = new CollectionStore<CalendarEvent>('events', (a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
 export const portalStore = new CollectionStore<PortalRecord>('portal', byDateDesc('publishedAt'));
+/** Public client-facing dashboard: published records of the public kinds only (readable without sign-in). */
+export const publicPortalStore = new CollectionStore<PortalRecord>('portal', byDateDesc('publishedAt'), [where('kind', 'in', PUBLIC_PORTAL_KINDS)]);
 
 export const INTERNAL_STORES = [procurementStore, manpowerStore, documentStore, publicationStore, eventStore];
 export const FINANCE_STORES = [budgetStore, expenseStore];

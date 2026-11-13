@@ -14,6 +14,8 @@ interface AuthModalProps {
   onGoogleLogin?: () => Promise<void>;
   onLogout: () => Promise<void>;
   onOpenAdminPanel?: () => void;
+  /** Optional context line (e.g. why sign-in is needed). */
+  note?: string;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -24,6 +26,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onGoogleLogin,
   onLogout,
   onOpenAdminPanel,
+  note,
 }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
@@ -60,10 +63,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className="shhead">
           <div>
             <h2 className="text-lg font-bold text-[var(--sx-ink)] flex items-center gap-2">
-              <span>🛡️</span> Madhouse Team Access Portal
+              <span>🔒</span> Internal Login
             </h2>
             <div className="text-xs text-[var(--sx-text-2)]">
-              Secure Firebase Authentication &amp; Role-Based Access Control
+              {note || 'Authorized Convengers team members, project owners and executives. Access is granted by the System Administrator.'}
             </div>
           </div>
           <button type="button" className="shx" onClick={onClose}>

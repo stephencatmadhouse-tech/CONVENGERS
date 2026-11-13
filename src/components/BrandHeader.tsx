@@ -9,7 +9,7 @@
 import React from 'react';
 import wordmarkUrl from '../assets/images/convengers_wordmark.jpg';
 
-export const BrandHeader: React.FC<{ subtitle?: string }> = ({ subtitle = 'Project Management System' }) => (
+export const BrandHeader: React.FC<{ subtitle?: string; right?: React.ReactNode }> = ({ subtitle = 'Project Management System', right }) => (
   <header className="cb-brand" role="banner">
     <div className="cb-brand-mark">
       <img src={wordmarkUrl} alt="Convengers — Construction Multiverse" width={232} height={108} />
@@ -22,5 +22,6 @@ export const BrandHeader: React.FC<{ subtitle?: string }> = ({ subtitle = 'Proje
       </div>
       <div className="cb-brand-l3">{subtitle}</div>
     </div>
+    {right && <div className="cb-brand-right">{right}</div>}
   </header>
 );

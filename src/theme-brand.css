@@ -650,3 +650,57 @@ html:not([data-eff='dark']) .cv-btn.sm:not(.primary):not(.danger) {
     display: none !important;
   }
 }
+
+/* ---------- Header actions (discreet internal login) ---------- */
+.cb-brand-right {
+  position: relative;
+  z-index: 2;
+  margin-left: auto;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.cb-login,
+a.cb-login {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  font: 600 12px 'Barlow', sans-serif;
+  letter-spacing: 0.3px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.cb-login:hover,
+.cb-login:focus-visible {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+}
+.cb-login:focus-visible {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
+}
+.cb-user {
+  color: rgba(255, 255, 255, 0.72);
+  font: 500 12px 'Barlow', sans-serif;
+  white-space: nowrap;
+}
+.cb-user b {
+  color: #fff;
+  font-weight: 700;
+}
+@media (max-width: 760px) {
+  .cb-brand-right {
+    gap: 2px;
+  }
+  .cb-user {
+    display: none;
+  }
+}
