@@ -21,7 +21,7 @@ import { buildAlignment } from './alignment.ts';
 import { buildAttention, buildOutlook } from './attention.ts';
 import { buildWeeklyContent, buildMonthlyContent, reportToCsv } from './reports.ts';
 import { validateActivityEdit, findDuplicates, dataHealthCheck, makeSnapshot } from './validation.ts';
-import { weekRange, monthRange, toScopeDateText } from './dates.ts';
+import { weekRange, monthRange, toScopeDateText, addDays } from './dates.ts';
 import { parseDateWindow, toIsoDate } from '../utils/calculations.ts';
 
 const TODAY = '2026-11-12';
@@ -223,4 +223,86 @@ test('role routing: guests, pending, internal and external audiences', () => {
   assert.equal(audienceOf(u('viewer')), 'internal');
   assert.equal(audienceOf(u('owner')), 'external');
   assert.equal(audienceOf(u('executive')), 'external');
+});
+
+// ---------------- Notifications, executive dashboard, calendar forecast ----------------
+import { buildNotifications, notifScope, isAssignedTo } from './notifications.ts';
+import { buildCalendar, buildForecast } from './calendarEvents.ts';
+import { execKpis, streamHealth, ownerPerformance } from './executive.ts';
+import { manilaIso, todayIso as todayManila } from './dates.ts';
+
+const reg2 = () => buildRegister(input, TODAY);
+const admin = { name: 'Stephen', email: 'stephen@example.com', role: 'admin' as const };
+
+test('dates: "today" is the Asia/Manila calendar date and weeks start on Monday', () => {
+  // 2026-11-12 17:30 UTC is already Nov 13 in Manila (UTC+8)
+  assert.equal(manilaIso(new Date('2026-11-12T17:30:00Z')), '2026-11-13');
+  assert.equal(todayManila(new Date('2026-11-12T15:59:00Z')), '2026-11-12');
+  assert.equal(weekRange('2026-11-15').start, '2026-11-09'); // Sunday → previous Monday
+});
+
+test('notifications: milestone due today is MEDIUM "due", overdue milestone is CRITICAL', () => {
+  const r = reg2();
+  const target = r.find((x) => x.kind === 'milestone' && x.status !== 'Completed' && x.finish && x.finish > TODAY)!;
+  const dueToday = buildNotifications({ register: r, viewer: admin, today: target.finish! });
+  const due = dueToday.find((n) => n.type === 'due' && n.activityId === target.id)!;
+  assert.ok(due, 'due-today notification exists');
+  assert.equal(due.priority, 'MEDIUM');
+  assert.match(due.detail, /Due today/);
+
+  const later = buildNotifications({ register: buildRegister(input, addDays(target.finish!, 2)), viewer: admin, today: addDays(target.finish!, 2) });
+  const over = later.find((n) => n.type === 'overdue' && n.activityId === target.id)!;
+  assert.ok(over, 'overdue notification exists');
+  assert.equal(over.priority, 'CRITICAL');
+  // Critical items sort first
+  assert.equal(later[0].priority, 'CRITICAL');
+});
+
+test('notifications: preferences switch types off and set the lead time', () => {
+  const r = reg2();
+  const all = buildNotifications({ register: r, viewer: admin, today: TODAY, prefs: { off: {}, leadDays: 30 } });
+  const none = buildNotifications({ register: r, viewer: admin, today: TODAY, prefs: { off: { due: true }, leadDays: 30 } });
+  assert.ok(all.some((n) => n.type === 'due'));
+  assert.ok(!none.some((n) => n.type === 'due'));
+  const short = buildNotifications({ register: r, viewer: admin, today: TODAY, prefs: { off: {}, leadDays: 0 } });
+  assert.ok(short.filter((n) => n.type === 'due').length <= all.filter((n) => n.type === 'due').length);
+});
+
+test('notifications: role scope — viewer read-only sees project items, staff only assigned items', () => {
+  const r = reg2();
+  assert.equal(notifScope('viewer'), 'readonly');
+  assert.equal(notifScope('staff'), 'assigned');
+  assert.equal(notifScope('manager'), 'all');
+  const viewer = buildNotifications({ register: r, viewer: { name: 'Guest Viewer', email: 'v@example.com', role: 'viewer' }, today: TODAY });
+  const adminList = buildNotifications({ register: r, viewer: admin, today: TODAY });
+  assert.equal(viewer.filter((n) => n.activityId).length, adminList.filter((n) => n.activityId).length);
+  const staff = buildNotifications({ register: r, viewer: { name: 'Richard Santos', email: 'rs@example.com', role: 'engineer' }, today: TODAY });
+  assert.ok(staff.every((n) => !n.activityId || isAssignedTo(r.find((x) => x.id === n.activityId)!, { name: 'Richard Santos', email: 'rs@example.com', role: 'engineer' })));
+  const nobody = buildNotifications({ register: r, viewer: { name: 'Zed Q', email: 'zq@example.com', role: 'staff' }, today: TODAY });
+  assert.equal(nobody.length, 0);
+});
+
+test('empty project: dashboard, notifications and forecast handle no records', () => {
+  assert.deepEqual(buildNotifications({ register: [], viewer: admin, today: TODAY }), []);
+  const k = execKpis([], TODAY);
+  assert.equal(k.activeStreams.length, 0);
+  assert.equal(k.onTime.pct, null);
+  assert.deepEqual(streamHealth([], TODAY), []);
+  assert.deepEqual(ownerPerformance([], TODAY), []);
+  const f = buildForecast(buildCalendar({ register: [], today: TODAY }), TODAY);
+  assert.equal(f.counts.d60, 0);
+  assert.equal(f.weeks.length, 9);
+  assert.ok(f.weeks.every((w) => !w.overloaded));
+});
+
+test('forecast: 60-day window, Monday weeks, counts are cumulative and no-owner items flagged', () => {
+  const items = buildCalendar({ register: reg2(), today: TODAY });
+  const f = buildForecast(items, TODAY);
+  assert.ok(f.counts.d7 <= f.counts.d14 && f.counts.d14 <= f.counts.d30 && f.counts.d30 <= f.counts.d60);
+  f.weeks.forEach((w) => assert.equal(new Date(w.start + 'T00:00:00').getDay(), 1));
+  const grouped = f.groups.reduce((a, g) => a + g.items.length, 0);
+  assert.equal(grouped, f.counts.d60);
+  assert.ok(f.noOwner.every((i) => !i.owner));
+  const past = buildForecast(items, TODAY, true);
+  assert.equal(past.to, TODAY);
 });

@@ -63,6 +63,7 @@ import { sanitizeReport } from './domain/portal.ts';
 import { portalStore, procurementStore, manpowerStore, documentStore, publicationStore, budgetStore, expenseStore } from './firebase/opsStores.ts';
 import { Shell, SlideKey, useHashRoute } from './command/Shell.tsx';
 import { ActivityEditor } from './command/ActivityEditor.tsx';
+import { NotificationsProvider, NotificationBell } from './command/Notifications.tsx';
 import { ConfirmDialog } from './command/ui.tsx';
 import './command/command.css';
 
@@ -1661,8 +1662,11 @@ export default function App() {
 
   return (
     <div className={isEditingText ? 'editing' : ''}>
+      <CommandProvider value={commandState}>
+      <NotificationsProvider>
       {/* Sticky Toolbar */}
       <Toolbar
+        extra={<NotificationBell />}
         user={user}
         settings={data.settings}
         isEditing={isEditingText}
@@ -1705,10 +1709,10 @@ export default function App() {
         }}
       />
 
-      <CommandProvider value={commandState}>
         <Shell renderSlide={renderSlide} renderDeck={renderDeck} />
         {openActivity && <ActivityEditor key={openActivity.id} activity={openActivity} onClose={() => setOpenActivityId(null)} />}
         {printNode && createPortal(<div id="cv-print-root">{printNode}</div>, document.body)}
+      </NotificationsProvider>
       </CommandProvider>
 
       {/* Printable Report View (shown during Print Report) */}

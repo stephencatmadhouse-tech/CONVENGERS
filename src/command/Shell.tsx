@@ -26,6 +26,9 @@ import {
   FolderOpen,
   Send,
   ExternalLink,
+  Gauge,
+  Bell,
+  CalendarDays,
   type LucideIcon,
 } from 'lucide-react';
 import { ROLE_LABEL } from '../auth/roles.ts';
@@ -46,6 +49,9 @@ import { Analytics, Forecast } from './Analytics.tsx';
 import { AttentionList, IssueLog, Accountability } from './Issues.tsx';
 import { Archive } from './Archive.tsx';
 import { Settings } from './Settings.tsx';
+import { ExecutiveDashboard } from './ExecutiveDashboard.tsx';
+import { NotificationsPage, useNotifications } from './Notifications.tsx';
+import { CalendarPage } from './CalendarPage.tsx';
 
 export type SlideKey = 'overview' | 'upcoming' | 'gf' | '2f' | '3f' | 'pours' | 'production' | 'episodes' | 'master' | 'methodology' | 'watch' | 'notes';
 
@@ -66,6 +72,33 @@ interface Section {
 }
 
 const RAW_SECTIONS: Section[] = [
+  {
+    id: 'executive',
+    num: '00',
+    label: 'Executive Dashboard',
+    title: 'Executive Dashboard',
+    sub: 'Key figures for management: active workstreams, progress, overdue and upcoming targets, project health, milestones, team performance and the 60-day forecast.',
+  },
+  {
+    id: 'notifications',
+    num: '00',
+    label: 'Notifications',
+    title: 'Notifications',
+    sub: 'Overdue and upcoming targets, missing owners, blocked items, recent changes, pending verifications, handover and new documents — derived from the project records.',
+  },
+  {
+    id: 'calendar',
+    num: '00',
+    label: 'Calendar',
+    title: 'Project Calendar',
+    sub: 'Milestones, construction targets, concrete pours, production dates, inspections, deliveries, handover and calendar entries — with the 60-day forecast.',
+    tabs: [
+      { id: 'agenda', label: 'Agenda · 60-day forecast' },
+      { id: 'month', label: 'Month' },
+      { id: 'week', label: 'Week' },
+      { id: 'day', label: 'Day' },
+    ],
+  },
   {
     id: 'procurement',
     num: '00',
@@ -233,6 +266,9 @@ const RAW_SECTIONS: Section[] = [
 /** Navigation order and grouping (numbers follow this order). */
 const ORDER: [string, string][] = [
   ['command', 'Operations'],
+  ['executive', 'Operations'],
+  ['notifications', 'Operations'],
+  ['calendar', 'Operations'],
   ['tracker', 'Operations'],
   ['construction', 'Operations'],
   ['production', 'Operations'],
@@ -272,6 +308,9 @@ const ICONS: Record<string, LucideIcon> = {
   finance: Wallet,
   documents: FolderOpen,
   publishing: Send,
+  executive: Gauge,
+  notifications: Bell,
+  calendar: CalendarDays,
 };
 
 export function parseRoute(hash: string): { section: string; tab?: string; param?: string } {
@@ -303,12 +342,19 @@ export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; re
   }, [route.section, route.tab]);
 
   const critical = attention.filter((a) => a.severity === 'critical').length;
+  const { unread } = useNotifications();
 
   const body = (() => {
     if (tab?.slide) return <div className="cv-slidehost">{renderSlide(tab.slide)}</div>;
     switch (section.id) {
       case 'command':
         return <CommandCenter />;
+      case 'executive':
+        return <ExecutiveDashboard />;
+      case 'notifications':
+        return <NotificationsPage />;
+      case 'calendar':
+        return <CalendarPage view={tab?.id} param={route.param} />;
       case 'overview':
         return <div className="cv-slidehost">{renderDeck()}</div>;
       case 'tracker':
@@ -363,6 +409,7 @@ export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; re
             <span className="cv-nav-label">{s.label}</span>
             <span className="cv-nav-num">{s.num}</span>
             {s.id === 'issues' && critical > 0 && <span className="cv-nav-badge" title="Critical attention items">{critical}</span>}
+            {s.id === 'notifications' && unread > 0 && <span className="cv-nav-badge" title="Unread notifications">{unread > 99 ? '99+' : unread}</span>}
           </button>
           </React.Fragment>
         ))}

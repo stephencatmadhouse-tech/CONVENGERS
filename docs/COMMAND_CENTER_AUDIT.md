@@ -276,3 +276,19 @@ Procurement & Materials (with delayed-delivery detection), Manpower schedules, B
 
 * The original seed project data (`src/db/seedData.ts`) is bundled in the app's JavaScript for the baseline-reset feature. Anyone who downloads the app files can read that seed snapshot. Live data is protected by the rules. Remove the seed import from the client bundle if that snapshot is confidential.
 * Concurrent edits to the same field: last save wins (the audit log shows who changed what).
+
+## 9. Notifications, Executive Dashboard and Calendar (60-day forecast)
+
+New sidebar pages (Operations group): **Executive Dashboard**, **Notifications**, **Calendar**; bell with unread badge in the top bar.
+
+| Part | Source data | Stored |
+|---|---|---|
+| Notifications (8 rules) | master register, reports, publications, documents, calendar entries | only each user's read keys + preferences in `userPrefs/{uid}` |
+| Executive Dashboard | master register (per workstream), notifications, calendar | nothing |
+| Calendar / 60-day forecast | register milestones, scope start/target, pours, episodes, procurement deliveries, manual entries | manual entries in `events` |
+
+- All "today" comparisons use **Asia/Manila** (`manilaIso` / `todayIso` in `src/domain/dates.ts`); weeks start Monday.
+- Roles: Admin/Manager see everything and manage calendar entries; Engineer/Production/Staff see notifications only for activities where they are owner/supporting; Viewer gets project notifications read-only.
+- Chart.js 4.4.1 loads from cdnjs; if unreachable, charts fall back to plain lists.
+- **Deploy the updated `firestore.rules`** (new `events` and `userPrefs` matches). Until then, read state, preferences and calendar entries are kept in the browser and flagged.
+- Code: `src/domain/notifications.ts`, `calendarEvents.ts`, `executive.ts`; `src/command/Notifications.tsx`, `ExecutiveDashboard.tsx`, `CalendarPage.tsx`, `charts.tsx`, `exec.css`; `src/firebase/userPrefsStore.ts`.

@@ -17,8 +17,38 @@ export function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
+/** Project time zone: every "today", due-date and calendar comparison uses Manila time. */
+export const PROJECT_TZ = 'Asia/Manila';
+
+/** Calendar date (YYYY-MM-DD) of an instant in Asia/Manila, regardless of the device's time zone. */
+export function manilaIso(at: Date = new Date()): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: PROJECT_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(at);
+    const get = (t: string) => parts.find((p) => p.type === t)?.value || '';
+    const iso = `${get('year')}-${get('month')}-${get('day')}`;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+  } catch {
+    // Intl time-zone data unavailable — fall back to the device calendar date
+  }
+  return toIsoDate(startOfDay(at));
+}
+
+/** Today's date in Asia/Manila. */
 export function todayIso(now: Date = new Date()): string {
-  return toIsoDate(startOfDay(now));
+  return manilaIso(now);
+}
+
+/** Date part (Manila) of an ISO timestamp such as `2026-11-13T02:15:00.000Z`. */
+export function isoDateOf(ts?: string): string | undefined {
+  if (!ts) return undefined;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(ts)) return ts;
+  const d = new Date(ts);
+  return isNaN(d.getTime()) ? undefined : manilaIso(d);
+}
+
+/** Whole calendar days from a to b (alias of diffDays, positive when b is later). */
+export function daysBetween(aIso: string, bIso: string): number {
+  return diffDays(aIso, bIso);
 }
 
 export function addDays(iso: string, days: number): string {

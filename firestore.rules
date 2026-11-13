@@ -272,6 +272,21 @@ service cloud.firestore {
       allow write: if isManager();
     }
 
+    // --- CALENDAR: manually added entries (inspections, site visits, deliveries, handover) ---
+    match /events/{id} {
+      allow read: if isInternal();
+      allow create, update: if isManager() && isValidId(id) && incoming().id == id
+        && incoming().date is string && incoming().title is string;
+      allow delete: if isManager();
+    }
+
+    // --- PER-USER NOTIFICATION STATE: read keys + preferences, own document only ---
+    match /userPrefs/{uid} {
+      allow read: if isCurrentUser(uid) && isInternal();
+      allow create, update: if isCurrentUser(uid) && isInternal()
+        && incoming().readKeys is list && incoming().readKeys.size() <= 1000;
+    }
+
     // --- AUDIT LOGS ---
     match /auditLogs/{logId} {
       allow read: if isAdmin();

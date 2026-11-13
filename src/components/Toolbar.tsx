@@ -33,6 +33,8 @@ interface ToolbarProps {
   compact?: boolean;
   themeLabel?: string;
   onOpenSettings?: () => void;
+  /** Extra controls rendered before Share (e.g. the notification bell). */
+  extra?: React.ReactNode;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -59,6 +61,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   compact = false,
   themeLabel,
   onOpenSettings,
+  extra,
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -184,6 +187,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           </button>
         </div>
       )}
+
+      {extra}
 
       <button id="share" type="button" className="on" onClick={onOpenShare} title="Generate presentation or team links">
         Share

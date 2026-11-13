@@ -20,6 +20,7 @@ import {
   Expense,
   ProjectDocument,
   Publication,
+  CalendarEvent,
 } from '../types/index.ts';
 import type { PortalRecord } from '../domain/portal.ts';
 
@@ -33,7 +34,9 @@ export const budgetStore = new CollectionStore<BudgetLine>('budget', (a, b) => a
 export const expenseStore = new CollectionStore<Expense>('expenses', byDateDesc('date'));
 export const documentStore = new CollectionStore<ProjectDocument>('documents', byDateDesc('date'));
 export const publicationStore = new CollectionStore<Publication>('publications', byDateDesc('updatedAt'));
+/** Manually added calendar entries (server rules: internal read; admin / manager write). */
+export const eventStore = new CollectionStore<CalendarEvent>('events', (a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
 export const portalStore = new CollectionStore<PortalRecord>('portal', byDateDesc('publishedAt'));
 
-export const INTERNAL_STORES = [procurementStore, manpowerStore, documentStore, publicationStore];
+export const INTERNAL_STORES = [procurementStore, manpowerStore, documentStore, publicationStore, eventStore];
 export const FINANCE_STORES = [budgetStore, expenseStore];

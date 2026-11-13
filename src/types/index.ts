@@ -501,3 +501,53 @@ export interface Publication {
   updatedBy: string;
   localOnly?: boolean;
 }
+
+// ===================== Calendar events & notifications =====================
+
+/** Manually added calendar entries (inspections, site visits, deliveries, handover, meetings). */
+export type CalendarEventType = 'Inspection' | 'Site visit' | 'Delivery' | 'Handover / turnover' | 'Meeting' | 'Other';
+
+export interface CalendarEvent {
+  id: string;
+  date: string; // YYYY-MM-DD (Asia/Manila)
+  endDate?: string;
+  time?: string; // HH:MM
+  type: CalendarEventType;
+  title: string;
+  notes?: string;
+  owner?: string;
+  linkedActivityId?: string;
+  done: boolean;
+  doneAt?: string;
+  doneBy?: string;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+  updatedBy: string;
+  localOnly?: boolean;
+}
+
+export type NotificationType =
+  | 'overdue'
+  | 'due'
+  | 'unassigned'
+  | 'blocked'
+  | 'changed'
+  | 'verification'
+  | 'turnover'
+  | 'document';
+
+export interface NotificationPrefs {
+  /** Notification types this user has switched off. */
+  off: Partial<Record<NotificationType, boolean>>;
+  /** Lead time (days) for "due soon" notifications. */
+  leadDays: number;
+}
+
+/** Per-user notification state (read keys + preferences). */
+export interface UserNotificationState {
+  readKeys: string[];
+  prefs: NotificationPrefs;
+  updatedAt?: string;
+  localOnly?: boolean;
+}
