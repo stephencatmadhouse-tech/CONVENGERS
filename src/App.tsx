@@ -293,7 +293,12 @@ export default function App() {
         .stage > div + div { break-before: page !important; page-break-before: always !important; }
         .stage > div:last-child { break-after: auto !important; page-break-after: auto !important; }
         .wrap { display: block !important; position: relative !important; width: ${Math.floor(paper.width)}px !important; height: ${Math.floor(paper.height) - 2}px !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; break-inside: avoid !important; page-break-inside: avoid !important; }
-        .slide { position: absolute !important; left: ${offsetX}px !important; top: ${offsetY}px !important; transform: scale(${k}) !important; transform-origin: 0 0 !important; margin: 0 !important; }
+        /* zoom (not transform) so Chrome lays the slide out at page size and does not drop
+           the parts of a 1920x1280 slide that fall past the first page height */
+        .slide { position: absolute !important; left: ${(offsetX / k).toFixed(2)}px !important; top: ${(offsetY / k).toFixed(2)}px !important; transform: none !important; zoom: ${k} !important; margin: 0 !important; }
+        /* only the slides: no app chrome (section heading, tabs, sidebar, brand header) */
+        .cv-sec-head, .cv-tabs, .cv-sidebar, .cb-brand, .cv-portal-link { display: none !important; }
+        .cv-shell, .cv-main { display: block !important; padding: 0 !important; margin: 0 !important; min-height: 0 !important; }
       }
     `;
   }, [data?.settings?.paper, uiTheme, isPrintingReport, printNode]);
@@ -1716,7 +1721,7 @@ export default function App() {
       </CommandProvider>
 
       {/* Printable Report View (shown during Print Report) */}
-      <PrintReport data={data} />
+      <PrintReport data={data} register={register} metrics={metrics} attention={attention} today={today} />
 
       {/* Modals */}
       {isAuthOpen && (

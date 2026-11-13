@@ -1235,3 +1235,267 @@ body.pmrep-active .pmrep-container {
     padding: 0;
   }
 }
+
+/* ===================== Print report — executive first page ===================== */
+/* The report replaces the whole screen while printing: hide the app UI
+   (brand header, Command Center, portal panels) so nothing prints before it. */
+body.pmrep-active .cb-brand,
+body.pmrep-active .cv-shell,
+body.pmrep-active .cv-modal-bg,
+body.pmrep-active .ex-np,
+body.pmrep-active #cv-print-root {
+  display: none !important;
+}
+
+.pmrep-pagebreak {
+  break-before: page;
+  page-break-before: always;
+  padding-top: 4px;
+}
+
+.pmx {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  color: #303030;
+}
+.pmx-sec {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.pmx-h2 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 2px solid #7026c8;
+  font: 800 15px 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #4a1a8c;
+}
+.pmx-h2 span {
+  font: 600 11px 'Barlow', sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #777777;
+}
+.pmx-h3 {
+  margin: 10px 0 4px;
+  font: 800 12px 'Barlow', sans-serif;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #777777;
+}
+.pmx-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.pmx-kpi {
+  display: grid;
+  gap: 0;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+.pmx-kpi-l {
+  font: 700 10.5px 'Barlow', sans-serif;
+  letter-spacing: 0.3px;
+  opacity: 0.95;
+}
+.pmx-kpi-v {
+  font: 800 22px/1.05 'Barlow Condensed', 'Arial Narrow', sans-serif;
+}
+.pmx-kpi-s {
+  font-size: 10px;
+  opacity: 0.9;
+}
+.pmx-health {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr);
+  gap: 12px;
+  align-items: start;
+}
+.pmx-health-main {
+  border: 1.5px solid #eaeaea;
+  border-left-width: 5px;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 6px;
+}
+.pmx-status {
+  justify-self: start;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font: 800 11px 'Barlow', sans-serif;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+.pmx-big {
+  font: 800 30px/1 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  color: #7026c8;
+}
+.pmx-big small {
+  font: 600 12px 'Barlow', sans-serif;
+  color: #777777;
+}
+.pmx-bar {
+  position: relative;
+  height: 8px;
+  border-radius: 99px;
+  background: #ececf1;
+  overflow: visible;
+}
+.pmx-bar.sm {
+  height: 6px;
+  flex: 1;
+}
+.pmx-barrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pmx-barrow .pmx-dim {
+  white-space: nowrap;
+  font-size: 9.5px;
+}
+.pmx-bar b {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: #7026c8;
+}
+.pmx-bar i {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -1px;
+  background: #303030;
+}
+.pmx-dim {
+  font-size: 10.5px;
+  color: #777777;
+}
+.pmx-dates {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.pmx-dates div {
+  display: grid;
+}
+.pmx-dates span {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #777777;
+}
+.pmx-dates b {
+  font-size: 12.5px;
+}
+.pmx-reasons {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 10.5px;
+  color: #303030;
+}
+.pmx-streams {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.pmx-streams th {
+  text-align: left;
+  font: 700 9.5px 'Barlow', sans-serif;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #777777;
+  border-bottom: 1px solid #eaeaea;
+  padding: 3px 4px;
+}
+.pmx-streams td {
+  padding: 2px 4px;
+  border-bottom: 1px solid #f0f0f3;
+  vertical-align: middle;
+}
+.pmx-streams td.num {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.pmx-tier {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  color: #ffffff;
+  font: 800 9.5px 'Barlow', sans-serif;
+  white-space: nowrap;
+}
+.pmx-two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.pmx-counts {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.pmx-counts div {
+  display: grid;
+  border: 1px solid #eaeaea;
+  border-radius: 8px;
+  padding: 5px 6px;
+  text-align: center;
+}
+.pmx-counts b {
+  font: 800 18px 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  color: #303030;
+}
+.pmx-counts span {
+  font-size: 9.5px;
+  color: #777777;
+}
+.pmx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+}
+.pmx-list li {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 2px 0;
+  border-bottom: 1px solid #f0f0f3;
+}
+.pmx-list li em {
+  font-style: normal;
+  font-size: 9.5px;
+  color: #777777;
+}
+.pmx-list.att li {
+  grid-template-columns: 70px minmax(0, 1fr);
+  align-items: start;
+}
+.pmx-list.att li span:last-child {
+  display: grid;
+}
+.pmx-list.att small {
+  font-size: 9.5px;
+  color: #777777;
+}
+.pmx-sev {
+  justify-self: start;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font: 800 8.5px 'Barlow', sans-serif;
+  letter-spacing: 0.5px;
+}

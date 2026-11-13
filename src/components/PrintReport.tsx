@@ -6,6 +6,11 @@
 import React from 'react';
 import { FullDashboardData } from '../types/index.ts';
 import { BrandLogo } from './BrandLogo.tsx';
+import type { RegisterActivity } from '../domain/register.ts';
+import type { ProjectMetrics } from '../domain/metrics.ts';
+import type { AttentionItem } from '../domain/attention.ts';
+import { execKpis, streamHealth, TIER_HEX } from '../domain/executive.ts';
+import { addDays, fmtDate, monthLabel, monthRange } from '../domain/dates.ts';
 import {
   calculateMilestonesCompletion,
   calculateScheduleElapsed,
@@ -15,7 +20,228 @@ import {
 
 interface PrintReportProps {
   data: FullDashboardData;
+  /** Live project figures for the executive first page (same source as the Executive Dashboard). */
+  register?: RegisterActivity[];
+  metrics?: ProjectMetrics;
+  attention?: AttentionItem[];
+  today?: string;
 }
+
+const HEALTH_COLOR: Record<string, string> = { 'On Track': '#22A06B', 'At Risk': '#F5A623', Critical: '#E5484D' };
+const SEV_COLOR: Record<string, { bg: string; fg: string; label: string }> = {
+  critical: { bg: '#E5484D', fg: '#FFFFFF', label: 'CRITICAL' },
+  warn: { bg: '#F5A623', fg: '#2B1A00', label: 'ATTENTION' },
+  info: { bg: '#E8E8EF', fg: '#303030', label: 'INFO' },
+};
+
+/** Page 1 — Executive dashboard, project health and overall summary for stakeholders. */
+const ExecutiveSummaryPage: React.FC<{ register: RegisterActivity[]; metrics: ProjectMetrics; attention: AttentionItem[]; today: string }> = ({
+  register,
+  metrics: m,
+  attention,
+  today,
+}) => {
+  const k = execKpis(register, today);
+  const streams = streamHealth(register, today).sort((a, b) => a.workstream.localeCompare(b.workstream));
+  const healthColor = HEALTH_COLOR[m.health] || '#777777';
+  const upcomingMs = register
+    .filter((r) => (r.kind === 'milestone' || r.kind === 'pour') && r.status !== 'Completed' && r.finish && r.finish >= today)
+    .sort((a, b) => a.finish!.localeCompare(b.finish!))
+    .slice(0, 4);
+  const topAttention = attention.slice(0, 4);
+  const variance = m.variancePct;
+  const kpis: { label: string; value: string | number; sub: string; color: string; dark?: boolean }[] = [
+    { label: 'Active workstreams', value: k.activeStreams.length, sub: `of ${k.totalStreams}`, color: '#7026C8' },
+    { label: 'In progress', value: k.lists.inprogress.length, sub: 'activities ongoing', color: '#8B35E8' },
+    { label: 'Completed this month', value: k.lists.completedMonth.length, sub: monthLabel(monthRange(today).key), color: '#22A06B' },
+    { label: 'Overdue', value: k.lists.overdue.length, sub: 'past target', color: '#E5484D' },
+    { label: 'Due in 7 days', value: k.lists.due7.length, sub: `to ${fmtDate(addDays(today, 7), false)}`, color: '#F5A623', dark: true },
+    { label: 'Due in 30 days', value: k.lists.due30.length, sub: `to ${fmtDate(addDays(today, 30), false)}`, color: '#A34FEA' },
+    { label: 'Blocked / on hold', value: k.lists.blocked.length, sub: 'flagged on hold', color: '#C02AE0' },
+    {
+      label: 'On-time completion',
+      value: k.onTime.pct === null ? '—' : `${k.onTime.pct}%`,
+      sub: k.onTime.measured ? `${k.onTime.onTime} of ${k.onTime.measured} on time` : 'pending update',
+      color: '#303030',
+    },
+  ];
+
+  return (
+    <div className="pmx">
+      {/* Executive dashboard */}
+      <section className="pmx-sec">
+        <h2 className="pmx-h2">Executive dashboard <span>as of {fmtDate(today)}</span></h2>
+        <div className="pmx-kpis">
+          {kpis.map((x) => (
+            <div key={x.label} className="pmx-kpi" style={{ background: x.color, color: x.dark ? '#2B1A00' : '#FFFFFF' }}>
+              <span className="pmx-kpi-l">{x.label}</span>
+              <b className="pmx-kpi-v">{x.value}</b>
+              <span className="pmx-kpi-s">{x.sub}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Project health */}
+      <section className="pmx-sec">
+        <h2 className="pmx-h2">Project health</h2>
+        <div className="pmx-health">
+          <div className="pmx-health-main" style={{ borderColor: healthColor }}>
+            <span className="pmx-status" style={{ background: healthColor, color: m.health === 'At Risk' ? '#2B1A00' : '#FFFFFF' }}>
+              {m.health}
+            </span>
+            <div className="pmx-big">
+              {m.actualPct.toFixed(1)}%<small> actual</small>
+            </div>
+            <div className="pmx-bar">
+              <b style={{ width: `${Math.max(0, Math.min(100, m.actualPct))}%` }} />
+              <i style={{ left: `${Math.max(0, Math.min(100, m.plannedPct))}%` }} />
+            </div>
+            <div className="pmx-dim">
+              Planned {m.plannedPct.toFixed(1)}% · variance {variance >= 0 ? '+' : ''}
+              {variance.toFixed(1)} pts{m.spi !== null ? ` · SPI ${m.spi.toFixed(2)}` : ''} · schedule elapsed {Math.round(m.elapsedPct)}%
+            </div>
+            <div className="pmx-dates">
+              <div>
+                <span>Target completion</span>
+                <b>{m.targetCompletion ? fmtDate(m.targetCompletion) : 'Pending update'}</b>
+              </div>
+              <div>
+                <span>Projected completion</span>
+                <b>{m.projectedCompletion ? fmtDate(m.projectedCompletion) : 'Pending update'}</b>
+              </div>
+              <div>
+                <span>Milestones</span>
+                <b>
+                  {m.milestonesComplete} / {m.milestonesTotal}
+                </b>
+              </div>
+            </div>
+            {m.healthReasons.length > 0 && (
+              <ul className="pmx-reasons">
+                {m.healthReasons.slice(0, 3).map((r) => (
+                  <li key={r}>{r}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <table className="pmx-streams">
+            <thead>
+              <tr>
+                <th>Workstream</th>
+                <th style={{ width: '34%' }}>Actual vs planned</th>
+                <th>Open</th>
+                <th>Overdue</th>
+                <th>Tier</th>
+              </tr>
+            </thead>
+            <tbody>
+              {streams.map((h) => (
+                <tr key={h.workstream}>
+                  <td>
+                    <b>{h.workstream}</b>
+                  </td>
+                  <td>
+                    <div className="pmx-barrow">
+                      <div className="pmx-bar sm">
+                        <b style={{ width: `${h.actual}%` }} />
+                        <i style={{ left: `${h.planned}%` }} />
+                      </div>
+                      <span className="pmx-dim">
+                        {h.actual}% / {h.planned}%
+                      </span>
+                    </div>
+                  </td>
+                  <td className="num">{h.open}</td>
+                  <td className="num" style={{ color: h.overdue ? '#C62828' : undefined, fontWeight: h.overdue ? 700 : 400 }}>
+                    {h.overdue}
+                  </td>
+                  <td>
+                    {h.tier ? (
+                      <span className="pmx-tier" style={{ background: TIER_HEX[h.tier] }}>
+                        {h.tier}
+                      </span>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Overall summary */}
+      <section className="pmx-sec pmx-two">
+        <div>
+          <h2 className="pmx-h2">Project summary</h2>
+          <div className="pmx-counts">
+            <div>
+              <b>{m.counts.completed}</b>
+              <span>completed</span>
+            </div>
+            <div>
+              <b>{m.counts.ongoing}</b>
+              <span>ongoing</span>
+            </div>
+            <div>
+              <b>{m.counts.upcoming}</b>
+              <span>upcoming</span>
+            </div>
+            <div>
+              <b style={{ color: m.counts.delayed ? '#C62828' : undefined }}>{m.counts.delayed}</b>
+              <span>delayed</span>
+            </div>
+            <div>
+              <b>
+                {m.episodesCompleted}/{m.episodesTotal}
+              </b>
+              <span>episodes done</span>
+            </div>
+          </div>
+          <h3 className="pmx-h3">Upcoming milestones</h3>
+          {upcomingMs.length ? (
+            <ul className="pmx-list">
+              {upcomingMs.map((r) => (
+                <li key={r.id}>
+                  <b>{fmtDate(r.finish)}</b>
+                  <span>{r.name}</span>
+                  <em>{r.commitment}</em>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="pmx-dim">No upcoming milestones.</div>
+          )}
+        </div>
+        <div>
+          <h2 className="pmx-h2">Needs management attention</h2>
+          {topAttention.length ? (
+            <ul className="pmx-list att">
+              {topAttention.map((a) => (
+                <li key={a.id}>
+                  <span className="pmx-sev" style={{ background: SEV_COLOR[a.severity].bg, color: SEV_COLOR[a.severity].fg }}>
+                    {SEV_COLOR[a.severity].label}
+                  </span>
+                  <span>
+                    <b>{a.title}</b>
+                    <small>
+                      {a.category} · {a.detail}
+                    </small>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="pmx-dim">Nothing needs management attention.</div>
+          )}
+          {attention.length > topAttention.length && <div className="pmx-dim">+ {attention.length - topAttention.length} more in Issues &amp; Accountability</div>}
+        </div>
+      </section>
+    </div>
+  );
+};
 
 function badgeStyle(status: string): React.CSSProperties {
   const s = (status || '').toLowerCase();
@@ -34,7 +260,7 @@ function badgeStyle(status: string): React.CSSProperties {
   return { background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1' };
 }
 
-export const PrintReport: React.FC<PrintReportProps> = ({ data }) => {
+export const PrintReport: React.FC<PrintReportProps> = ({ data, register, metrics, attention, today }) => {
   const milestonePct = calculateMilestonesCompletion(data.milestones);
   const elapsed = calculateScheduleElapsed();
   const concrete = calculateConcreteCompletion(data.pours);
@@ -75,7 +301,17 @@ export const PrintReport: React.FC<PrintReportProps> = ({ data }) => {
         </div>
       </div>
 
-      {/* Executive KPI Summary Grid */}
+      {/* Page 1 — executive dashboard, project health and overall summary */}
+      {register && metrics && (
+        <ExecutiveSummaryPage register={register} metrics={metrics} attention={attention || []} today={today || new Date().toISOString().slice(0, 10)} />
+      )}
+
+      {/* Page 2 onwards — detailed status */}
+      <div className={register && metrics ? 'pmrep-pagebreak' : undefined}>
+        <h2 className="pmrep-h2" style={{ marginTop: 0 }}>Detailed status</h2>
+      </div>
+
+      {/* Schedule KPI Summary Grid */}
       <div className="pmrep-kpis">
         <div className="pmrep-kpi">
           <span className="pmrep-kpi-lbl">Schedule Elapsed</span>
