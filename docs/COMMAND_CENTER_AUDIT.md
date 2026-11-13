@@ -322,3 +322,14 @@ Access (server-enforced in `firestore.rules`):
 - Module navigation per internal role: `allowedModules()` in `src/auth/roles.ts`.
 
 **Deploy `firestore.rules`** — until then visitors cannot read the portal (they see "not available at the moment").
+
+## 11. Automatic deployment of the Firestore security rules
+
+`.github/workflows/deploy-firestore-rules.yml` publishes `firestore.rules` to the named database whenever the rules change on `main`, and on demand (Actions → **Deploy Firestore security rules** → **Run workflow**).
+
+One-time setup:
+1. Firebase console → Project settings → **Service accounts** → **Generate new private key** (downloads a JSON file).
+2. GitHub → repository **Settings** → **Secrets and variables** → **Actions** → **New repository secret** — name `FIREBASE_SERVICE_ACCOUNT`, value: the whole JSON file.
+3. Actions → **Deploy Firestore security rules** → **Run workflow**.
+
+Without the secret the workflow does not deploy and shows a warning explaining the missing secret.

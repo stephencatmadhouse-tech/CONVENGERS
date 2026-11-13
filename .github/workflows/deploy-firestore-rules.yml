@@ -1,0 +1,62 @@
+# Publishes firestore.rules to the Convengers Bahay Build database
+# (project fleet-wallaby-73rp2, named database ai-studio-convengersbahayb-…).
+#
+# Runs automatically when the rules change on main, and on demand from
+# GitHub → Actions → "Deploy Firestore security rules" → Run workflow.
+#
+# One-time setup: add a repository secret FIREBASE_SERVICE_ACCOUNT containing
+# the JSON key of a service account with the "Firebase Rules Admin" role
+# (Firebase console → Project settings → Service accounts → Generate new private key).
+# Without the secret the workflow skips the deploy and explains why.
+
+name: Deploy Firestore security rules
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - firestore.rules
+      - firebase.json
+      - .firebaserc
+      - .github/workflows/deploy-firestore-rules.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-firestore-rules
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check for the Firebase service-account secret
+        id: cred
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$SA" ]; then
+            echo "::warning title=Rules not deployed::Add the FIREBASE_SERVICE_ACCOUNT repository secret (Settings → Secrets and variables → Actions), then re-run this workflow."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            printf '%s' "$SA" > "$RUNNER_TEMP/firebase-sa.json"
+            echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-sa.json" >> "$GITHUB_ENV"
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy firestore.rules
+        if: steps.cred.outputs.ok == 'true'
+        run: npx --yes firebase-tools@13.35.1 deploy --only firestore:rules --project fleet-wallaby-73rp2 --non-interactive
+
+      - name: Remove the key file
+        if: always()
+        run: rm -f "$RUNNER_TEMP/firebase-sa.json"
