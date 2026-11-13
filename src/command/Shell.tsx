@@ -22,7 +22,6 @@ import {
   Archive as ArchiveIcon,
   Settings as SettingsIcon,
   Package,
-  Wallet,
   FolderOpen,
   Send,
   ExternalLink,
@@ -33,7 +32,6 @@ import {
 } from 'lucide-react';
 import { ROLE_LABEL, canOpenModule, landingModule } from '../auth/roles.ts';
 import { Procurement, Manpower } from './Operations.tsx';
-import { Finance } from './Finance.tsx';
 import { Documents } from './Documents.tsx';
 import { Publishing } from './Publishing.tsx';
 import { SummaryReports } from './SummaryReports.tsx';
@@ -105,13 +103,6 @@ const RAW_SECTIONS: Section[] = [
     label: 'Procurement & Materials',
     title: 'Procurement & Materials Monitoring',
     sub: 'Material requirements, procurement status, suppliers, purchase and delivery schedules, pending orders, received materials and delayed deliveries.',
-  },
-  {
-    id: 'finance',
-    num: '00',
-    label: 'Budget & Expenses',
-    title: 'Budget & Expense Monitoring',
-    sub: 'Project budget, allocations, actual expenses, remaining balance and cost variation. Restricted to the System Administrator and Project Managers.',
   },
   {
     id: 'documents',
@@ -275,7 +266,6 @@ const ORDER: [string, string][] = [
   ['timeline', 'Operations'],
   ['milestones', 'Operations'],
   ['procurement', 'Operations'],
-  ['finance', 'Operations'],
   ['issues', 'Operations'],
   ['reports', 'Reporting & Publishing'],
   ['analytics', 'Reporting & Publishing'],
@@ -305,7 +295,6 @@ const ICONS: Record<string, LucideIcon> = {
   archive: ArchiveIcon,
   settings: SettingsIcon,
   procurement: Package,
-  finance: Wallet,
   documents: FolderOpen,
   publishing: Send,
   executive: Gauge,
@@ -340,8 +329,14 @@ export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; re
   const section = (allowed ? SECTIONS.find((s) => s.id === route.section) : undefined) || SECTIONS.find((s) => s.id === home) || visible[0] || SECTIONS[0];
 
   useEffect(() => {
-    if (!allowed) window.location.replace(`#/${home}`);
-  }, [allowed, home]);
+    if (!allowed) {
+      window.location.replace(`#/${home}`);
+      return;
+    }
+    // Unknown or removed module in the address (e.g. an old bookmark) → show its real address
+    const raw = window.location.hash.replace(/^#\/?/, '').split('/')[0];
+    if (raw && raw !== route.section) window.location.replace(`#/${route.section}`);
+  }, [allowed, home, route]);
   const tab = section.tabs ? section.tabs.find((t) => t.id === route.tab) || section.tabs[0] : undefined;
 
   useEffect(() => {
@@ -371,8 +366,6 @@ export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; re
         return tab?.id === 'manpower' ? <Manpower /> : <ScheduleCalendar defaultLayers={['construction', 'pours', 'milestones', 'deliveries', 'manpower']} />;
       case 'procurement':
         return <Procurement />;
-      case 'finance':
-        return <Finance />;
       case 'documents':
         return <Documents />;
       case 'publishing':

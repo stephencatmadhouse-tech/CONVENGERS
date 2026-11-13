@@ -235,7 +235,7 @@ One application, one sign-in, one database, two experiences:
 
 | Audience | Roles | Lands on | Can read |
 |---|---|---|---|
-| Internal | System Administrator (`admin`), Project Manager (`manager`), Site Engineer (`engineer`), Production Coordinator (`production`), Internal Team Member (`staff`), Internal Viewer (`viewer`) | Project Management System | All internal collections (finance: admin & manager only) |
+| Internal | System Administrator (`admin`), Project Manager (`manager`), Site Engineer (`engineer`), Production Coordinator (`production`), Internal Team Member (`staff`), Internal Viewer (`viewer`) | Project Management System | All internal collections |
 | External | Project Owner (`owner`), Executive, Client Representative (`client`), Authorized Stakeholder (`stakeholder`) | Executive & Client Portal | **Only** the `portal` collection |
 | Not signed in | — | Sign-in page | Nothing |
 | Pending / revoked | — | Awaiting-approval page | Their own profile |
@@ -245,7 +245,6 @@ The System Administrator assigns roles in **Admin Panel → user list**. New sig
 ### Security model (server-side, not front-end checks)
 
 * `firestore.rules` now make every internal collection readable **only by internal roles**. External roles can read only `portal`. The earlier public read access (`read: if true`) has been **removed**, so public "presentation" links stop working once the rules are deployed. Everyone signs in.
-* Finance (`budget`, `expenses`) is readable and writable only by `admin` / `manager`.
 * `storage.rules`: `documents/**` is for internal roles; `portal/**` (approved photos and documents) is for internal and external roles.
 * The UI routing (`src/Root.tsx`) only decides which interface to render. External users never load internal modules, and the database rules refuse their reads even if they edit the URL or call the API directly.
 
@@ -260,7 +259,7 @@ The System Administrator assigns roles in **Admin Panel → user list**. New sig
 
 ### New internal modules
 
-Procurement & Materials (with delayed-delivery detection), Manpower schedules, Budget & Expenses (restricted), Document Repository (uploads or links, linked to activities), Client Portal Publishing, and Summary reports (construction progress, production/construction coordination, delayed and upcoming activities). The tracker gains department and deadline filters, a department field and attachments. The construction calendar gains layers for material deliveries and manpower. The Command Center gains delivery blockers, priorities and recent updates. All new modules start empty and show "Not yet provided" until the team enters data. Nothing is pre-filled.
+Procurement & Materials (with delayed-delivery detection), Manpower schedules, Document Repository (uploads or links, linked to activities), Client Portal Publishing, and Summary reports (construction progress, production/construction coordination, delayed and upcoming activities). The tracker gains department and deadline filters, a department field and attachments. The construction calendar gains layers for material deliveries and manpower. The Command Center gains delivery blockers, priorities and recent updates. All new modules start empty and show "Not yet provided" until the team enters data. Nothing is pre-filled.
 
 ### Actions required to go live
 
@@ -318,7 +317,7 @@ Access (server-enforced in `firestore.rules`):
 
 - **Public / Client / Stakeholder** — portal records of kinds `snapshot`, `report`, `photo`, `consideration`, `update`.
 - **Project Owner / Executive** — the above + approved project documents (`document`).
-- **Internal roles** — Master Project Tracker; every internal collection remains `isInternal()` (finance: manager only).
+- **Internal roles** — Master Project Tracker; every internal collection remains `isInternal()`.
 - Module navigation per internal role: `allowedModules()` in `src/auth/roles.ts`.
 
 **Deploy `firestore.rules`** — until then visitors cannot read the portal (they see "not available at the moment").
@@ -333,3 +332,7 @@ One-time setup:
 3. Actions → **Deploy Firestore security rules** → **Run workflow**.
 
 Without the secret the workflow does not deploy and shows a warning explaining the missing secret.
+
+## 12. Budget & Expenses module removed
+
+The Budget & Expenses section, its `budget` / `expenses` stores, backup entries and Firestore rules were removed at the owner's request. No records are deleted by this change; any entries saved earlier remain in this browser's local storage (`convengers_cs_budget`, `convengers_cs_expenses`) and, if they ever reached Firestore, in those collections, which the app and server rules no longer read or write.

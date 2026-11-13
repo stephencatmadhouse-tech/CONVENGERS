@@ -406,37 +406,7 @@ export interface ManpowerPlan {
   localOnly?: boolean;
 }
 
-export interface BudgetLine {
-  id: string;
-  category: string;
-  description?: string;
-  budget: number; // approved budget
-  allocated?: number; // committed / allocated amount
-  notes?: string;
-  archived?: boolean;
-  createdAt: string;
-  createdBy: string;
-  updatedAt: string;
-  updatedBy: string;
-  localOnly?: boolean;
-}
 
-export interface Expense {
-  id: string;
-  date: string;
-  budgetLineId?: string;
-  description: string;
-  amount: number;
-  vendor?: string;
-  reference?: string; // OR / invoice no.
-  linkedProcurementId?: string;
-  archived?: boolean;
-  createdAt: string;
-  createdBy: string;
-  updatedAt: string;
-  updatedBy: string;
-  localOnly?: boolean;
-}
 
 export type DocumentCategory =
   | 'Site report'

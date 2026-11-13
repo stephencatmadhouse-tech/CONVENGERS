@@ -61,7 +61,7 @@ import { makeSnapshot } from './domain/validation.ts';
 import { todayIso, toScopeDateText, isValidIso } from './domain/dates.ts';
 import { CommandProvider, CommandState, ActivityPatch } from './command/context.tsx';
 import { sanitizeReport } from './domain/portal.ts';
-import { portalStore, procurementStore, manpowerStore, documentStore, publicationStore, budgetStore, expenseStore } from './firebase/opsStores.ts';
+import { portalStore, procurementStore, manpowerStore, documentStore, publicationStore } from './firebase/opsStores.ts';
 import { Shell, SlideKey, useHashRoute } from './command/Shell.tsx';
 import { ActivityEditor } from './command/ActivityEditor.tsx';
 import { NotificationsProvider, NotificationBell } from './command/Notifications.tsx';
@@ -1035,13 +1035,12 @@ export default function App() {
       reports: control.reports.map(({ localOnly: _l, ...r }) => r),
       issues: control.issues.map(({ localOnly: _l, ...r }) => r),
       snapshots: control.snapshots.map(({ localOnly: _l, ...r }) => r),
-      // Operations & publishing records (finance only for managers)
+      // Operations & publishing records
       operations: {
         procurement: procurementStore.getState().items,
         manpower: manpowerStore.getState().items,
         documents: documentStore.getState().items,
         publications: publicationStore.getState().items,
-        ...(isManager ? { budget: budgetStore.getState().items, expenses: expenseStore.getState().items } : {}),
       },
     };
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
@@ -1092,7 +1091,6 @@ export default function App() {
           ['manpower', manpowerStore],
           ['documents', documentStore],
           ['publications', publicationStore],
-          ...(isManager ? ([['budget', budgetStore], ['expenses', expenseStore]] as [string, any][]) : []),
         ];
         let merged = 0;
         for (const [k, st] of pairs) {

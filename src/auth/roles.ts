@@ -48,7 +48,7 @@ export function canEditOperations(role: UserRole): boolean {
   return ['admin', 'manager', 'engineer', 'production', 'staff'].includes(role);
 }
 
-/** Project Manager level: schedules, approvals, publishing, finance. */
+/** Project Manager level: schedules, approvals and publishing. */
 export function isManagerRole(role: UserRole): boolean {
   return role === 'admin' || role === 'manager';
 }
@@ -59,8 +59,8 @@ export function isAdminRole(role: UserRole): boolean {
 
 // ---------------- Internal modules per role ----------------
 // Navigation level: which Master Project Tracker modules each internal role
-// works in, and where they land after signing in. Sensitive data (finance,
-// internal records, unpublished content) is additionally protected
+// works in, and where they land after signing in. Sensitive data (internal
+// records, unpublished content) is additionally protected
 // server-side by firestore.rules.
 
 const ALL_MODULES = [
@@ -74,7 +74,6 @@ const ALL_MODULES = [
   'timeline',
   'milestones',
   'procurement',
-  'finance',
   'issues',
   'reports',
   'analytics',
@@ -94,8 +93,8 @@ const MODULES_BY_ROLE: Partial<Record<UserRole, string[]>> = {
   production: ['command', 'notifications', 'calendar', 'tracker', 'production', 'timeline', 'milestones', 'issues', 'reports', 'documents', 'overview', 'settings'],
   // Authorized team members — their assigned records and supporting modules
   staff: ['command', 'notifications', 'calendar', 'tracker', 'issues', 'reports', 'documents', 'overview', 'settings'],
-  // Internal read-only viewer — everything except finance and publishing
-  viewer: ALL_MODULES.filter((m) => m !== 'finance' && m !== 'publishing'),
+  // Internal read-only viewer — everything except publishing
+  viewer: ALL_MODULES.filter((m) => m !== 'publishing'),
 };
 
 const LANDING_BY_ROLE: Partial<Record<UserRole, string>> = {

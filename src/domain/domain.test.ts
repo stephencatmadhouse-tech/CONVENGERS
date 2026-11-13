@@ -320,11 +320,12 @@ test('roles: internal users land on their dashboard and see only their modules',
   assert.equal(landingModule('engineer'), 'construction');
   assert.equal(landingModule('production'), 'production');
   assert.equal(landingModule('staff'), 'tracker');
-  assert.ok(canOpenModule('admin', 'finance') && canOpenModule('manager', 'publishing'));
-  assert.ok(!canOpenModule('engineer', 'finance') && !canOpenModule('engineer', 'production') && canOpenModule('engineer', 'procurement'));
+  assert.ok(canOpenModule('admin', 'publishing') && canOpenModule('manager', 'publishing'));
+  assert.ok(!canOpenModule('engineer', 'production') && canOpenModule('engineer', 'procurement'));
+  for (const r of ['admin', 'manager', 'engineer', 'production', 'staff', 'viewer'] as const) assert.ok(!canOpenModule(r, 'finance'), 'Budget & Expenses removed');
   assert.ok(!canOpenModule('production', 'construction') && canOpenModule('production', 'calendar'));
-  assert.ok(!canOpenModule('staff', 'finance') && !canOpenModule('staff', 'publishing'));
-  assert.ok(!canOpenModule('viewer', 'finance') && !canOpenModule('viewer', 'publishing'));
+  assert.ok(!canOpenModule('staff', 'publishing'));
+  assert.ok(!canOpenModule('viewer', 'publishing'));
   for (const r of ['owner', 'executive', 'client', 'stakeholder', 'pending'] as const) assert.ok(!canOpenModule(r, 'command'));
 });
 
