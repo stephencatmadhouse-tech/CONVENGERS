@@ -270,7 +270,7 @@ export function SectionHeader({
           <span className="cv-kicker">{num} – Convengers Bahay Build</span>
         </div>
         <h1 className="cv-h1">
-          {title} <span className="cb-slashes" aria-hidden />
+          {title}
         </h1>
         {sub && <div className="cv-sub">{sub}</div>}
       </div>

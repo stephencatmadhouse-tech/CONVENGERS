@@ -301,3 +301,5 @@ Visual only — no data, calculations, schedules or modules changed.
 - **Toolbar**: same existing controls, reordered (Data & settings, version, sync, user, admin, presentation, notifications, share, theme, edit, print) with one icon set (lucide).
 - **All modules** (`src/theme-brand.css`, loaded last): navy section titles with golden `///`, purple banner card headers, white KPI cards with navy figures, solid status badges (green completed · purple ongoing · red delayed · blue upcoming · gray on hold), clean table headers with alternating rows, consistent button heights. Light theme; the optional dark theme keeps working.
 - **Command Center**: solid status summary cards (green / purple / red / blue / navy / orange), yellow health-summary strip, management-attention cards showing status, schedule, workstream, owner and dependencies.
+
+- Update: the branding header uses the same deep indigo palette as the left side panel (internal system and portal); all golden diagonal stripes and `///` accents were removed.

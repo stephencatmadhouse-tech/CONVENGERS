@@ -18,10 +18,9 @@ export const BrandHeader: React.FC<{ subtitle?: string }> = ({ subtitle = 'Proje
     <div className="cb-brand-text">
       <div className="cb-brand-l1">Convengers Assemble</div>
       <div className="cb-brand-l2">
-        Bahay Build <span className="cb-slashes" aria-hidden />
+        Bahay Build
       </div>
       <div className="cb-brand-l3">{subtitle}</div>
     </div>
-    <span className="cb-brand-stripes" aria-hidden />
   </header>
 );
