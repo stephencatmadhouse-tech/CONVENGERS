@@ -145,6 +145,18 @@ async function status(req: IncomingMessage, res: ServerResponse) {
   const url = new URL((req as any).originalUrl || req.url || '/', 'http://x');
   if (url.searchParams.get('check')) {
     const caller = await verifyCaller(env, req.headers.authorization).catch(() => null);
+    if (caller?.manager && !out.configured) {
+      // Names only (never values), so an administrator can see which setting the server is missing
+      const has = (k: string) => !!(process.env[k] || '').trim();
+      const oauthKeys = ['GOOGLE_DRIVE_OAUTH_CLIENT_ID', 'GOOGLE_DRIVE_OAUTH_CLIENT_SECRET', 'GOOGLE_DRIVE_OAUTH_REFRESH_TOKEN'];
+      const missing: string[] = [];
+      if (!env.mode) {
+        if (has('GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON')) out.invalid = ['GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON'];
+        else missing.push(...oauthKeys.filter((k) => !has(k)));
+      }
+      if (!env.rootFolderId) missing.push('GOOGLE_DRIVE_ROOT_FOLDER_ID');
+      out.missing = missing;
+    }
     if (caller?.manager && out.configured) {
       try {
         const f = await new DriveApi(env).getFolder(env.rootFolderId!);

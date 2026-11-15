@@ -43,7 +43,8 @@ function readAppletConfig(): {
 export function driveEnv(): DriveEnv {
   const cfg = readAppletConfig();
   let serviceAccount: Record<string, any> | undefined;
-  const raw = process.env.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON;
+  const env = (k: string) => (process.env[k] || '').trim() || undefined;
+  const raw = env('GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON');
   if (raw) {
     try {
       serviceAccount = JSON.parse(raw);
@@ -51,19 +52,15 @@ export function driveEnv(): DriveEnv {
       serviceAccount = undefined;
     }
   }
-  const oauth =
-    process.env.GOOGLE_DRIVE_OAUTH_CLIENT_ID && process.env.GOOGLE_DRIVE_OAUTH_CLIENT_SECRET && process.env.GOOGLE_DRIVE_OAUTH_REFRESH_TOKEN
-      ? {
-          clientId: process.env.GOOGLE_DRIVE_OAUTH_CLIENT_ID,
-          clientSecret: process.env.GOOGLE_DRIVE_OAUTH_CLIENT_SECRET,
-          refreshToken: process.env.GOOGLE_DRIVE_OAUTH_REFRESH_TOKEN,
-        }
-      : undefined;
+  const clientId = env('GOOGLE_DRIVE_OAUTH_CLIENT_ID');
+  const clientSecret = env('GOOGLE_DRIVE_OAUTH_CLIENT_SECRET');
+  const refreshToken = env('GOOGLE_DRIVE_OAUTH_REFRESH_TOKEN');
+  const oauth = clientId && clientSecret && refreshToken ? { clientId, clientSecret, refreshToken } : undefined;
   return {
     mode: serviceAccount ? 'service_account' : oauth ? 'oauth' : null,
     serviceAccount,
     oauth,
-    rootFolderId: process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID || undefined,
+    rootFolderId: env('GOOGLE_DRIVE_ROOT_FOLDER_ID'),
     apiBase: (process.env.DRIVE_API_BASE || 'https://www.googleapis.com').replace(/\/$/, ''),
     maxUploadBytes: Math.round(Number(process.env.DRIVE_MAX_UPLOAD_MB || 20) * 1024 * 1024),
     projectId: process.env.FIREBASE_PROJECT_ID || cfg.projectId || '',

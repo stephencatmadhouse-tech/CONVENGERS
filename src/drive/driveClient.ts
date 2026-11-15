@@ -225,6 +225,8 @@ export async function finishPendingRecords(): Promise<number> {
 
 export async function driveStatus(check = false): Promise<{
   configured: boolean;
+  missing?: string[];
+  invalid?: string[];
   rootAccessible?: boolean;
   rootName?: string;
   error?: string;

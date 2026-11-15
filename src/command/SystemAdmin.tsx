@@ -438,8 +438,24 @@ const DriveStorageCard: React.FC = () => {
       </div>
       {st !== 'loading' && !st?.configured && (
         <Banner kind="warn">
-          The server needs Google Drive credentials (a service account added to the project Shared Drive, or an OAuth refresh token) and the root folder ID. See
-          docs/GOOGLE_DRIVE.md.
+          {st?.missing?.length || st?.invalid?.length ? (
+            <>
+              The running server cannot see these settings:{' '}
+              {[...(st.missing || []), ...(st.invalid || []).map((k) => `${k} (not valid JSON)`)].map((k, i) => (
+                <React.Fragment key={k}>
+                  {i ? ', ' : ''}
+                  <code>{k}</code>
+                </React.Fragment>
+              ))}
+              . Add them as secrets on the server (in AI Studio: the Secrets panel), check each name is spelled exactly, then redeploy and press Test Connection. See
+              docs/GOOGLE_DRIVE.md.
+            </>
+          ) : (
+            <>
+              The server needs Google Drive credentials (an OAuth refresh token for a personal Gmail account, or a service account added to a Shared Drive) and the root
+              folder ID. See docs/GOOGLE_DRIVE.md.
+            </>
+          )}
         </Banner>
       )}
       {note && <Banner kind={note.kind}>{note.text}</Banner>}
