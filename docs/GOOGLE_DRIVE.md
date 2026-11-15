@@ -16,13 +16,17 @@ Phone / browser ──(Firebase sign-in token)──► /api/drive/*  (this app'
 
 1. **Create the root folder.** Use a Shared Drive (recommended) or a folder, e.g. `CONVENGERS BAHAY BUILD`. Copy its ID from the URL: `https://drive.google.com/drive/folders/<ROOT_FOLDER_ID>`.
 2. **Give the server access.** Choose one of these:
-   * **Service account (recommended).**
+   * **Service account (Google Workspace with a Shared Drive).**
      1. In Google Cloud Console (project `fleet-wallaby-73rp2`), enable the **Google Drive API**.
      2. Create a service account and a JSON key.
      3. Add the service account's e-mail to the Shared Drive as **Content manager**.
      * A service account has no storage quota of its own, so use a Shared Drive. Files it creates in a personal "My Drive" folder fail with a quota error.
-   * **OAuth refresh token.** Use this when you must use a personal Drive. Create an OAuth client (type: web or desktop) with scope `https://www.googleapis.com/auth/drive`, and obtain a refresh token for the Drive owner's account.
-3. **Set the server environment variables.** Set them in AI Studio / Cloud Run secrets, or in the Vercel project settings. Never put them in the frontend or the repository.
+   * **OAuth refresh token (personal Gmail accounts).** Shared Drives need Google Workspace, so a personal account uses this method; files use that account's storage.
+     1. In Google Cloud Console, enable the **Google Drive API**.
+     2. Set up the OAuth consent screen (Audience: External), then **Publish app** to *In production*. In *Testing* status, refresh tokens expire after 7 days.
+     3. Create an OAuth client of type **Web application** with the redirect URI `https://developers.google.com/oauthplayground`.
+     4. In the OAuth 2.0 Playground, choose *Use your own OAuth credentials*, authorize the scope `https://www.googleapis.com/auth/drive` with the Drive owner's account, and exchange the code for tokens. Copy the **refresh token**.
+3. **Set the server environment variables.** Set them in the AI Studio Secrets panel (then redeploy), in Cloud Run, or in the Vercel project settings. Never put them in the frontend or the repository.
 
 | Variable | Required | Value |
 |---|---|---|
