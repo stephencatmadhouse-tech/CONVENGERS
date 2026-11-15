@@ -12,8 +12,9 @@ import React, { useEffect, useState } from 'react';
 import { RefreshCw, UploadCloud, Check, Minus, HardDrive } from 'lucide-react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config.ts';
-import { driveStatus, reconcileDrive, finishPendingRecords } from '../drive/driveClient.ts';
+import { driveStatus, reconcileDrive, finishPendingRecords, saveDriveCredentials } from '../drive/driveClient.ts';
 import { plural } from '../utils/plural.ts';
+import { fmtDate } from '../domain/dates.ts';
 import { useCommand } from './context.tsx';
 import { Banner, Card, Field, SyncChip, SYNC_LABEL } from './ui.tsx';
 import { INTERNAL_ROLES, EXTERNAL_ROLES, ROLE_LABEL, allowedModules, landingModule, isManagerRole, canEditOperations } from '../auth/roles.ts';
@@ -323,9 +324,13 @@ const DriveStorageCard: React.FC = () => {
     kind: 'info' | 'warn' | 'error';
     text: string;
   } | null>(null);
+  // Last known credential source, kept while a new check runs so the connect form (and its message) stays in place
+  const [source, setSource] = useState<'env' | 'app' | null | undefined>(undefined);
   const check = async () => {
     setSt('loading');
-    setSt(await driveStatus(true));
+    const r = await driveStatus(true);
+    setSt(r);
+    if (r) setSource(r.source ?? null);
   };
   useEffect(() => {
     void check();
@@ -356,7 +361,9 @@ const DriveStorageCard: React.FC = () => {
           ? 'Not configured on the server'
           : st.rootAccessible === false
             ? `Configured, but the root folder cannot be opened${st.error ? `: ${st.error}` : ''}`
-            : `Connected${st.rootName ? ` · root folder “${st.rootName}”` : ''}${st.mode ? ` · ${st.mode === 'service_account' ? 'service account' : 'OAuth'}` : ''}`;
+            : `Connected${st.rootName ? ` · root folder “${st.rootName}”` : ''}${st.mode ? ` · ${st.mode === 'service_account' ? 'service account' : 'Google account'}` : ''}${
+                st.source === 'app' ? ` · saved in the app${st.savedBy ? ` by ${st.savedBy}` : ''}${st.savedAt ? ` on ${fmtDate(st.savedAt.slice(0, 10))}` : ''}` : ''
+              }`;
   const ok = st !== 'loading' && !!st?.configured && st.rootAccessible !== false;
   const recover = async () => {
     setBusy('recover');
@@ -447,8 +454,8 @@ const DriveStorageCard: React.FC = () => {
                   <code>{k}</code>
                 </React.Fragment>
               ))}
-              . Add them as secrets on the server (in AI Studio: the Secrets panel), check each name is spelled exactly, then redeploy and press Test Connection. See
-              docs/GOOGLE_DRIVE.md.
+              . {isAdmin ? 'Enter them below under “Connect Google Drive”' : 'The System Administrator can enter them under “Connect Google Drive”'}, or add them as
+              server secrets and redeploy. See docs/GOOGLE_DRIVE.md.
             </>
           ) : (
             <>
@@ -466,6 +473,7 @@ const DriveStorageCard: React.FC = () => {
           </button>
         </div>
       )}
+      {isAdmin && source !== undefined && source !== 'env' && <DriveConnectForm connected={source === 'app'} onDone={check} />}
       {isAdmin && (
         <details style={{ marginTop: 14 }}>
           <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Folder names</summary>
@@ -511,5 +519,86 @@ const DriveStorageCard: React.FC = () => {
         </details>
       )}
     </Card>
+  );
+};
+
+/** Administrator form: the four Google Drive values are sent once to the server, tested, and stored where no browser can read them. */
+const DriveConnectForm: React.FC<{ connected: boolean; onDone: () => void }> = ({ connected, onDone }) => {
+  const [v, setV] = useState({ clientId: '', clientSecret: '', refreshToken: '', rootFolderId: '' });
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ kind: 'info' | 'error'; text: string } | null>(null);
+  const save = async () => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await saveDriveCredentials(v);
+      setV({ clientId: '', clientSecret: '', refreshToken: '', rootFolderId: '' });
+      setMsg({ kind: 'info', text: `Google Drive connected${r.rootName ? ` — files will be stored in “${r.rootName}”` : ''}.` });
+      setOpen(false);
+      onDone();
+    } catch (e) {
+      setMsg({ kind: 'error', text: e instanceof Error ? e.message : 'Could not connect.' });
+    }
+    setBusy(false);
+  };
+  const disconnect = async () => {
+    if (!window.confirm('Disconnect Google Drive? Uploads stop until it is connected again. Files already in Drive are not affected.')) return;
+    setBusy(true);
+    try {
+      await saveDriveCredentials({ remove: true });
+      setMsg({ kind: 'info', text: 'Google Drive disconnected.' });
+      onDone();
+    } catch (e) {
+      setMsg({ kind: 'error', text: e instanceof Error ? e.message : 'Could not disconnect.' });
+    }
+    setBusy(false);
+  };
+  const field = (k: keyof typeof v, label: string, secret?: boolean, placeholder?: string) => (
+    <Field label={label}>
+      <input
+        className="cv-input"
+        type={secret ? 'password' : 'text'}
+        autoComplete="off"
+        spellCheck={false}
+        value={v[k]}
+        placeholder={placeholder}
+        onChange={(e) => setV({ ...v, [k]: e.target.value })}
+      />
+    </Field>
+  );
+  const complete = Object.values(v).every((x) => x.trim());
+  const [open, setOpen] = useState(!connected);
+  return (
+    <>
+      <details open={open} onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)} style={{ marginTop: 14 }}>
+        <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{connected ? 'Google Drive connection' : 'Connect Google Drive'}</summary>
+        <p className="cv-dim" style={{ fontSize: 13 }}>
+          {connected
+            ? 'Connected with values saved in the app. To change them, enter all four again. Saved values are never shown.'
+            : 'Paste the four values from the Google Drive setup (docs/GOOGLE_DRIVE.md). They are checked with Google, then stored on the server, where no browser can read them back.'}
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 10 }}>
+          {field('clientId', 'Client ID', false, '…apps.googleusercontent.com')}
+          {field('clientSecret', 'Client secret', true)}
+          {field('refreshToken', 'Refresh token', true)}
+          {field('rootFolderId', 'Drive folder ID (or folder link)', false, 'Code after /folders/ in the folder address')}
+        </div>
+        <div className="cv-row" style={{ marginTop: 10 }}>
+          <button type="button" className="cv-btn primary sm" onClick={save} disabled={busy || !complete}>
+            {busy ? 'Checking…' : connected ? 'Save and Test New Values' : 'Connect and Test'}
+          </button>
+          {connected && (
+            <button type="button" className="cv-btn ghost sm" onClick={disconnect} disabled={busy}>
+              Disconnect
+            </button>
+          )}
+        </div>
+      </details>
+      {msg && (
+        <div style={{ marginTop: 10 }}>
+          <Banner kind={msg.kind}>{msg.text}</Banner>
+        </div>
+      )}
+    </>
   );
 };

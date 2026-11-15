@@ -227,6 +227,9 @@ export async function driveStatus(check = false): Promise<{
   configured: boolean;
   missing?: string[];
   invalid?: string[];
+  source?: 'env' | 'app' | null;
+  savedBy?: string;
+  savedAt?: string;
   rootAccessible?: boolean;
   rootName?: string;
   error?: string;
@@ -300,4 +303,18 @@ export async function setDrivePublication(fileId: string, published: boolean, by
     publishedAt: published ? new Date().toISOString() : null,
     publishedBy: published ? by : null,
   });
+}
+
+/** Administrator: save the Google Drive connection on the server (checked first; never readable afterwards). */
+export async function saveDriveCredentials(
+  v: { clientId: string; clientSecret: string; refreshToken: string; rootFolderId: string } | { remove: true },
+): Promise<{ rootName?: string }> {
+  const r = await fetch('/api/drive/credentials', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${await idToken()}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(v),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || `Could not save (${r.status}).`);
+  return j;
 }

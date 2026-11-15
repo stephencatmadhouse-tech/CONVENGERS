@@ -25,6 +25,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { driveEnv, folderPath, safeName, ALLOWED_TYPES, DEFAULT_FOLDERS, type FolderKey, type FolderSettings } from './config.ts';
 import { DriveApi, DriveError } from './driveApi.ts';
 import { adminDb, verifyCaller, type Caller } from './admin.ts';
+import { loadDriveEnv, saveStoredCredentials } from './credentials.ts';
 
 const PROJECT_ID = 'bahay-build';
 const PROJECT_NAME = 'Convengers Bahay Build';
@@ -136,11 +137,12 @@ function publicFile(d: any) {
 
 // ---------------- routes ----------------
 async function status(req: IncomingMessage, res: ServerResponse) {
-  const env = driveEnv();
+  const env = await loadDriveEnv();
   const out: any = {
     configured: !!env.mode && !!env.rootFolderId,
     mode: env.mode,
     rootFolder: !!env.rootFolderId,
+    source: env.source,
   };
   const url = new URL((req as any).originalUrl || req.url || '/', 'http://x');
   if (url.searchParams.get('check')) {
@@ -157,6 +159,10 @@ async function status(req: IncomingMessage, res: ServerResponse) {
       if (!env.rootFolderId) missing.push('GOOGLE_DRIVE_ROOT_FOLDER_ID');
       out.missing = missing;
     }
+    if (caller?.manager && env.source === 'app') {
+      out.savedBy = env.savedBy;
+      out.savedAt = env.savedAt;
+    }
     if (caller?.manager && out.configured) {
       try {
         const f = await new DriveApi(env).getFolder(env.rootFolderId!);
@@ -172,7 +178,7 @@ async function status(req: IncomingMessage, res: ServerResponse) {
 }
 
 async function upload(req: IncomingMessage, res: ServerResponse) {
-  const env = driveEnv();
+  const env = await loadDriveEnv();
   const caller = await verifyCaller(env, req.headers.authorization);
   if (!caller)
     return send(res, 401, {
@@ -374,7 +380,7 @@ async function upload(req: IncomingMessage, res: ServerResponse) {
 }
 
 async function file(req: IncomingMessage, res: ServerResponse, fileId: string) {
-  const env = driveEnv();
+  const env = await loadDriveEnv();
   if (!isId(fileId)) return send(res, 404, { error: 'Not found' });
   const snap = await adminDb(env).collection('driveFiles').doc(fileId).get();
   const d: any = snap.exists ? snap.data() : null;
@@ -404,7 +410,7 @@ async function file(req: IncomingMessage, res: ServerResponse, fileId: string) {
 }
 
 async function record(req: IncomingMessage, res: ServerResponse) {
-  const env = driveEnv();
+  const env = await loadDriveEnv();
   const caller = await verifyCaller(env, req.headers.authorization);
   if (!caller?.staff) return send(res, caller ? 403 : 401, { error: 'Not allowed.' });
   const { fileId } = await readJson(req);
@@ -433,7 +439,7 @@ async function record(req: IncomingMessage, res: ServerResponse) {
 }
 
 async function reconcile(req: IncomingMessage, res: ServerResponse) {
-  const env = driveEnv();
+  const env = await loadDriveEnv();
   const caller = await verifyCaller(env, req.headers.authorization);
   if (!caller?.manager)
     return send(res, caller ? 403 : 401, {
@@ -504,6 +510,62 @@ async function reconcile(req: IncomingMessage, res: ServerResponse) {
   });
 }
 
+/** Administrators save (or remove) the Google Drive connection from the app. Values are checked, stored server-side and never returned. */
+async function credentials(req: IncomingMessage, res: ServerResponse) {
+  const env = driveEnv();
+  const caller = await verifyCaller(env, req.headers.authorization);
+  if (!caller) return send(res, 401, { error: 'Sign in first.' });
+  if (caller.role !== 'admin' || !caller.active) return send(res, 403, { error: 'Only the System Administrator can connect Google Drive.' });
+  const body = await readJson(req);
+  if (body?.remove) {
+    await saveStoredCredentials(env, null);
+    return send(res, 200, { ok: true, removed: true });
+  }
+  const clean = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+  let rootFolderId = clean(body?.rootFolderId);
+  const m = /folders\/([A-Za-z0-9_-]+)/.exec(rootFolderId);
+  if (m) rootFolderId = m[1];
+  const value = {
+    clientId: clean(body?.clientId),
+    clientSecret: clean(body?.clientSecret),
+    refreshToken: clean(body?.refreshToken),
+    rootFolderId,
+  };
+  const missing = Object.entries(value)
+    .filter(([, v]) => !v)
+    .map(([k]) => k);
+  if (missing.length) return send(res, 400, { error: `Fill in every field (missing: ${missing.join(', ')}).` });
+  if (!/\.apps\.googleusercontent\.com$/.test(value.clientId)) return send(res, 400, { error: 'The Client ID should end with .apps.googleusercontent.com.' });
+  if (!/^[A-Za-z0-9_-]{5,}$/.test(value.rootFolderId))
+    return send(res, 400, { error: 'The folder ID does not look right. Copy the code after /folders/ in the folder address.' });
+  // Check the connection before saving
+  const test = {
+    ...env,
+    mode: 'oauth' as const,
+    serviceAccount: undefined,
+    oauth: { clientId: value.clientId, clientSecret: value.clientSecret, refreshToken: value.refreshToken },
+    rootFolderId: value.rootFolderId,
+  };
+  let rootName = '';
+  try {
+    const f = await new DriveApi(test).getFolder(value.rootFolderId);
+    if (!f)
+      return send(res, 400, {
+        error: 'Connected to Google, but that folder was not found (or it is not a folder). Check the folder ID and that the same Google account owns it.',
+      });
+    rootName = f.name;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return send(res, 400, {
+      error: /invalid_grant|unauthorized_client|invalid_client|authentication failed/i.test(msg)
+        ? 'Google rejected these credentials. Check the Client ID and Client secret, and create a new refresh token in the OAuth Playground with the same client.'
+        : `Google Drive could not be reached with these credentials: ${msg}`,
+    });
+  }
+  await saveStoredCredentials(env, { ...value, savedBy: caller.name || caller.email, savedAt: new Date().toISOString() });
+  send(res, 200, { ok: true, rootName });
+}
+
 /** Entry point for every /api/drive/* request. */
 export async function handleDriveRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const url = new URL((req as any).originalUrl || req.url || '/', 'http://x');
@@ -513,6 +575,7 @@ export async function handleDriveRequest(req: IncomingMessage, res: ServerRespon
     if (req.method === 'POST' && p === '/api/drive/upload') return await upload(req, res);
     if (req.method === 'POST' && p === '/api/drive/record') return await record(req, res);
     if (req.method === 'POST' && p === '/api/drive/reconcile') return await reconcile(req, res);
+    if (req.method === 'POST' && p === '/api/drive/credentials') return await credentials(req, res);
     const m = /^\/api\/drive\/file\/([^/]+)$/.exec(p);
     if (req.method === 'GET' && m) return await file(req, res, decodeURIComponent(m[1]));
     send(res, 404, { error: 'Not found' });

@@ -36,6 +36,11 @@ Phone / browser ──(Firebase sign-in token)──► /api/drive/*  (this app'
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | only outside Google Cloud | A Firebase Admin key, used by the server to verify sign-ins and write file records. Not needed on Cloud Run / AI Studio, which use the default service account. |
 | `DRIVE_MAX_UPLOAD_MB` | no | Server upload limit (default 20) |
 
+   **Can't set server secrets?** On hosts where you cannot set server secrets (e.g. an AI Studio Starter project), the System Administrator can use **Database Synchronization → Google Drive storage → Connect Google Drive** instead:
+   * Paste the Client ID, Client secret, refresh token and the folder ID or link.
+   * The server tests them with Google first, then stores them in Firestore `driveSecrets/oauth`.
+   * The security rules block every browser from that collection, and the values are never returned.
+   * Server environment variables, when present, take precedence.
 4. **Deploy `firestore.rules`.** The new collections are `driveFiles`, `driveConfig` and `dailyReports`. The GitHub Action deploys them, or you can paste the rules into the Firebase console.
 5. **Check the connection.** Open **Database Synchronization → Google Drive storage → Test Connection**. It should say *Connected · root folder "…"*.
 
