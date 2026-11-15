@@ -61,7 +61,7 @@ service cloud.firestore {
     function isManager() {
       return isSignedIn() && (
         isAdmin() ||
-        (getUserRole() in ['manager', 'director'] && getUserStatus() == 'active')
+        (getUserRole() == 'manager' && getUserStatus() == 'active')
       );
     }
 
@@ -69,7 +69,7 @@ service cloud.firestore {
     function isStaff() {
       return isSignedIn() && (
         isManager() ||
-        (getUserRole() in ['staff', 'engineer', 'production', 'construction_manager', 'quality'] && getUserStatus() == 'active')
+        (getUserRole() in ['staff', 'engineer', 'production'] && getUserStatus() == 'active')
       );
     }
 
@@ -112,7 +112,7 @@ service cloud.firestore {
       // Role changes: Only admin can update users, and a user can NEVER change their own role.
       allow update: if isAdmin() && request.auth.uid != userId && (
         (!incoming().diff(existing()).affectedKeys().hasAny(['role']) ||
-         incoming().role in ['admin', 'director', 'manager', 'construction_manager', 'engineer', 'production', 'quality', 'staff', 'viewer',
+         incoming().role in ['admin', 'manager', 'engineer', 'production', 'staff', 'viewer',
                              'owner', 'executive', 'client', 'stakeholder', 'pending'])
       );
 
@@ -280,23 +280,6 @@ service cloud.firestore {
       allow create, update: if isManager() && isValidId(id) && incoming().id == id
         && incoming().date is string && incoming().title is string;
       allow delete: if isManager();
-    }
-
-    // --- DAILY SITE REPORTS (mobile site reporting) ---
-    // Each person writes only their own reports; one document per person, date and activity.
-    match /siteReports/{id} {
-      allow read: if isInternal();
-      allow create, update: if isStaff() && isValidId(id) && incoming().id == id
-        && incoming().submittedById == request.auth.uid
-        && incoming().progressAfter is number && incoming().progressAfter >= 0 && incoming().progressAfter <= 100;
-      allow delete: if isAdmin();
-    }
-
-    // --- CLIENT EXPERIENCE CONFIGURATION: construction journey stages, project profile ---
-    // Internal only. Clients see this information only through the published `portal` snapshot.
-    match /clientConfig/{id} {
-      allow read: if isInternal();
-      allow write: if isManager() && id in ['journey', 'profile'];
     }
 
     // --- PER-USER NOTIFICATION STATE: read keys + preferences, own document only ---
