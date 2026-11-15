@@ -18,7 +18,7 @@ import { Banner, Card, ConfirmDialog, Empty, Field, Modal, StatusPill } from './
 import { clientConfigStore } from '../firebase/opsStores.ts';
 import { useClientConfig } from '../firebase/useClientConfig.ts';
 import { uploadFile } from '../firebase/files.ts';
-import { computeJourney, defaultJourney, newStageId, sortedStages, type JourneyConfig, type JourneyStage } from '../domain/journey.ts';
+import { computeJourney, defaultJourney, isNineStageLayout, newStageId, sortedStages, upgradeToTwelveStages, type JourneyConfig, type JourneyStage } from '../domain/journey.ts';
 import { clientStatus, type PortalJourney } from '../domain/portal.ts';
 import { isConstructionItem } from '../domain/categories.ts';
 import { fmtDate } from '../domain/dates.ts';
@@ -157,7 +157,20 @@ export const JourneyManagement: React.FC = () => {
         {!editable && <Banner kind="info">Read-only: stages are configured by the System Administrator or a Project Manager.</Banner>}
       </Card>
 
-      <Card title="Stage illustrations" note="Upload the nine-stage isometric sheet once (stages are read from its grid in order), or set an image per stage below.">
+      {editable && isNineStageLayout(cur) && (
+        <Banner kind="info">
+          This journey uses the earlier nine-stage layout. The recommended layout for this three-storey house has twelve stages, with a separate structure stage for
+          each floor, plus walls, plumbing and electrical works, interior finishes and turnover.{' '}
+          <button type="button" className="cv-linkbtn" onClick={() => setDraft(upgradeToTwelveStages(cur))}>
+            Switch to 12 stages
+          </button>{' '}
+          (review below, then Save Changes).
+        </Banner>
+      )}
+      <Card
+        title="Stage illustrations"
+        note={`Upload one sheet with a picture per stage (read left to right, top to bottom; set its columns and rows), or set an image per stage below. A sheet with fewer pictures than stages (such as the nine-picture sheet) is reused: each stage shows the closest picture.`}
+      >
         <div className="jm-sheet">
           <div className="jm-sheet-prev">
             {cur.sheetUrl ? <img src={cur.sheetUrl} alt="Stage illustration sheet" /> : <div className="jm-empty-art"><ImageIcon size={22} aria-hidden /> No sheet uploaded — placeholder drawings are shown</div>}
@@ -203,7 +216,7 @@ export const JourneyManagement: React.FC = () => {
             return (
               <div key={s.id} className={`jm-row ${s.visible ? '' : 'hidden'}`}>
                 <div className="jm-art">
-                  <StageArt stage={{ index: i, name: s.name, imageUrl: s.imageUrl }} journey={{ sheetUrl: cur.sheetUrl, sheetCols: cur.sheetCols, sheetRows: cur.sheetRows }} />
+                  <StageArt stage={{ index: i, name: s.name, imageUrl: s.imageUrl, sheetIndex: s.sheetIndex }} journey={{ sheetUrl: cur.sheetUrl, sheetCols: cur.sheetCols, sheetRows: cur.sheetRows }} stageCount={cur.stages.length} />
                   <span className="jm-num">{String(i + 1).padStart(2, '0')}</span>
                 </div>
                 <div className="jm-main">
@@ -282,8 +295,8 @@ export const JourneyManagement: React.FC = () => {
       )}
       {confirm?.kind === 'reset' && (
         <ConfirmDialog
-          title="Reset to the default nine stages?"
-          message="Stage names, order, descriptions, links and per-stage images are replaced by the default nine-stage sequence. The uploaded stage sheet is kept. Nothing changes until you Save Changes."
+          title="Reset to the default twelve stages?"
+          message="Stage names, order, descriptions, links and per-stage images are replaced by the default twelve-stage sequence for the three-storey house. The uploaded stage sheet is kept. Nothing changes until you Save Changes."
           confirmLabel="Reset"
           onCancel={() => setConfirm(null)}
           onConfirm={() => {

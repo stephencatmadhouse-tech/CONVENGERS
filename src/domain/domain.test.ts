@@ -356,7 +356,7 @@ test('firestore.rules public portal kinds match the app and internal collections
 
 // ---------------- 2.0: categories, construction journey, forecast, client snapshot ----------------
 import { categoryProgress, classifyCategory, CONSTRUCTION_CATEGORIES } from './categories.ts';
-import { computeJourney, defaultJourney, assignStages, currentStageIndex } from './journey.ts';
+import { computeJourney, defaultJourney, assignStages, currentStageIndex, isNineStageLayout, upgradeToTwelveStages, sheetTile } from './journey.ts';
 import { forecastCompletion } from './metrics.ts';
 import { clientStatus } from './portal.ts';
 
@@ -391,18 +391,80 @@ test('journey: stage progress comes from linked activities, nothing is double co
   const all = [...links.values()].flat().map((x) => x.id);
   assert.equal(all.length, new Set(all).size, 'each activity in at most one stage');
   const stages = computeJourney(cfg, r, TODAY);
-  assert.equal(stages.length, 9);
+  assert.equal(stages.length, 12);
   assert.ok(stages.every((s) => s.progress === null || (s.progress >= 0 && s.progress <= 100)));
   // A stage without links reports "pending" (null), never an invented figure
   const empty = stages.find((s) => !s.linked);
   if (empty) assert.equal(empty.progress, null);
   // Explicit links override automatic ones and are removed from the automatic pool
   const pick = r.find((x) => x.kind === 'scope')!;
-  cfg.stages[8].activityIds = [pick.id];
+  cfg.stages[10].activityIds = [pick.id];
   const after = assignStages(cfg, r);
-  assert.deepEqual(after.get(cfg.stages[8].id)!.map((x) => x.id), [pick.id]);
-  assert.ok(![...after.entries()].some(([id, list]) => id !== cfg.stages[8].id && list.some((x) => x.id === pick.id)));
+  assert.deepEqual(after.get(cfg.stages[10].id)!.map((x) => x.id), [pick.id]);
+  assert.ok(![...after.entries()].some(([id, list]) => id !== cfg.stages[10].id && list.some((x) => x.id === pick.id)));
   assert.equal(currentStageIndex([{ status: 'Completed' }, { status: 'In Progress' }, { status: 'Upcoming' }]), 1);
+});
+
+test('journey: twelve stages for the three-storey house map real activities to the right stage', () => {
+  const r = buildRegister(input, TODAY);
+  const cfg = defaultJourney();
+  const links = assignStages(cfg, r);
+  const stageOf = (pred: (x: (typeof r)[number]) => boolean) => {
+    const a = r.find(pred)!;
+    return cfg.stages.find((s) => links.get(s.id)!.some((x) => x.id === a.id))?.name;
+  };
+  assert.equal(stageOf((x) => x.name === 'Site clearing & preparation'), 'Site Preparation');
+  assert.equal(stageOf((x) => x.name === 'Footing concrete works'), 'Foundation Works');
+  assert.equal(stageOf((x) => x.floor === 'GF' && x.name === 'Plumbing embedded works (parallel)'), 'Ground Floor Structure');
+  assert.equal(stageOf((x) => x.floor === '2F' && x.name === 'I-beam connections'), 'Second Floor Structure');
+  assert.equal(stageOf((x) => x.kind === 'pour' && x.floor === '2F'), 'Second Floor Structure');
+  assert.equal(stageOf((x) => x.floor === '3F' && x.name === 'Steel deck / reinforcement'), 'Third Floor Structure');
+  assert.equal(stageOf((x) => x.name === 'Roof trusses'), 'Roof Framing');
+  assert.equal(stageOf((x) => x.floor === '2F' && x.name === 'Wall assembly works'), 'Walls and Partitions');
+  assert.equal(stageOf((x) => x.floor === '3F' && x.name === 'Electrical works'), 'Plumbing, Electrical and Mechanical Works');
+  assert.equal(stageOf((x) => x.floor === 'GF' && x.name === 'Doors & window hardware'), 'Ceilings, Doors and Windows');
+  assert.equal(stageOf((x) => x.floor === '2F' && x.name === 'Tiling & floor finishes'), 'Interior Finishes');
+  assert.equal(stageOf((x) => x.floor === '2F' && x.name === 'Final MEP / fixtures'), 'Testing, Final Inspection and Turnover');
+  assert.equal(stageOf((x) => x.floor === '3F' && x.name === 'Final punchlist / rectification'), 'Testing, Final Inspection and Turnover');
+  // Every construction scope lands in exactly one stage
+  const all = [...links.values()].flat().map((x) => x.id);
+  assert.equal(all.length, new Set(all).size);
+  assert.ok(r.filter((x) => x.kind === 'scope').every((x) => all.includes(x.id)), 'no scope left out of the journey');
+});
+
+test('journey: the nine-stage layout upgrades to twelve stages keeping remarks, visibility, links and the sheet', () => {
+  const nine = {
+    id: 'journey' as const,
+    sheetUrl: '/api/drive/file/Fsheet',
+    sheetCols: 3,
+    sheetRows: 3,
+    stages: ['site', 'foundation', 'ground', 'framing', 'walls', 'roofFraming', 'roofing', 'enclosure', 'finishing'].map((rule, i) => ({
+      id: `st-0${i + 1}`,
+      order: i + 1,
+      rule,
+      name: `Old ${rule}`,
+      description: '',
+      visible: rule !== 'roofing',
+      clientRemark: rule === 'site' ? 'Lot cleared' : undefined,
+      activityIds: rule === 'walls' ? ['SC-x'] : undefined,
+    })),
+  };
+  assert.ok(isNineStageLayout(nine));
+  assert.ok(!isNineStageLayout(defaultJourney()));
+  const up = upgradeToTwelveStages(nine);
+  assert.equal(up.stages.length, 12);
+  assert.equal(up.sheetUrl, '/api/drive/file/Fsheet');
+  assert.equal(up.stages[0].clientRemark, 'Lot cleared');
+  assert.equal(up.stages.find((s) => s.rule === 'roofing')!.visible, false);
+  assert.deepEqual(up.stages.find((s) => s.rule === 'walls')!.activityIds, ['SC-x']);
+  assert.equal(up.stages[3].name, 'Second Floor Structure');
+});
+
+test('journey: a nine-picture sheet is reused for twelve stages; a twelve-picture sheet is used in order', () => {
+  const st = defaultJourney().stages.map((s, index) => ({ index, sheetIndex: s.sheetIndex }));
+  assert.deepEqual(st.map((s) => sheetTile(s, 12, 3, 3)), [0, 1, 2, 3, 3, 4, 4, 5, 6, 7, 8, 8]);
+  assert.deepEqual(st.map((s) => sheetTile(s, 12, 4, 3)), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  assert.equal(sheetTile({ index: 5 }, 9, 3, 3), 5);
 });
 
 test('forecast: one authoritative forecast date shared by the client snapshot and the dashboards', () => {

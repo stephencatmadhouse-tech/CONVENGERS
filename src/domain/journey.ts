@@ -11,8 +11,10 @@
  *
  *   Master Project Tracker → activities → stage → journey → client dashboard
  *
- * Default links follow the nine-stage reference sequence by matching activity
- * names / floors / phases. Any stage can instead be linked to an explicit list
+ * Default links follow the twelve-stage sequence for a three-storey house
+ * (site → foundation → each floor's structure → walls → MEP → roof →
+ * enclosure → finishes → turnover) by matching activity names / floors /
+ * phases. Any stage can instead be linked to an explicit list
  * of activities, and activities linked explicitly are never counted twice.
  */
 
@@ -31,6 +33,12 @@ export interface JourneyStage {
   activityIds?: string[];
   /** Optional illustration for this stage (replaces the sheet tile). */
   imageUrl?: string;
+  /**
+   * Tile to use when the illustration sheet has fewer tiles than there are
+   * stages (e.g. the nine-picture sheet with twelve stages). With a sheet that
+   * has a tile for every stage, tiles are used in stage order.
+   */
+  sheetIndex?: number;
   /** Approved client-facing remark for this stage. */
   clientRemark?: string;
 }
@@ -60,11 +68,20 @@ export interface ProjectProfile {
 
 export type ClientConfigDoc = JourneyConfig | ProjectProfile;
 
+const structural = (r: RegisterActivity) => r.phase === 'Structural' || r.kind === 'pour';
+const finishingPhase = (r: RegisterActivity) => r.phase === 'Finishing';
 const RULES: Record<string, (r: RegisterActivity) => boolean> = {
   site: (r) => /mobili[sz]ation|layout|site clearing|site prep/i.test(r.name),
   foundation: (r) => /excavation|footing|foundation|pedestal|tie beam|backfill/i.test(r.name),
-  ground: (r) => r.floor === 'GF' && r.phase === 'Structural',
-  framing: (r) => (r.floor === '2F' || r.floor === '3F') && r.phase === 'Structural' && !/roof|truss/i.test(r.name),
+  ground: (r) => r.floor === 'GF' && structural(r),
+  framing: (r) => (r.floor === '2F' || r.floor === '3F') && structural(r) && !/roof|truss/i.test(r.name),
+  second: (r) => r.floor === '2F' && structural(r) && !/roof|truss/i.test(r.name),
+  third: (r) => r.floor === '3F' && structural(r) && !/roof|truss/i.test(r.name),
+  mep: (r) => finishingPhase(r) && /plumbing|electrical|mechanical|\bmep\b/i.test(r.name),
+  interior: (r) => /til(e|ing)|paint|cabinet|carpentry|floor finish/i.test(r.name),
+  closeout: (r) =>
+    (finishingPhase(r) || /turnover|move-in/i.test(r.name)) &&
+    /testing|commissioning|punch|rectification|turnover|move-in|final (plumbing|mep|electrical)|fixtures/i.test(r.name),
   walls: (r) => /wall|masonry|\bchb\b/i.test(r.name),
   roofFraming: (r) => /roof|truss/i.test(r.name) && !/roofing|roof sheet|gutter/i.test(r.name),
   roofing: (r) => /roofing|roof sheet|gutter|waterproof/i.test(r.name),
@@ -72,22 +89,168 @@ const RULES: Record<string, (r: RegisterActivity) => boolean> = {
   finishing: (r) => r.phase === 'Finishing' || /paint|til(e|ing)|finish|cabinet|carpentry|punch|rectification|testing|commissioning|turnover|move-in/i.test(r.name),
 };
 /** Rules are evaluated in this order (specific before general); display order is the stage order. */
-const RULE_PRIORITY = ['roofing', 'roofFraming', 'site', 'foundation', 'ground', 'framing', 'walls', 'enclosure', 'finishing'];
-
-export const DEFAULT_STAGES: JourneyStage[] = [
-  { id: 'st-01', order: 1, rule: 'site', name: 'Site Preparation', description: 'Clearing, layout and mobilization of the lot before construction begins.', visible: true },
-  { id: 'st-02', order: 2, rule: 'foundation', name: 'Foundation Works', description: 'Excavation, footings and tie beams that carry the weight of the house.', visible: true },
-  { id: 'st-03', order: 3, rule: 'ground', name: 'Ground Floor Works', description: 'Ground floor columns, utilities embedded in the slab and the ground floor slab.', visible: true },
-  { id: 'st-04', order: 4, rule: 'framing', name: 'Structural Framing', description: 'Upper-floor columns, beams, steel decks and slabs that form the frame of the house.', visible: true },
-  { id: 'st-05', order: 5, rule: 'walls', name: 'Wall Construction', description: 'Walls are assembled and the rooms take shape.', visible: true },
-  { id: 'st-06', order: 6, rule: 'roofFraming', name: 'Roof Framing', description: 'Roof beams and trusses that will carry the roof.', visible: true },
-  { id: 'st-07', order: 7, rule: 'roofing', name: 'Roofing Works', description: 'Roof sheets, flashing and gutters that close the house from the weather.', visible: true },
-  { id: 'st-08', order: 8, rule: 'enclosure', name: 'Architectural Enclosure', description: 'Doors, windows, ceilings and metal works that close and secure the house.', visible: true },
-  { id: 'st-09', order: 9, rule: 'finishing', name: 'Finishing and Completion', description: 'Finishes, fixtures, testing, punch listing and turnover of your home.', visible: true },
+const RULE_PRIORITY = [
+  'roofing',
+  'roofFraming',
+  'site',
+  'foundation',
+  'closeout',
+  'ground',
+  'second',
+  'third',
+  'framing',
+  'walls',
+  'mep',
+  'enclosure',
+  'interior',
+  'finishing',
 ];
+
+/**
+ * Twelve stages for the three-storey house. `sheetIndex` maps each stage to the
+ * closest picture of the nine-picture reference sheet; a twelve-picture sheet
+ * (4 × 3) is used in stage order instead.
+ */
+export const DEFAULT_STAGES: JourneyStage[] = [
+  {
+    id: 'st-01',
+    order: 1,
+    rule: 'site',
+    sheetIndex: 0,
+    name: 'Site Preparation',
+    description: 'Clearing, layout and mobilization of the lot before construction begins.',
+    visible: true,
+  },
+  {
+    id: 'st-02',
+    order: 2,
+    rule: 'foundation',
+    sheetIndex: 1,
+    name: 'Foundation Works',
+    description: 'Excavation, footings, column pedestals and tie beams that carry the weight of the house.',
+    visible: true,
+  },
+  {
+    id: 'st-03',
+    order: 3,
+    rule: 'ground',
+    sheetIndex: 2,
+    name: 'Ground Floor Structure',
+    description: 'Ground floor columns, utilities embedded in the slab, the ground floor slab and stairs.',
+    visible: true,
+  },
+  {
+    id: 'st-04',
+    order: 4,
+    rule: 'second',
+    sheetIndex: 3,
+    name: 'Second Floor Structure',
+    description: 'Second floor columns, beams, steel deck and the second floor slab.',
+    visible: true,
+  },
+  {
+    id: 'st-05',
+    order: 5,
+    rule: 'third',
+    sheetIndex: 3,
+    name: 'Third Floor Structure',
+    description: 'Third floor columns, beams, steel deck, the third floor slab and stairs.',
+    visible: true,
+  },
+  {
+    id: 'st-06',
+    order: 6,
+    rule: 'walls',
+    sheetIndex: 4,
+    name: 'Walls and Partitions',
+    description: 'Walls are built on every floor and the rooms take shape.',
+    visible: true,
+  },
+  {
+    id: 'st-07',
+    order: 7,
+    rule: 'mep',
+    sheetIndex: 4,
+    name: 'Plumbing, Electrical and Mechanical Works',
+    description: 'Water, drainage, electrical and mechanical lines installed inside the walls and ceilings.',
+    visible: true,
+  },
+  { id: 'st-08', order: 8, rule: 'roofFraming', sheetIndex: 5, name: 'Roof Framing', description: 'Roof beams and trusses that will carry the roof.', visible: true },
+  {
+    id: 'st-09',
+    order: 9,
+    rule: 'roofing',
+    sheetIndex: 6,
+    name: 'Roofing Works',
+    description: 'Roof sheets, flashing and gutters that close the house from the weather.',
+    visible: true,
+  },
+  {
+    id: 'st-10',
+    order: 10,
+    rule: 'enclosure',
+    sheetIndex: 7,
+    name: 'Ceilings, Doors and Windows',
+    description: 'Ceilings, doors, windows and metal works that close and secure the house.',
+    visible: true,
+  },
+  {
+    id: 'st-11',
+    order: 11,
+    rule: 'interior',
+    sheetIndex: 8,
+    name: 'Interior Finishes',
+    description: 'Floor and wall tiles, painting, cabinetry and carpentry.',
+    visible: true,
+  },
+  {
+    id: 'st-12',
+    order: 12,
+    rule: 'closeout',
+    sheetIndex: 8,
+    name: 'Testing, Final Inspection and Turnover',
+    description: 'Final fixtures, testing and commissioning, punch listing and turnover of your home.',
+    visible: true,
+  },
+];
+
+/** The earlier nine-stage sequence (recognised so it can be upgraded to twelve stages). */
+const NINE_STAGE_RULES = ['site', 'foundation', 'ground', 'framing', 'walls', 'roofFraming', 'roofing', 'enclosure', 'finishing'];
+export const isNineStageLayout = (cfg: JourneyConfig) => cfg.stages.length === 9 && NINE_STAGE_RULES.every((r) => cfg.stages.some((s) => s.rule === r));
+
+/**
+ * Upgrade the nine-stage layout to the twelve-stage one. Keeps the uploaded
+ * sheet, and for stages that continue (same rule) their visibility, client
+ * remark, own image and explicit activity links.
+ */
+export function upgradeToTwelveStages(cfg: JourneyConfig): JourneyConfig {
+  const byRule = new Map(cfg.stages.filter((s) => s.rule).map((s) => [s.rule!, s]));
+  const carry = (rule?: string) => (rule ? byRule.get(rule === 'interior' ? 'finishing' : rule) : undefined);
+  return {
+    ...cfg,
+    stages: DEFAULT_STAGES.map((d) => {
+      const old = carry(d.rule);
+      return {
+        ...d,
+        visible: old ? old.visible : d.visible,
+        clientRemark: old?.clientRemark,
+        imageUrl: old?.imageUrl,
+        activityIds: old?.activityIds?.length ? old.activityIds : undefined,
+      };
+    }),
+  };
+}
 
 export function defaultJourney(): JourneyConfig {
   return { id: 'journey', stages: DEFAULT_STAGES.map((s) => ({ ...s })), sheetCols: 3, sheetRows: 3 };
+}
+
+/** Which tile of the illustration sheet a stage uses (see `JourneyStage.sheetIndex`). */
+export function sheetTile(stage: { index: number; sheetIndex?: number }, stageCount: number, cols = 3, rows = 3): number | null {
+  const tiles = cols * rows;
+  if (stageCount <= tiles) return stage.index < tiles ? stage.index : null;
+  if (stage.sheetIndex !== undefined && stage.sheetIndex >= 0 && stage.sheetIndex < tiles) return stage.sheetIndex;
+  return stageCount > 1 ? Math.round((stage.index * (tiles - 1)) / (stageCount - 1)) : 0;
 }
 
 export function sortedStages(cfg: JourneyConfig): JourneyStage[] {
@@ -139,6 +302,7 @@ export interface StageView {
   actualFinish?: string;
   remark?: string;
   imageUrl?: string;
+  sheetIndex?: number;
   activities: { name: string; status: string; progress: number; finish?: string; category: string }[];
   activityIds: string[];
 }
@@ -152,10 +316,19 @@ export function computeJourney(cfg: JourneyConfig, register: RegisterActivity[],
       const { actual, planned } = weightedProgress(list, asOf);
       // Stages with no weighted scopes (e.g. pours only) use their stage/status progress average
       const fallback = list.length ? Math.round((list.reduce((a, r) => a + r.progress, 0) / list.length) * 10) / 10 : null;
-      const starts = list.map((r) => r.start).filter(Boolean).sort() as string[];
-      const finishes = list.map((r) => r.finish).filter(Boolean).sort() as string[];
+      const starts = list
+        .map((r) => r.start)
+        .filter(Boolean)
+        .sort() as string[];
+      const finishes = list
+        .map((r) => r.finish)
+        .filter(Boolean)
+        .sort() as string[];
       const status: StageStatus = list.length ? groupStatus(list) : 'Upcoming';
-      const actualFinishes = list.map((r) => r.actualFinish || (r.status === 'Completed' ? r.finish : undefined)).filter(Boolean).sort() as string[];
+      const actualFinishes = list
+        .map((r) => r.actualFinish || (r.status === 'Completed' ? r.finish : undefined))
+        .filter(Boolean)
+        .sort() as string[];
       return {
         id: s.id,
         order: s.order,
@@ -164,7 +337,7 @@ export function computeJourney(cfg: JourneyConfig, register: RegisterActivity[],
         description: s.description,
         visible: s.visible,
         linked: list.length > 0,
-        progress: list.length ? actual ?? fallback : null,
+        progress: list.length ? (actual ?? fallback) : null,
         planned: list.length ? planned : null,
         status,
         start: starts[0],
@@ -172,6 +345,7 @@ export function computeJourney(cfg: JourneyConfig, register: RegisterActivity[],
         actualFinish: status === 'Completed' ? actualFinishes[actualFinishes.length - 1] : undefined,
         remark: s.clientRemark?.trim() || undefined,
         imageUrl: s.imageUrl || undefined,
+        sheetIndex: s.sheetIndex,
         activities: list.map((r) => ({ name: r.name, status: r.status, progress: r.progress, finish: r.finish, category: r.category })),
         activityIds: list.map((r) => r.id),
       };

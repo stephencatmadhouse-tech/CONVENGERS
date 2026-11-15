@@ -44,6 +44,14 @@
   scroll-snap-type: x proximity;
   scrollbar-width: thin;
 }
+/* Ten or more stages: two rows on wide screens instead of a long sideways strip */
+@media (min-width: 900px) {
+  .jr-strip.rows {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    overflow-x: visible;
+  }
+}
 .jr-step {
   position: relative;
   display: grid;

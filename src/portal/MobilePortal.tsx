@@ -378,7 +378,7 @@ const MobileHomeBody: React.FC<{
       {cur && snap.journey && (
         <button type="button" className="mb-card mb-journey" onClick={() => go('journey')}>
           <span className="mb-journey-art">
-            <StageArt stage={cur} journey={snap.journey} />
+            <StageArt stage={cur} journey={snap.journey} stageCount={snap.journey.stages.length} />
           </span>
           <span className="mb-journey-b">
             <em>3D Construction Journey</em>

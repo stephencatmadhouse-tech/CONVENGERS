@@ -240,7 +240,7 @@ export const ClientOverview: React.FC<ClientCtx> = ({ snap, snapRec, updates, co
         {cur && snap.journey && (
           <button type="button" className="cx-card cx-journey" onClick={() => go('journey')}>
             <span className="cx-journey-art">
-              <StageArt stage={cur} journey={snap.journey} />
+              <StageArt stage={cur} journey={snap.journey} stageCount={snap.journey.stages.length} />
             </span>
             <span className="cx-journey-b">
               <span className="cx-label">Construction Journey 3D · current stage</span>

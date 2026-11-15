@@ -17,7 +17,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Clock3, AlertTriangle, CircleDot, ChevronLeft, ChevronRight, Camera, Layers } from 'lucide-react';
 import { IsoHouse } from './IsoHouse.tsx';
 import type { PortalJourney, PortalJourneyStage, ClientStatus, PortalRecord } from '../domain/portal.ts';
-import { currentStageIndex } from '../domain/journey.ts';
+import { currentStageIndex, sheetTile } from '../domain/journey.ts';
 import { fmtDate } from '../domain/dates.ts';
 import './journey.css';
 
@@ -41,14 +41,20 @@ function useImageAspect(url?: string, cols = 3, rows = 3): number | null {
 }
 
 /** One stage visual: own image → tile of the stage sheet → placeholder drawing. */
-export const StageArt: React.FC<{ stage: Pick<PortalJourneyStage, 'index' | 'name' | 'imageUrl'>; journey: Pick<PortalJourney, 'sheetUrl' | 'sheetCols' | 'sheetRows'> }> = ({ stage, journey }) => {
+export const StageArt: React.FC<{
+  stage: Pick<PortalJourneyStage, 'index' | 'name' | 'imageUrl' | 'sheetIndex'>;
+  journey: Pick<PortalJourney, 'sheetUrl' | 'sheetCols' | 'sheetRows'>;
+  /** Number of stages shown (decides whether the sheet has a picture for every stage). */
+  stageCount: number;
+}> = ({ stage, journey, stageCount }) => {
   const cols = journey.sheetCols || 3;
   const rows = journey.sheetRows || 3;
   const ratio = useImageAspect(!stage.imageUrl ? journey.sheetUrl : undefined, cols, rows);
   if (stage.imageUrl) return <img className="jr-img" src={stage.imageUrl} alt={`${stage.name} — reference illustration`} loading="lazy" />;
-  if (journey.sheetUrl && stage.index < cols * rows) {
-    const col = stage.index % cols;
-    const row = Math.floor(stage.index / cols);
+  const tile = journey.sheetUrl ? sheetTile(stage, stageCount, cols, rows) : null;
+  if (journey.sheetUrl && tile !== null) {
+    const col = tile % cols;
+    const row = Math.floor(tile / cols);
     return (
       <div
         className="jr-tile"
@@ -65,7 +71,7 @@ export const StageArt: React.FC<{ stage: Pick<PortalJourneyStage, 'index' | 'nam
   }
   return (
     <div className="jr-svg">
-      <IsoHouse stage={stage.index + 1} title={`${stage.name} — placeholder reference illustration`} />
+      <IsoHouse stage={(sheetTile(stage, stageCount, 3, 3) ?? stage.index) + 1} title={`${stage.name} — placeholder reference illustration`} />
     </div>
   );
 };
@@ -116,7 +122,7 @@ export const JourneyViewer: React.FC<JourneyViewerProps> = ({ journey, photos = 
       </div>
 
       {/* Stage strip */}
-      <div className="jr-strip" role="tablist" aria-label="Construction stages">
+      <div className={`jr-strip ${stages.length > 9 ? 'rows' : ''}`} role="tablist" aria-label="Construction stages">
         {stages.map((s, i) => {
           const tone = STATUS_TONE[s.status] || STATUS_TONE.Upcoming;
           return (
@@ -129,7 +135,7 @@ export const JourneyViewer: React.FC<JourneyViewerProps> = ({ journey, photos = 
               onClick={() => setSel(i)}
             >
               <span className="jr-step-art">
-                <StageArt stage={s} journey={journey} />
+                <StageArt stage={s} journey={journey} stageCount={stages.length} />
               </span>
               <span className="jr-step-num">{String(i + 1).padStart(2, '0')}</span>
               <span className="jr-step-name">{s.name}</span>
@@ -161,7 +167,7 @@ export const JourneyViewer: React.FC<JourneyViewerProps> = ({ journey, photos = 
           </div>
           <div className={`jr-compare ${compare ? 'on' : ''}`}>
             <figure className={`jr-figure ${st.status === 'Upcoming' ? 'muted' : ''} ${st.status === 'In Progress' ? 'live' : ''}`}>
-              <StageArt stage={st} journey={journey} />
+              <StageArt stage={st} journey={journey} stageCount={stages.length} />
               <figcaption>
                 <Layers size={13} aria-hidden /> 3D construction reference
               </figcaption>
