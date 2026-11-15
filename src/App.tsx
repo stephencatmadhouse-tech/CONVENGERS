@@ -1825,14 +1825,14 @@ export default function App() {
         <div className="shm">
           <div className="shbox" style={{ maxWidth: '460px' }}>
             <div className="shhead">
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <h2 className="text-base font-bold text-[var(--sx-ink)] flex items-center gap-2">
                 <span>⚠️</span> Confirm Project Baseline Reset
               </h2>
               <button type="button" className="shx" onClick={() => setIsResetConfirmOpen(false)}>
                 ×
               </button>
             </div>
-            <p className="text-xs text-[#BAC4E2] leading-relaxed mb-4">
+            <p className="text-xs text-[var(--sx-text-2)] leading-relaxed mb-4">
               Are you sure you want to reset all milestones, scopes, concrete pours, and production episodes in Firestore back to the original baseline?
             </p>
             <div className="shrow justify-end">

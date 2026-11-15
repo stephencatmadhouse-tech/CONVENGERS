@@ -71,8 +71,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   const roleColors: Record<string, string> = {
     admin: '#E0213B',
     manager: '#F5C518',
-    staff: '#3A9BFF',
-    viewer: '#BAC4E2',
+    staff: '#1F6FE0',
+    viewer: '#68738A',
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,7 +99,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       {!compact && (
       <div className="flex items-center gap-2.5 mr-2">
         <BrandLogo variant="toolbar" />
-        <b>CONVENGERS ASSEMBLE</b>
+        <b>PROJECT MANAGEMENT MASTER TRACKER</b>
         <span
           className="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono tracking-wide text-[var(--sx-text-3)] bg-[var(--sx-bg-5)] border border-[var(--sx-border-6)]/60 select-all"
           title="Custom website address: www.ConvengersAssemble.com"
@@ -156,7 +156,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               onClick={onToggleAdminPresentationMode}
               className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md font-bold text-xs border transition-all ${
                 isAdminPresentationMode
-                  ? 'bg-[var(--sx-bg-7)] text-[#F5C518] border-[var(--sx-border-4)] shadow-[0_0_10px_rgba(245,197,24,0.5)]'
+                  ? 'bg-[#7B4DFF] text-white border-[#7B4DFF]'
                   : 'bg-[var(--sx-bg-22)] text-[var(--sx-text-2)] hover:text-[var(--sx-ink)] border-[var(--sx-border-6)]/50'
               }`}
               title="Temporarily hide all editing controls to present to clients without signing out"
@@ -196,7 +196,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           <button
             type="button"
             onClick={onOpenAuth}
-            className="flex items-center gap-1 border border-[var(--sx-border-4)] bg-[var(--sx-bg-12)]/20 hover:bg-[var(--sx-bg-12)]/35 text-[#F5C518] px-2.5 py-1.5 rounded-md font-bold text-xs transition-all shadow-[0_0_8px_rgba(245,197,24,0.35)]"
+            className="flex items-center gap-1 border border-[#0A1140] bg-[#F5C518] hover:bg-[#e5b712] text-[#0A1140] px-2.5 py-1.5 rounded-md font-bold text-xs transition-all"
             title="Sign in as a Madhouse team member or administrator"
           >
             <ShieldCheck {...ico} /><span>Admin Sign In</span>

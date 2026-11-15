@@ -24,8 +24,8 @@ const LAYER_META: Record<Layer, { label: string; color: string }> = {
   pours: { label: 'Concrete pours', color: STREAM_HEX.Concrete },
   milestones: { label: 'Milestones', color: STREAM_HEX.Milestone },
   production: { label: 'Production shoots', color: STREAM_HEX.Production },
-  deliveries: { label: 'Material deliveries', color: '#777777' },
-  manpower: { label: 'Manpower', color: '#B0B0BA' },
+  deliveries: { label: 'Material deliveries', color: '#121C5A' },
+  manpower: { label: 'Manpower', color: '#68738A' },
 };
 
 interface ExtraEvent {
@@ -174,7 +174,7 @@ export const ScheduleCalendar: React.FC<{ defaultLayers: Layer[]; title?: string
                       type="button"
                       key={r.id}
                       className="cv-cal-ev"
-                      style={{ borderLeftColor: kindColor(r.kind, r.stream), outline: r.status === 'Delayed' ? '1px solid #E5484D' : cls === 'Conflict' ? '1px solid #E5484D' : undefined }}
+                      style={{ borderLeftColor: kindColor(r.kind, r.stream), outline: r.status === 'Delayed' ? '1px solid #E0213B' : cls === 'Conflict' ? '1px solid #E0213B' : undefined }}
                       title={`${r.name} · ${r.workstream} · ${fmtRange(r.start, r.finish)} · ${r.status}${cls ? ` · ${cls}` : ''}`}
                       onClick={() => actions.openActivity(r.id)}
                     >
@@ -190,7 +190,7 @@ export const ScheduleCalendar: React.FC<{ defaultLayers: Layer[]; title?: string
                       type="button"
                       key={e.id}
                       className="cv-cal-ev"
-                      style={{ borderLeftColor: LAYER_META[e.layer].color, outline: e.status === 'Delayed' ? '1px solid #E5484D' : undefined, fontStyle: 'italic' }}
+                      style={{ borderLeftColor: LAYER_META[e.layer].color, outline: e.status === 'Delayed' ? '1px solid #E0213B' : undefined }}
                       title={`${e.title} · ${fmtRange(e.start, e.end)} · ${e.status}`}
                       onClick={() => actions.navigate(e.route)}
                     >
@@ -233,7 +233,7 @@ export const ScheduleCalendar: React.FC<{ defaultLayers: Layer[]; title?: string
           <span className="cv-sw" style={{ background: 'repeating-linear-gradient(135deg,rgba(224,33,59,.35) 0 4px,transparent 4px 8px)' }} /> Non-working (Sunday, holiday, stoppage)
         </span>
         <span>✓ completed</span>
-        <span style={{ color: '#E5484D' }}>! delayed / conflict (red outline)</span>
+        <span style={{ color: '#E0213B' }}>! delayed / conflict (red outline)</span>
       </div>
       {dayOpen && (
         <Modal title={`Activities on ${fmtDate(dayOpen)}`} onClose={() => setDayOpen(null)} width={640}>
@@ -386,7 +386,7 @@ export const AlignmentView: React.FC = () => {
                   <td style={{ minWidth: 260 }}>
                     {a.alerts.length ? (
                       a.alerts.map((al, i) => (
-                        <div key={i} style={{ fontSize: 12, marginBottom: 3, color: al.severity === 'critical' ? '#E5484D' : al.severity === 'warn' ? '#B36D00' : undefined }}>
+                        <div key={i} style={{ fontSize: 12, marginBottom: 3, color: al.severity === 'critical' ? '#E0213B' : al.severity === 'warn' ? '#B45309' : undefined }}>
                           {al.severity === 'critical' ? '⛔' : al.severity === 'warn' ? '⚠️' : 'ℹ️'} {al.message}
                         </div>
                       ))

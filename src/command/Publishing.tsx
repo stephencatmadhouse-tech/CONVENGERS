@@ -26,11 +26,11 @@ import { Banner, Card, Empty, Field, Kpi, Modal, Pill, ConfirmDialog } from './u
 import { ReportStatusStamp } from './Reports.tsx';
 
 export const STATUS_HEX_PUB: Record<PublishStatus, string> = {
-  draft: '#9A9AA3',
-  review: '#F5A623',
-  approved: '#22A06B',
-  published: '#7026C8',
-  archived: '#C7C7D0',
+  draft: '#68738A',
+  review: '#FF9A1F',
+  approved: '#4BE08A',
+  published: '#7B4DFF',
+  archived: '#9CA3AF',
 };
 
 const KIND_LABEL: Record<PublicationKind, string> = {
@@ -165,8 +165,8 @@ const LiveOverview: React.FC<{ pubs: Publication[]; portalCount: number; portalI
         </div>
       </Card>
       <div className="cv-kpis">
-        <Kpi label="Live on portal" value={portalCount} color="#7026C8" sub="Published items incl. reports" />
-        <Kpi label="For review" value={by('review')} color={by('review') ? '#F5A623' : undefined} />
+        <Kpi label="Live on portal" value={portalCount} color="#7B4DFF" sub="Published items incl. reports" />
+        <Kpi label="For review" value={by('review')} color={by('review') ? '#B45309' : undefined} />
         <Kpi label="Approved, not published" value={by('approved')} />
         <Kpi label="Drafts" value={by('draft')} />
         <Kpi label="Published reports" value={repPublished} />

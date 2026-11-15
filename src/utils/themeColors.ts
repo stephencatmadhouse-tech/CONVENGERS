@@ -4,16 +4,16 @@
  *
  * Display-only colour mapping for hard-coded category colours that are
  * combined in code (e.g. `${color}22`) and therefore cannot be CSS variables.
- * Light theme: Convengers purple family. Dark theme: original colours.
+ * Light theme: official Convengers palette. Dark theme: original colours.
  * Data is never changed — this only affects how a colour is drawn.
  */
 
 const LIGHT_MAP: Record<string, string> = {
-  '#3A9BFF': '#7026C8', // construction / structural
-  '#FF9A1F': '#A34FEA', // finishing / concrete
-  '#F5C518': '#C7C7D0', // highlight
-  '#FF5D8F': '#C02AE0', // production
-  '#B58CFF': '#A34FEA', // other
+  '#3A9BFF': '#1F6FE0', // construction / structural
+  '#FF9A1F': '#FF9A1F', // finishing / concrete
+  '#F5C518': '#F5C518', // highlight
+  '#FF5D8F': '#7B4DFF', // production
+  '#B58CFF': '#0A1140', // other
 };
 
 export function isDarkTheme(): boolean {

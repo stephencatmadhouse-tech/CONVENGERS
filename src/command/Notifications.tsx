@@ -26,10 +26,10 @@ import { NotificationPrefs, NotificationType } from '../types/index.ts';
 import { fmtDate } from '../domain/dates.ts';
 
 export const PRIORITY_COLOR: Record<NotifPriority, { bg: string; fg: string }> = {
-  CRITICAL: { bg: '#E5484D', fg: '#FFFFFF' },
-  HIGH: { bg: '#F5A623', fg: '#2B1A00' },
-  MEDIUM: { bg: '#FFD43B', fg: '#303030' },
-  LOW: { bg: '#22A06B', fg: '#FFFFFF' },
+  CRITICAL: { bg: '#E0213B', fg: '#FFFFFF' },
+  HIGH: { bg: '#FF9A1F', fg: '#0A1140' },
+  MEDIUM: { bg: '#F5C518', fg: '#0A1140' },
+  LOW: { bg: '#4BE08A', fg: '#0A1140' },
 };
 
 export const PriorityChip: React.FC<{ p: NotifPriority }> = ({ p }) => (

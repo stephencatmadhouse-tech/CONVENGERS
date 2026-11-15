@@ -14,10 +14,10 @@ import { addDays, diffDays, monthRange } from './dates.ts';
 
 export type Tier = 'Excellent' | 'Satisfactory' | 'Needs Attention' | 'Critical';
 export const TIER_HEX: Record<Tier, string> = {
-  Excellent: '#22A06B',
-  Satisfactory: '#7026C8',
-  'Needs Attention': '#F5A623',
-  Critical: '#E5484D',
+  Excellent: '#4BE08A',
+  Satisfactory: '#1F6FE0',
+  'Needs Attention': '#FF9A1F',
+  Critical: '#E0213B',
 };
 
 export type KpiId = 'active' | 'inprogress' | 'completedMonth' | 'overdue' | 'due7' | 'due30' | 'blocked' | 'ontime';

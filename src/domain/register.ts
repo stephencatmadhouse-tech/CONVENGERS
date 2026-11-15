@@ -34,6 +34,7 @@ import { isValidIso, toIsoDate, todayIso, workingDaysBetween, diffDays, parseIso
 
 export type RegisterKind = 'scope' | 'pour' | 'milestone' | 'episode' | 'manual';
 export type Stream = 'Construction' | 'Production' | 'Milestone';
+export const DEFAULT_CONSTRUCTION_OWNER = 'Engr. Richard Solido and Engr. Sandree';
 
 export interface RegisterActivity {
   id: string; // stable unique activity ID, e.g. SC-sc_gf_s_3
@@ -258,7 +259,7 @@ export function buildRegister(input: RegisterInput, today: string = todayIso()):
       phase: s.phase,
       scopeOfWork: `${s.floor} ${s.phase} works`,
       description: s.subNote || '',
-      owner: meta.owner || '',
+      owner: meta.owner?.trim() || DEFAULT_CONSTRUCTION_OWNER,
       supporting: meta.supporting || '',
       department: meta.department || '',
       plannedStart,
@@ -336,7 +337,7 @@ export function buildRegister(input: RegisterInput, today: string = todayIso()):
       floor: p.floor,
       scopeOfWork: p.activity || p.component,
       description: `Prep ${p.prepStatus} · Pour ${p.pourStatus} · Cure ${p.cureStatus} · Inspection ${p.inspStatus}`,
-      owner: meta.owner || '',
+      owner: meta.owner?.trim() || DEFAULT_CONSTRUCTION_OWNER,
       supporting: meta.supporting || '',
       department: meta.department || '',
       plannedStart,
@@ -556,7 +557,7 @@ export function buildRegister(input: RegisterInput, today: string = todayIso()):
       workstream: a.category === 'Concrete' ? 'Concrete pours' : a.category === 'Other' ? 'General' : a.category === 'Milestone' ? 'Milestones' : a.category,
       scopeOfWork: a.category,
       description: a.description || '',
-      owner: a.owner || meta.owner || '',
+      owner: a.owner?.trim() || meta.owner?.trim() || (stream === 'Construction' ? DEFAULT_CONSTRUCTION_OWNER : ''),
       supporting: meta.supporting || '',
       department: meta.department || '',
       plannedStart,

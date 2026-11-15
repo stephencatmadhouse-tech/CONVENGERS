@@ -973,7 +973,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px', width: '100%' }}>
           <div style={{ flex: 1, height: '1px', background: 'var(--sx-bg-32)' }} />
           <div className="wm" style={{ fontSize: '20px', letterSpacing: '8px', fontWeight: 500, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-            Convengers Assemble · Master Integrated Calendar
+            Project Management Master Tracker · Bahay Build 2.0
           </div>
           <div style={{ flex: 1, height: '1px', background: 'var(--sx-bg-32)' }} />
         </div>

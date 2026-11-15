@@ -332,7 +332,7 @@ export const FloorScopeSlide: React.FC<FloorScopeSlideProps> = ({
 
           {/* Bottom Notes */}
           <div style={{ background: 'var(--sx-bg-14)', border: 'var(--sx-border-19)', borderRadius: '14px', boxShadow: 'var(--sx-shadow-36)', overflow: 'hidden', flex: 'none' }}>
-            <div style={{ padding: '12px 18px', fontSize: '15px', lineHeight: '21px', color: '#E3E8F7' }}>
+            <div style={{ padding: '12px 18px', fontSize: '15px', lineHeight: '21px', color: 'var(--sx-text-2)' }}>
               {bottomNote}
             </div>
           </div>
