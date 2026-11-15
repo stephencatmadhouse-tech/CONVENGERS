@@ -20,6 +20,7 @@ import { newId } from '../firebase/collectionStore.ts';
 import { CAL_TYPES, CAL_COLOR, CalItem, CalType, buildCalendar, buildForecast, inRange, weekLabel } from '../domain/calendarEvents.ts';
 import { addDays, diffDays, fmtDate, fmtRange, fmtTime, isValidIso, monthLabel, monthRange, weekRange } from '../domain/dates.ts';
 import { CalendarEvent, CalendarEventType } from '../types/index.ts';
+import { useNarrativeCalendar } from './Narrative.tsx';
 
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const EVENT_TYPES: CalendarEventType[] = ['Inspection', 'Site visit', 'Delivery', 'Handover / turnover', 'Meeting', 'Other'];
@@ -29,7 +30,8 @@ export function useCalendarItems(): { items: CalItem[]; manual: CalendarEvent[];
   const { register, today } = useCommand();
   const proc = useStore(procurementStore);
   const ev = useStore(eventStore);
-  const items = useMemo(() => buildCalendar({ register, procurement: proc.items, manual: ev.items, today }), [register, proc.items, ev.items, today]);
+  const reports = useNarrativeCalendar();
+  const items = useMemo(() => buildCalendar({ register, procurement: proc.items, manual: ev.items, reports, today }), [register, proc.items, ev.items, reports, today]);
   return { items, manual: ev.items, manualShared: ev.shared };
 }
 

@@ -36,6 +36,7 @@ import {
   Gauge,
   Bell,
   CalendarDays,
+  BookOpenText,
   type LucideIcon,
 } from 'lucide-react';
 import { ROLE_LABEL, canOpenModule, landingModule } from '../auth/roles.ts';
@@ -61,6 +62,7 @@ import { CalendarPage } from './CalendarPage.tsx';
 import { JourneyManagement } from './JourneyManagement.tsx';
 import { RolesPermissions, SyncPanel } from './SystemAdmin.tsx';
 import { DailyReports } from './DailyReport.tsx';
+import { NarrativeReports } from './Narrative.tsx';
 
 export type SlideKey = 'overview' | 'upcoming' | 'gf' | '2f' | '3f' | 'pours' | 'production' | 'episodes' | 'master' | 'methodology' | 'watch' | 'notes';
 
@@ -227,6 +229,18 @@ const RAW_SECTIONS: Section[] = [
     ],
   },
   {
+    id: 'narrative',
+    num: '00',
+    label: 'Narrative Reports',
+    title: 'Automated Narrative Reports',
+    sub: 'Daily, weekly, monthly, milestone, activity, status and project summary narratives written from the recorded project data. Review, edit, approve, and export to PDF or Word.',
+    tabs: [
+      { id: 'generate', label: 'Generate' },
+      { id: 'archive', label: 'Report Archive' },
+      { id: 'schedule', label: 'Schedule' },
+    ],
+  },
+  {
     id: 'analytics',
     num: '09',
     label: 'Project Performance',
@@ -321,6 +335,7 @@ const ORDER: [string, string][] = [
   ['issues', 'Monitoring & Control'],
   ['analytics', 'Monitoring & Control'],
   ['reports', 'Reports & Documents'],
+  ['narrative', 'Reports & Documents'],
   ['documents', 'Reports & Documents'],
   ['archive', 'Reports & Documents'],
   ['overview', 'Reports & Documents'],
@@ -362,6 +377,7 @@ const ICONS: Record<string, LucideIcon> = {
   roles: ShieldCheck,
   sync: RefreshCw,
   site: ClipboardPen,
+  narrative: BookOpenText,
 };
 
 export function parseRoute(hash: string): { section: string; tab?: string; param?: string } {
@@ -436,6 +452,8 @@ export function renderSectionBody(
         return <SyncPanel />;
       case 'site':
         return <DailyReports key={tab?.id} tab={tab?.id} />;
+      case 'narrative':
+        return <NarrativeReports key={`${tab?.id}:${route.param || ''}`} tab={tab?.id} param={route.param} />;
       case 'issues':
         return tab?.id === 'log' ? <IssueLog /> : tab?.id === 'owners' ? <Accountability /> : <AttentionList />;
       case 'archive':

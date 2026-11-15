@@ -24,6 +24,7 @@ import {
 } from '../types/index.ts';
 import { PUBLIC_PORTAL_KINDS, type PortalRecord } from '../domain/portal.ts';
 import type { ClientConfigDoc } from '../domain/journey.ts';
+import type { NarrativeReport, NarrativeSchedule } from '../domain/narrative.ts';
 
 const byDateDesc = (k: string) => (a: any, b: any) => String(b[k] || '').localeCompare(String(a[k] || ''));
 
@@ -49,4 +50,9 @@ export const driveFileStore = new CollectionStore<DriveFile>('driveFiles', (a, b
 /** Daily Construction Reports (server rules: internal read; preparer edits until review; managers review). */
 export const dailyReportStore = new CollectionStore<DailyReport>('dailyReports', (a, b) => (b.date + (b.submittedAt || b.updatedAt)).localeCompare(a.date + (a.submittedAt || a.updatedAt)));
 
-export const INTERNAL_STORES = [procurementStore, manpowerStore, documentStore, publicationStore, eventStore, siteReportStore, dailyReportStore];
+/** Narrative reports (server rules: internal read; staff create drafts; managers approve and finalise; the generated original never changes). */
+export const narrativeStore = new CollectionStore<NarrativeReport>('narrativeReports', (a, b) => (b.periodEnd + b.createdAt).localeCompare(a.periodEnd + a.createdAt));
+/** Narrative preparation schedule — one document `schedule` (server rules: internal read; managers write). */
+export const narrativeConfigStore = new CollectionStore<NarrativeSchedule>('narrativeConfig');
+
+export const INTERNAL_STORES = [procurementStore, manpowerStore, documentStore, publicationStore, eventStore, siteReportStore, dailyReportStore, narrativeStore, narrativeConfigStore];

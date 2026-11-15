@@ -84,6 +84,7 @@ const ALL_MODULES = [
   'procurement',
   'issues',
   'reports',
+  'narrative',
   'analytics',
   'documents',
   'publishing',
@@ -97,15 +98,15 @@ const MODULES_BY_ROLE: Partial<Record<UserRole, string[]>> = {
   director: ALL_MODULES,
   manager: ALL_MODULES,
   // Construction Manager — construction, schedule and quality modules
-  construction_manager: ['command', 'executive', 'notifications', 'calendar', 'tracker', 'site', 'construction', 'timeline', 'milestones', 'procurement', 'schedule', 'issues', 'analytics', 'reports', 'documents', 'archive', 'overview', 'settings', 'roles', 'sync'],
+  construction_manager: ['command', 'executive', 'notifications', 'calendar', 'tracker', 'site', 'construction', 'timeline', 'milestones', 'procurement', 'schedule', 'issues', 'analytics', 'reports', 'narrative', 'documents', 'archive', 'overview', 'settings', 'roles', 'sync'],
   // Quality Personnel — inspections, issues and construction records
-  quality: ['command', 'notifications', 'calendar', 'tracker', 'site', 'construction', 'milestones', 'issues', 'reports', 'documents', 'overview', 'settings', 'roles', 'sync'],
+  quality: ['command', 'notifications', 'calendar', 'tracker', 'site', 'construction', 'milestones', 'issues', 'reports', 'narrative', 'documents', 'overview', 'settings', 'roles', 'sync'],
   // Site Engineer — construction-related modules
-  engineer: ['command', 'notifications', 'calendar', 'tracker', 'site', 'construction', 'timeline', 'milestones', 'procurement', 'schedule', 'issues', 'reports', 'documents', 'overview', 'settings', 'roles', 'sync'],
+  engineer: ['command', 'notifications', 'calendar', 'tracker', 'site', 'construction', 'timeline', 'milestones', 'procurement', 'schedule', 'issues', 'reports', 'narrative', 'documents', 'overview', 'settings', 'roles', 'sync'],
   // Production Coordinator — production and integrated scheduling modules
-  production: ['command', 'notifications', 'calendar', 'tracker', 'site', 'production', 'timeline', 'milestones', 'schedule', 'issues', 'reports', 'documents', 'overview', 'settings', 'roles', 'sync'],
+  production: ['command', 'notifications', 'calendar', 'tracker', 'site', 'production', 'timeline', 'milestones', 'schedule', 'issues', 'reports', 'narrative', 'documents', 'overview', 'settings', 'roles', 'sync'],
   // Authorized team members — their assigned records and supporting modules
-  staff: ['command', 'notifications', 'calendar', 'tracker', 'site', 'issues', 'reports', 'documents', 'overview', 'settings', 'roles', 'sync'],
+  staff: ['command', 'notifications', 'calendar', 'tracker', 'site', 'issues', 'reports', 'narrative', 'documents', 'overview', 'settings', 'roles', 'sync'],
   // Internal read-only viewer — everything except publishing
   viewer: ALL_MODULES.filter((m) => m !== 'publishing'),
 };

@@ -4,7 +4,8 @@
  *
  * Convengers Bahay Build — Node server (AI Studio / Cloud Run).
  *
- * Serves the web app, the Google Drive file service (/api/drive/*) and the
+ * Serves the web app, the Google Drive file service (/api/drive/*), the
+ * narrative report wording service (/api/narrative/*) and the
  * live "who is online" presence channel (/ws). All project data lives in
  * Firebase (Firestore + security rules); this server keeps no project data.
  *
@@ -19,6 +20,7 @@ import fs from 'node:fs';
 import { WebSocketServer, WebSocket } from 'ws';
 import type { Collaborator, UserRole } from './src/types/index.ts';
 import { handleDriveRequest } from './server/drive/handler.ts';
+import { handleNarrativeRequest } from './server/narrative/handler.ts';
 import { driveEnv } from './server/drive/config.ts';
 import { verifyCaller } from './server/drive/admin.ts';
 
@@ -33,6 +35,11 @@ app.disable('x-powered-by');
 // Google Drive file service (server-side credentials only; see server/drive/). Reads its own request bodies.
 app.all('/api/drive/*', (req, res) => {
   void handleDriveRequest(req, res);
+});
+
+// Narrative report wording (optional AI; the key stays on the server). See server/narrative/.
+app.all('/api/narrative/*', (req, res) => {
+  void handleNarrativeRequest(req, res);
 });
 
 // Any other /api path: this server has no other API (project data is in Firebase)

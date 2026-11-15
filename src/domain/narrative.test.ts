@@ -1,0 +1,128 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Narrative report generator: facts only, "Not Recorded" for gaps, AI guard.
+ */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { INITIAL_SCOPES, INITIAL_MILESTONES, INITIAL_CONCRETE_POURS, INITIAL_EPISODES, INITIAL_OVERRIDES, INITIAL_CHARACTERS } from '../db/seedData.ts';
+import { buildRegister } from './register.ts';
+import { collectFacts, composeSections, defaultPeriod, narrativeId, addsNoNumbers, addsNoNumberWords, duePeriods, upcomingPreparations, figures, type NarrativeSources } from './narrative.ts';
+import type { DailyReport } from '../types/index.ts';
+
+const TODAY = '2026-11-12';
+const reg = buildRegister(
+  { scopes: INITIAL_SCOPES, milestones: INITIAL_MILESTONES, pours: INITIAL_CONCRETE_POURS, episodes: INITIAL_EPISODES, activities: [], overrides: INITIAL_OVERRIDES, characters: INITIAL_CHARACTERS },
+  TODAY
+);
+
+const dcr = (over: Partial<DailyReport>): DailyReport => ({
+  id: 'r1',
+  reference: 'DCR-20261110-AAAA',
+  projectId: 'p',
+  projectName: 'Bahay Build',
+  date: '2026-11-10',
+  weather: 'Sunny',
+  siteLocation: '',
+  preparedBy: 'Site Engineer',
+  preparedById: 'u1',
+  createdAt: '',
+  updatedAt: '',
+  updatedBy: '',
+  status: 'submitted',
+  activities: [{ activityId: reg[0].id, category: 'Structural', name: 'Column rebar', workDescription: 'Tied column bars at grid A', accomplishment: '14 columns', progress: 60, workStatus: 'In progress', remarks: '' }],
+  manpower: { skilled: 6, general: 9, subcontractor: 0, other: 1 },
+  materials: [{ description: 'Deformed bars 16mm', quantity: '120', unit: 'pcs', deliveryDate: '2026-11-10', supplier: 'Steel Depot', remarks: '' }],
+  equipment: [],
+  site: { observations: '', issues: 'Late delivery of form plywood', delays: '', safety: '', corrective: 'Supplier asked to deliver by Nov 12', recommendations: '' },
+  photos: [{ fileId: 'ph1', fileName: 'a.jpg', photoType: 'Progress', activityId: reg[0].id, description: 'Grid A columns', uploadStatus: 'uploaded' }],
+  history: [],
+  ...over,
+});
+
+const base = (reports: DailyReport[]): NarrativeSources => ({
+  register: reg,
+  milestones: INITIAL_MILESTONES,
+  issues: [],
+  snapshots: [],
+  dailyReports: reports,
+  manpower: [],
+  procurement: [],
+  events: [],
+  driveFiles: [],
+  documents: [],
+  narratives: [],
+  today: TODAY,
+});
+
+test('narrative: daily report content comes from the submitted record only', () => {
+  const r = dcr({});
+  const facts = collectFacts({ type: 'daily', start: '2026-11-10', end: '2026-11-10' }, base([r, dcr({ id: 'r2', reference: 'DCR-DRAFT', status: 'draft', manpower: { skilled: 99, general: 0, subcontractor: 0, other: 0 } })]));
+  assert.equal(facts.reports.length, 1, 'drafts are not used');
+  const text = composeSections(facts).map((s) => s.text).join('\n');
+  assert.match(text, /Tied column bars at grid A/);
+  assert.match(text, /Manpower recorded on Nov(ember)? 10, 2026: 16 workers \(skilled 6, general 9, subcontractor 0, other 1\)/);
+  assert.match(text, /Deformed bars 16mm, 120 pcs from Steel Depot/);
+  assert.match(text, /Late delivery of form plywood/);
+  assert.match(text, /Supplier asked to deliver by Nov 12/);
+  assert.doesNotMatch(text, /99/, 'draft figures never appear');
+  assert.match(text, /Equipment: Not Recorded/);
+  assert.equal(facts.photos.length, 1);
+  assert.equal(facts.photos[0].caption, 'Progress — Grid A columns');
+});
+
+test('narrative: no records → "Not Recorded", no invented figures', () => {
+  const facts = collectFacts({ type: 'daily', start: '2026-11-08', end: '2026-11-08' }, base([]));
+  const s = composeSections(facts);
+  const by = Object.fromEntries(s.map((x) => [x.key, x.text]));
+  assert.match(by.resources, /Manpower on site: Not Recorded/);
+  assert.match(by.photos, /Not Recorded/);
+  assert.match(by.summary, /No Daily Construction Reports were submitted/);
+  assert.equal(figures(facts).manDays, null);
+  assert.equal(s.length, 10);
+});
+
+test('narrative: empty report fields are "not recorded" — never zero workers or invented work', () => {
+  const blank = dcr({ id: 'r3', reference: 'DCR-20261110-BBBB', activities: [], manpower: { skilled: 0, general: 0, subcontractor: 0, other: 0 }, photos: [] });
+  const facts = collectFacts({ type: 'daily', start: '2026-11-10', end: '2026-11-10' }, base([dcr({}), blank]));
+  const text = composeSections(facts).map((s) => s.text).join('\n');
+  assert.match(text, /DCR-20261110-BBBB, weather: sunny\), no construction activity was recorded in the report/);
+  assert.match(text, /Manpower was not recorded in DCR-20261110-BBBB/);
+  assert.match(text, /16 workers/, 'blank report adds nothing to the headcount');
+  assert.doesNotMatch(text, /general site activities/);
+  assert.ok(!facts.ongoing.some((r) => r.kind === 'episode'), 'production shoots are not construction activities');
+  assert.ok(!facts.next.activities.some((r) => r.kind === 'episode'));
+});
+
+test('narrative: photos are never described as accomplishments', () => {
+  const facts = collectFacts({ type: 'daily', start: '2026-11-10', end: '2026-11-10' }, base([dcr({})]));
+  const photosText = composeSections(facts).find((x) => x.key === 'photos')!.text;
+  assert.match(photosText, /accomplishments are stated only from the reports and the tracker/);
+});
+
+test('narrative: periods, ids and schedule', () => {
+  assert.deepEqual(defaultPeriod('weekly', '2026-11-12', reg), { start: '2026-11-09', end: '2026-11-15' });
+  assert.deepEqual(defaultPeriod('monthly', '2026-11-12', reg), { start: '2026-11-01', end: '2026-11-30' });
+  assert.equal(narrativeId('weekly', '2026-11-09', '2026-11-15'), 'NR-W-20261109-20261115');
+  const due = duePeriods({ daily: true, weekly: true, monthly: true }, '2026-11-12');
+  assert.deepEqual(due, [
+    { type: 'daily', start: '2026-11-11', end: '2026-11-11' },
+    { type: 'weekly', start: '2026-11-02', end: '2026-11-08' },
+    { type: 'monthly', start: '2026-10-01', end: '2026-10-31' },
+  ]);
+  const up = upcomingPreparations({ daily: false, weekly: true, monthly: true }, '2026-11-12', 20);
+  assert.deepEqual(
+    up.map((u) => `${u.type}:${u.date}`),
+    ['weekly:2026-11-16', 'weekly:2026-11-23', 'weekly:2026-11-30', 'monthly:2026-12-01']
+  );
+});
+
+test('narrative: AI guard rejects added numbers and number words', () => {
+  const src = 'Manpower totalled 16 man-days; progress reached 42.5%.';
+  assert.equal(addsNoNumbers(src, 'A total of 16 man-days were recorded and progress stood at 42.5%.').ok, true);
+  assert.deepEqual(addsNoNumbers(src, 'Some 18 workers were present.').added, ['18']);
+  assert.equal(addsNoNumbers(src, 'Work completed on 2026-11-14.').ok, false);
+  assert.equal(addsNoNumberWords(src, 'three crews worked'), false);
+  assert.equal(addsNoNumberWords(src, 'crews worked'), true);
+});

@@ -133,7 +133,7 @@ export function snapshotAt(snapshots: ProgressSnapshot[], iso: string): Progress
   return [...snapshots].filter((s) => s.date <= iso).sort((a, b) => b.date.localeCompare(a.date))[0];
 }
 
-function progressPoint(register: RegisterActivity[], snapshots: ProgressSnapshot[], iso: string, today: string, liveActual: number): ProgressPoint {
+export function progressPoint(register: RegisterActivity[], snapshots: ProgressSnapshot[], iso: string, today: string, liveActual: number): ProgressPoint {
   const scopes = register.filter((r) => r.kind === 'scope');
   const w = scopes.reduce((s, r) => s + r.weight, 0) || 1;
   const planned = round1(scopes.reduce((s, r) => s + r.weight * plannedPercentAt(r.plannedStart, r.plannedFinish, iso), 0) / w);
@@ -146,7 +146,7 @@ function progressPoint(register: RegisterActivity[], snapshots: ProgressSnapshot
   return { date: iso, actual: null, planned, source: 'none' };
 }
 
-function completedIn(r: RegisterActivity, s: string, e: string): boolean {
+export function completedIn(r: RegisterActivity, s: string, e: string): boolean {
   if (r.status !== 'Completed') return false;
   if (r.actualFinish) return inRange(r.actualFinish, s, e);
   return inRange(r.lastUpdated, s, e);

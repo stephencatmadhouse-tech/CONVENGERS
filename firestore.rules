@@ -336,6 +336,49 @@ service cloud.firestore {
       allow delete: if isAdmin() || (isStaff() && existing().preparedById == request.auth.uid && existing().status == 'draft');
     }
 
+    // --- AUTOMATED NARRATIVE REPORTS ---
+    // Internal read. Staff create drafts (their own) and edit drafts; managers review, approve and
+    // finalise. The generated original (`original`) can never change. Final reports are locked
+    // except for administrators. Nothing here is visible to client roles.
+    function nrValid() {
+      return incoming().type in ['daily', 'weekly', 'monthly', 'milestone', 'activity', 'status', 'summary']
+        && incoming().status in ['draft', 'review', 'approved', 'final']
+        && incoming().periodStart is string && incoming().periodEnd is string
+        && incoming().preparedById is string
+        && incoming().sections is list && incoming().sections.size() <= 12
+        && incoming().revisions is list && incoming().revisions.size() <= 200
+        && incoming().original is map;
+    }
+    function nrUnchangedCore() {
+      return incoming().id == existing().id
+        && incoming().original == existing().original
+        && incoming().preparedById == existing().preparedById
+        && incoming().type == existing().type
+        && incoming().periodStart == existing().periodStart
+        && incoming().periodEnd == existing().periodEnd
+        && incoming().createdAt == existing().createdAt;
+    }
+    match /narrativeReports/{id} {
+      allow read: if isInternal();
+      allow create: if isStaff() && isValidId(id) && incoming().id == id && nrValid()
+        && incoming().preparedById == request.auth.uid && incoming().status == 'draft'
+        && incoming().get('approvedBy', null) == null && incoming().get('finalizedBy', null) == null;
+      allow update: if nrValid() && nrUnchangedCore() && (
+        // staff: edit a draft and submit it for review (no approval fields)
+        (isStaff() && existing().status == 'draft' && incoming().status in ['draft', 'review']
+          && incoming().get('approvedBy', null) == existing().get('approvedBy', null)
+          && incoming().get('finalizedBy', null) == existing().get('finalizedBy', null))
+        // managers: review, approve, return, finalise — a final report is locked
+        || (isManager() && existing().status != 'final')
+        || isAdmin()
+      );
+      allow delete: if isAdmin() || (isStaff() && existing().preparedById == request.auth.uid && existing().status == 'draft');
+    }
+    match /narrativeConfig/{id} {
+      allow read: if isInternal();
+      allow write: if isManager() && id == 'schedule';
+    }
+
     // --- CLIENT EXPERIENCE CONFIGURATION: construction journey stages, project profile ---
     // Internal only. Clients see this information only through the published `portal` snapshot.
     match /clientConfig/{id} {

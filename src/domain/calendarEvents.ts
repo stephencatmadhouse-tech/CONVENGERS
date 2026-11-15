@@ -14,7 +14,7 @@ import { RegisterActivity } from './register.ts';
 import { isTurnover } from './notifications.ts';
 import { addDays, diffDays, isValidIso, weekRange } from './dates.ts';
 
-export type CalType = 'Milestone' | 'Construction' | 'Concrete pour' | 'Production' | 'Inspection' | 'Delivery' | 'Handover / turnover' | 'Manual';
+export type CalType = 'Milestone' | 'Construction' | 'Concrete pour' | 'Production' | 'Inspection' | 'Delivery' | 'Handover / turnover' | 'Report' | 'Manual';
 
 export const CAL_TYPES: { id: CalType; color: string }[] = [
   { id: 'Milestone', color: '#F5C518' },
@@ -24,6 +24,7 @@ export const CAL_TYPES: { id: CalType; color: string }[] = [
   { id: 'Inspection', color: '#FF9A1F' },
   { id: 'Delivery', color: '#121C5A' },
   { id: 'Handover / turnover', color: '#4BE08A' },
+  { id: 'Report', color: '#0B7A75' },
   { id: 'Manual', color: '#68738A' },
 ];
 export const CAL_COLOR: Record<CalType, string> = Object.fromEntries(CAL_TYPES.map((t) => [t.id, t.color])) as Record<CalType, string>;
@@ -49,6 +50,8 @@ export interface CalInput {
   register: RegisterActivity[];
   procurement?: ProcurementItem[];
   manual?: CalendarEvent[];
+  /** Narrative report preparation dates (scheduled) and prepared reports awaiting approval. */
+  reports?: { id: string; date: string; title: string; sub: string; done: boolean; route?: string }[];
   today: string;
 }
 
@@ -129,6 +132,11 @@ export function buildCalendar(input: CalInput): CalItem[] {
       activityId: e.linkedActivityId,
       manualId: e.id,
     });
+  });
+
+  (input.reports || []).forEach((r) => {
+    if (!isValidIso(r.date)) return;
+    out.push({ id: `NR:${r.id}`, date: r.date, type: 'Report', marker: 'Report', title: r.title, sub: r.sub, owner: '', done: r.done, overdue: false, route: r.route || 'narrative' });
   });
 
   return out.sort((a, b) => (a.date + (a.time || '99:99')).localeCompare(b.date + (b.time || '99:99')) || a.title.localeCompare(b.title));

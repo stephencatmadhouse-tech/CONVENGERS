@@ -20,6 +20,7 @@ import { procurementStore, documentStore, publicationStore } from '../firebase/o
 import { useStore } from '../firebase/useStore.ts';
 import { isDeliveryLate } from './Operations.tsx';
 import { plural } from '../utils/plural.ts';
+import { NarrativeDashboardCard } from './Narrative.tsx';
 
 export const CommandCenter: React.FC = () => {
   const { register, metrics, attention, today, actions, issues, reports, snapshots, canEdit, isManager, dataSync, user } = useCommand();
@@ -132,6 +133,9 @@ export const CommandCenter: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* AUTOMATED NARRATIVE REPORTS */}
+      {canOpenModule(user.role, 'narrative') && <NarrativeDashboardCard />}
 
       {/* ZONE B — ACTIVITY SUMMARY */}
       <div className="cc-zoneb">
