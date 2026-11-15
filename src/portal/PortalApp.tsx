@@ -113,7 +113,11 @@ export const PortalApp: React.FC<{ user: User; authReady: boolean; onLogin: () =
     const items = portal.items.filter((r) => (!r.localOnly || internal) && (full || PUBLIC_PORTAL_KINDS.includes(r.kind)));
     const sort = (a: PortalRecord, b: PortalRecord) => b.publishedAt.localeCompare(a.publishedAt);
     return {
-      snapshot: items.filter((r) => r.kind === 'snapshot').sort(sort)[0],
+      // Newest status update in the current format (with the construction journey); an outdated draft published later never hides it
+      snapshot: (() => {
+        const snaps = items.filter((r) => r.kind === 'snapshot').sort(sort);
+        return snaps.find((r) => !!(r.content as PortalSnapshot | undefined)?.journey) || snaps[0];
+      })(),
       reports: items.filter((r) => r.kind === 'report').sort((a, b) => (b.periodEnd || '').localeCompare(a.periodEnd || '')),
       photos: items.filter((r) => r.kind === 'photo').sort((a, b) => (b.content?.date || '').localeCompare(a.content?.date || '')),
       documents: items.filter((r) => r.kind === 'document').sort(sort),

@@ -64,6 +64,10 @@ export const Publishing: React.FC<{ tab?: string }> = ({ tab = 'overview' }) => 
       actions.toast('Your role cannot perform this step. Approval and publishing are done by a Project Manager.');
       return;
     }
+    if (p.kind === 'snapshot' && (to === 'review' || to === 'approved' || to === 'published') && !p.payload?.journey) {
+      actions.toast('This status update was created with an earlier version of the app and has no construction journey. Archive it and create a new status update.');
+      return;
+    }
     try {
       const next = transitionPublication(p, to, user.name);
       // Google Drive files become viewable on the client portal only while published
