@@ -309,7 +309,7 @@ const Overview: React.FC<{ onList: (s: ListSpec) => void; calItems: CalItem[]; o
               </button>
             ))}
             {upcoming.length > 8 && (
-              <button type="button" className="cv-dim" onClick={() => actions.navigate('calendar/upcomings')}>
+              <button type="button" className="cv-dim" onClick={() => actions.navigate('calendar/agenda')}>
                 + {upcoming.length - 8} more in Upcomings
               </button>
             )}

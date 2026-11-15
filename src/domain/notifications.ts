@@ -124,7 +124,7 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
   };
 
   const visible = (r: RegisterActivity) => scope !== 'assigned' || isAssignedTo(r, input.viewer);
-  const label = (r: RegisterActivity) => `${r.id} · ${r.workstream}`;
+  const label = (r: RegisterActivity) => r.workstream;
 
   input.register.filter(visible).forEach((r) => {
     const open = r.status !== 'Completed';
@@ -282,7 +282,7 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
           detail: `Handover / turnover in ${plural(d, 'day')} (${fmtDate(e.date)}) · calendar entry`,
           date: e.date,
           action: 'Confirm turnover readiness and attendees',
-          route: `calendar/upcomings/${e.date}`,
+          route: `calendar/agenda/${e.date}`,
           owner: e.owner,
         });
       }
@@ -296,7 +296,7 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
         detail: `${e.type} on ${fmtDate(e.date)} not marked done (${plural(diffDays(e.date, today), 'day')})`,
         date: e.date,
         action: 'Record the result and mark the entry done',
-        route: `calendar/upcomings/${e.date}`,
+        route: `calendar/agenda/${e.date}`,
         owner: e.owner,
       });
     }

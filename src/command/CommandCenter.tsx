@@ -19,6 +19,7 @@ import { monthRange } from '../domain/dates.ts';
 import { procurementStore, documentStore, publicationStore } from '../firebase/opsStores.ts';
 import { useStore } from '../firebase/useStore.ts';
 import { isDeliveryLate } from './Operations.tsx';
+import { plural } from '../utils/plural.ts';
 
 export const CommandCenter: React.FC = () => {
   const { register, metrics, attention, today, actions, issues, reports, snapshots, canEdit, isManager, dataSync, user } = useCommand();
@@ -104,7 +105,7 @@ export const CommandCenter: React.FC = () => {
             color={varColor}
             sub={`percentage points${m.spi !== null ? ` · SPI ${m.spi.toFixed(2)}` : ''}`}
           />
-          <Kpi icon={Gauge} label="Project Status" value={m.health} color={HEALTH_HEX[m.health]} sub={m.healthReasons[0]} />
+          <Kpi icon={Gauge} label="Project Status" value={m.health} color={m.health === 'At Risk' ? '#B45309' : HEALTH_HEX[m.health]} sub={m.healthReasons[0]} />
           <Kpi icon={CalendarCheck} label="Original Target Completion" value={fmtDate(m.targetCompletion)} sub="Turnover ceremony milestone" />
           <Kpi
             icon={CalendarClock}
@@ -113,7 +114,7 @@ export const CommandCenter: React.FC = () => {
             color={m.completionVarianceDays > 0 ? '#DC3545' : undefined}
             sub={
               <>
-                {m.completionVarianceDays > 0 ? `${m.completionVarianceDays} day(s) after target · ` : 'Current schedule · '}
+                {m.completionVarianceDays > 0 ? `${plural(m.completionVarianceDays, 'day')} after target · ` : 'Current schedule · '}
                 {m.paceCompletion ? `at current pace ${fmtDate(m.paceCompletion)} (indicative)` : 'pace on or above plan'}
               </>
             }
@@ -247,7 +248,7 @@ export const CommandCenter: React.FC = () => {
                       <td className="nowrap">
                         {fmtDate(r.finish)}
                         <div className={r.finish && r.finish < today ? 'cv-late' : 'cv-dim'} style={{ fontSize: 12 }}>
-                          {r.finish ? (r.finish < today ? `${diffDays(r.finish, today)} day(s) overdue` : `in ${diffDays(today, r.finish)} day(s)`) : ''}
+                          {r.finish ? (r.finish < today ? `${plural(diffDays(r.finish, today), 'day')} overdue` : `in ${plural(diffDays(today, r.finish), 'day')}`) : ''}
                         </div>
                       </td>
                       <td>
@@ -346,7 +347,7 @@ export function useManagementActions() {
           id: a.id,
           title: a.title,
           type: a.category,
-          related: act ? `${act.id} · ${act.workstream}` : '—',
+          related: act ? (act.category ? `${act.workstream} · ${act.category}` : act.workstream) : '—',
           responsible: a.owner || '',
           priority: a.severity === 'critical' ? 'Critical' : 'High',
           target: a.due || act?.finish,

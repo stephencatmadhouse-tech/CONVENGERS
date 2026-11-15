@@ -733,10 +733,10 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
                       overflow: 'hidden',
                     }}
                   >
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: m.constructionStatus === 'Complete' || m.constructionStatus === 'In progress' ? '#FFFFFF' : 'var(--tl-up-fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 800, color: m.constructionStatus === 'Complete' ? 'var(--tl-done-fg, #0A1140)' : m.constructionStatus === 'In progress' ? '#FFFFFF' : 'var(--tl-up-fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {m.phase}
                     </div>
-                    <div style={{ fontSize: '9px', color: m.constructionStatus === 'Complete' || m.constructionStatus === 'In progress' ? 'rgba(255,255,255,0.85)' : 'var(--tl-up-fg2)', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: '9px', color: m.constructionStatus === 'Complete' ? 'var(--tl-done-fg2, rgba(10,17,64,0.78))' : m.constructionStatus === 'In progress' ? 'rgba(255,255,255,0.85)' : 'var(--tl-up-fg2)', whiteSpace: 'nowrap' }}>
                       {m.constructionProgress}% · {m.constructionFloor}
                     </div>
                   </div>
@@ -784,10 +784,10 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
                       overflow: 'hidden',
                     }}
                   >
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: m.productionStatus === 'Completed' || m.productionStatus === 'Scheduled' ? '#FFFFFF' : 'var(--tl-up-fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 800, color: m.productionStatus === 'Completed' ? 'var(--tl-done-fg, #0A1140)' : m.productionStatus === 'Scheduled' ? '#FFFFFF' : 'var(--tl-up-fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       Ep {m.productionEpisodeNum}
                     </div>
-                    <div style={{ fontSize: '9px', color: m.productionStatus === 'Completed' || m.productionStatus === 'Scheduled' ? 'rgba(255,255,255,0.85)' : 'var(--tl-up-fg2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontSize: '9px', color: m.productionStatus === 'Completed' ? 'var(--tl-done-fg2, rgba(10,17,64,0.78))' : m.productionStatus === 'Scheduled' ? 'rgba(255,255,255,0.85)' : 'var(--tl-up-fg2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       ◆ {m.productionPostDate.replace(', 2026', '').replace(', 2027', '')}
                     </div>
                   </div>

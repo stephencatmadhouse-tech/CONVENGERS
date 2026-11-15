@@ -72,6 +72,7 @@ import { SyncChip } from './command/ui.tsx';
 import type { DataSyncState } from './firebase/firestoreData.ts';
 import { ConfirmDialog } from './command/ui.tsx';
 import './command/command.css';
+import { plural } from './utils/plural.ts';
 
 function windowOf(text: string | undefined): [string, string] | [undefined, undefined] {
   const w = parseDateWindow(text || '');
@@ -1095,7 +1096,7 @@ export default function App() {
           issues: src.issues,
           snapshots: src.snapshots,
         });
-        controlMsg = ` · ${res.imported} report/issue/snapshot record(s) merged, ${res.skipped} kept unchanged`;
+        controlMsg = ` · ${plural(res.imported, 'report, issue or snapshot record')} merged, ${res.skipped} kept unchanged`;
       }
       if (src.operations && typeof src.operations === 'object') {
         const ops = src.operations as Record<string, any[]>;
@@ -1115,7 +1116,7 @@ export default function App() {
             merged++;
           }
         }
-        controlMsg += ` · ${merged} operations record(s) added`;
+        controlMsg += ` · ${plural(merged, 'operations record')} added`;
       }
       const PROJECT_KEYS = ['milestones', 'scopes', 'pours', 'episodes', 'activities', 'characters', 'overrides', 'ms', 'pct', 'pm', 'page', 'data', 'dashboard'];
       if (!PROJECT_KEYS.some((k) => src[k] !== undefined)) {
@@ -1508,7 +1509,7 @@ export default function App() {
       syncLocal: async () => {
         let n = await controlStore.syncLocal();
         for (const st of [...INTERNAL_STORES, clientConfigStore, portalStore]) n += await st.syncLocal();
-        showToast(n ? `Uploaded ${n} device-only record(s) to the shared database` : 'Shared storage still unavailable — records remain on this device');
+        showToast(n ? `Uploaded ${plural(n, 'device-only record')} to the shared database` : 'Shared storage still unavailable — records remain on this device');
       },
       exportBackup: handleExportBackup,
       importBackup: (f) => setPendingImport(f),

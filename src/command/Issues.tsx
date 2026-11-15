@@ -14,6 +14,7 @@ import { firestoreData } from '../firebase/firestoreData.ts';
 import { ownerAccountability, AttentionCategory } from '../domain/attention.ts';
 import { fmtDate, todayIso } from '../domain/dates.ts';
 import { Card, Empty, Modal, Field, Banner, Pill, ConfirmDialog, Kpi } from './ui.tsx';
+import { plural } from '../utils/plural.ts';
 
 const SEV_HEX: Record<string, string> = { Critical: '#E0213B', High: '#FF9A1F', Medium: '#7B4DFF', Low: '#68738A', critical: '#E0213B', warn: '#FF9A1F', info: '#1F6FE0' };
 const STATUS_ISSUE_HEX: Record<IssueStatus, string> = { Open: '#E0213B', 'In Progress': '#1F6FE0', Resolved: '#4BE08A', Closed: '#68738A' };
@@ -417,7 +418,7 @@ export const Accountability: React.FC = () => {
           </table>
         </div>
       </Card>
-      <Card title={owner ? `Open tasks — ${owner}` : 'Select an owner'} note={owner ? `${items.length} open task(s)` : 'Click a row to see that person’s open tasks'}>
+      <Card title={owner ? `Open tasks — ${owner}` : 'Select an owner'} note={owner ? plural(items.length, 'open task') : 'Click a row to see that person’s open tasks'}>
         {owner ? (
           items.length ? (
             <div className="cv-list">

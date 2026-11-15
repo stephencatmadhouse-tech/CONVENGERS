@@ -18,7 +18,7 @@ import { useStore } from '../firebase/useStore.ts';
 import { procurementStore, eventStore } from '../firebase/opsStores.ts';
 import { newId } from '../firebase/collectionStore.ts';
 import { CAL_TYPES, CAL_COLOR, CalItem, CalType, buildCalendar, buildForecast, inRange, weekLabel } from '../domain/calendarEvents.ts';
-import { addDays, diffDays, fmtDate, fmtTime, isValidIso, monthLabel, monthRange, weekRange } from '../domain/dates.ts';
+import { addDays, diffDays, fmtDate, fmtRange, fmtTime, isValidIso, monthLabel, monthRange, weekRange } from '../domain/dates.ts';
 import { CalendarEvent, CalendarEventType } from '../types/index.ts';
 
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -105,7 +105,7 @@ export const ForecastPanel: React.FC<{ items: CalItem[]; onOpen: (i: CalItem) =>
                 .filter((w) => w.overloaded)
                 .map((w) => (
                   <span key={w.start} className="ex-flag">
-                    <AlertTriangle size={13} aria-hidden /> Overloaded week {fmtDate(w.start, false)}–{fmtDate(w.end, false)}: {w.total} items
+                    <AlertTriangle size={13} aria-hidden /> Overloaded week {fmtRange(w.start, w.end)}: {w.total} items
                   </span>
                 ))}
             </div>
@@ -505,7 +505,7 @@ const MonthView: React.FC<{ items: CalItem[]; anchor: string; onOpen: (i: CalIte
                 key={i.id}
                 type="button"
                 className={`ex-cal-ev ${i.done ? 'done' : ''} ${i.overdue ? 'late' : ''}`}
-                style={{ background: CAL_COLOR[i.type] }}
+                style={{ ['--ev-c' as string]: CAL_COLOR[i.type] } as React.CSSProperties}
                 onClick={() => onOpen(i)}
                 title={`${i.type} · ${i.marker}: ${i.title}`}
               >

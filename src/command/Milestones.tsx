@@ -9,6 +9,7 @@ import React, { useMemo, useState } from 'react';
 import { useCommand } from './context.tsx';
 import { diffDays, fmtDate, fmtRange } from '../domain/dates.ts';
 import { Card, Kpi, StatusPill, Pill, Empty, PRIORITY_HEX } from './ui.tsx';
+import { plural } from '../utils/plural.ts';
 
 export const Milestones: React.FC = () => {
   const { register, data, actions, canEdit, today } = useCommand();
@@ -109,7 +110,7 @@ export const Milestones: React.FC = () => {
         <Kpi label="Concrete pours approved" value={`${pours.filter((r) => r.status === 'Completed').length} / ${pours.length}`} />
         <Kpi label="Delayed milestones / pours" value={delayed} color={delayed ? '#E0213B' : '#117A42'} />
         <Kpi label="Completed on time / late" value={`${onTime} / ${late}`} sub="Needs actual dates recorded" />
-        <Kpi label="Next milestone" value={next ? fmtDate(next.finish) : '—'} sub={next ? `${next.name.slice(0, 48)} · ${diffDays(today, next.finish!)} day(s)` : ''} />
+        <Kpi label="Next milestone" value={next ? fmtDate(next.finish) : '—'} sub={next ? `${next.name.slice(0, 48)} · ${plural(diffDays(today, next.finish!), 'day')} away` : ''} />
       </div>
       <div className="cv-row">
         {(['all', 'open', 'done'] as const).map((k) => (

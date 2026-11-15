@@ -959,6 +959,21 @@
   background: none !important;
   font-size: 13.5px;
 }
+.mb table.mb-stack td {
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+/* extra lines in a cell (notes, sub-labels) wrap below instead of pushing past the screen edge */
+.mb table.mb-stack td > div,
+.mb table.mb-stack td > ul,
+.mb table.mb-stack td > p {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+.mb table.mb-stack td > * {
+  min-width: 0;
+  max-width: 100%;
+}
 .mb table.mb-stack td:last-child {
   border-bottom: 0 !important;
 }

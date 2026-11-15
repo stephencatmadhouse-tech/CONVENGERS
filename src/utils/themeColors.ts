@@ -16,6 +16,18 @@ const LIGHT_MAP: Record<string, string> = {
   '#B58CFF': '#0A1140', // other
 };
 
+/** Text drawn in a category colour on a light tint: bright brand colours get a darker shade that stays readable. */
+const LIGHT_TEXT_MAP: Record<string, string> = {
+  '#F5C518': '#8A6400',
+  '#FF9A1F': '#B45309',
+  '#4BE08A': '#117A42',
+};
+export function themedText(hex: string): string {
+  const c = themed(hex);
+  if (isDarkTheme()) return c;
+  return LIGHT_TEXT_MAP[(c || '').toUpperCase()] || c;
+}
+
 export function isDarkTheme(): boolean {
   return typeof document !== 'undefined' && document.documentElement.getAttribute('data-eff') === 'dark';
 }

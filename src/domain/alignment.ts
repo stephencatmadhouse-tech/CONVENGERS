@@ -11,6 +11,7 @@
 import { RegisterActivity, linkedScopesForEpisode } from './register.ts';
 import { diffDays, fmtDate, fmtRange, isValidIso, overlaps, todayIso } from './dates.ts';
 import { WORK_STOPPAGE_START, WORK_STOPPAGE_END, toIsoDate } from '../utils/calculations.ts';
+import { plural } from '../utils/plural.ts';
 
 export type AlignmentClass = 'Confirmed' | 'Tentative' | 'For Coordination' | 'Conflict' | 'Rescheduled' | 'Completed';
 
@@ -74,7 +75,7 @@ export function buildAlignment(register: RegisterActivity[], today: string = tod
         message: `${l.explicit ? '' : '[auto-matched] '}Shoot ${fmtRange(ep.start, ep.finish)} documents "${l.scope.name}" (${l.scope.workstream}), which is scheduled ${fmtRange(
           l.scope.start,
           l.scope.finish
-        )} — ${Math.abs(gap)} day(s) ${gap > 0 ? 'before' : 'after'} the shoot.`,
+        )} — ${plural(Math.abs(gap), 'day')} ${gap > 0 ? 'before' : 'after'} the shoot.`,
         relatedIds: [ep.id, l.scope.id],
       });
     });
@@ -95,7 +96,7 @@ export function buildAlignment(register: RegisterActivity[], today: string = tod
       alerts.push({
         type: 'character',
         severity: 'info',
-        message: `${ep.characters.length} character(s) needed on site during ${links
+        message: `${plural(ep.characters.length, 'character')} needed on site during ${links
           .filter((l) => l.overlapping)
           .map((l) => l.scope.name)
           .join(', ')}: ${ep.characters.slice(0, 8).join(', ')}${ep.characters.length > 8 ? '…' : ''}`,
@@ -133,7 +134,7 @@ export function buildAlignment(register: RegisterActivity[], today: string = tod
         message:
           daysOut < 0
             ? `Shoot date ${fmtDate(ep.start)} has passed but is still "${ep.episodeStatus}". Confirm what happened.`
-            : `Shoot is "${ep.episodeStatus}" — confirm ${daysOut} day(s) ahead of ${fmtDate(ep.start)}.`,
+            : `Shoot is still "${ep.episodeStatus}" and starts ${daysOut === 0 ? 'today' : `in ${plural(daysOut, 'day')}`} (${fmtDate(ep.start)}). Confirm the shoot date.`,
         relatedIds: [ep.id],
       });
     }
@@ -144,9 +145,9 @@ export function buildAlignment(register: RegisterActivity[], today: string = tod
       alerts.push({
         type: 'change',
         severity: 'warn',
-        message: `Shoot was rescheduled${ep.revisionCount ? ` ${ep.revisionCount} time(s)` : ''}${
+        message: `Shoot was rescheduled${ep.revisionCount ? ` ${ep.revisionCount === 1 ? 'once' : `${ep.revisionCount} times`}` : ''}${
           ep.lastRevisedAt ? ` (last ${fmtDate(ep.lastRevisedAt.slice(0, 10))})` : ''
-        }. Notify construction team${links.length ? ` handling ${links.map((l) => l.scope.name).join(', ')}` : ''}.`,
+        }. Notify the construction team${links.length ? ` handling ${links.map((l) => l.scope.name).join(', ')}` : ''}.`,
         relatedIds: [ep.id],
       });
     }

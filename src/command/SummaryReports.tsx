@@ -15,6 +15,7 @@ import { buildOutlook } from '../domain/attention.ts';
 import { LOGO_SVG } from '../constants/assets.ts';
 import { downloadFile, Empty, Pill, StatusPill } from './ui.tsx';
 import { ALIGNMENT_COLORS } from '../domain/alignment.ts';
+import { plural } from '../utils/plural.ts';
 
 type Kind = 'progress' | 'coordination' | 'delayed' | 'upcoming';
 const TITLES: Record<Kind, string> = {
@@ -47,7 +48,7 @@ export const SummaryReports: React.FC = () => {
           a.episode.characters.length,
           a.alerts.map((x) => x.message).join(' | ') || 'None',
         ]),
-        note: `${list.length} upcoming shoot(s). Calendars are compared, never changed automatically.`,
+        note: `${plural(list.length, 'upcoming shoot')}. Calendars are compared, never changed automatically.`,
       };
     }
     if (kind === 'delayed') {

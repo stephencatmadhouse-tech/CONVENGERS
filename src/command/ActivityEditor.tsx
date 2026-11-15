@@ -21,6 +21,7 @@ import { newId } from '../firebase/collectionStore.ts';
 import { uploadFile } from '../firebase/files.ts';
 import { firestoreData } from '../firebase/firestoreData.ts';
 import { DocumentCategory } from '../types/index.ts';
+import { plural } from '../utils/plural.ts';
 
 const MILESTONE_STATUSES = ['Upcoming', 'In progress', 'Complete', 'Delayed', 'Date passed · confirm'];
 const POUR_STATUSES = [
@@ -223,7 +224,7 @@ export const ActivityEditor: React.FC<{ activity: RegisterActivity; onClose: () 
 
       <fieldset className="cv-fieldset" disabled={!canEdit}>
         <legend>Schedule — planned vs actual</legend>
-        <Field label="Baseline dates (original plan)" hint={r.revisionCount ? `Preserved · ${r.revisionCount} revision(s)` : 'Current dates are the baseline'}>
+        <Field label="Baseline dates (original plan)" hint={r.revisionCount ? `Preserved · ${plural(r.revisionCount, 'revision')}` : 'Current dates are the baseline'}>
           <input className="cv-input" value={fmtRange(r.plannedStart, r.plannedFinish)} disabled />
         </Field>
         <Field label={r.kind === 'episode' ? 'Shoot start' : r.kind === 'pour' ? 'Target pour' : 'Revised start'}>
@@ -239,7 +240,7 @@ export const ActivityEditor: React.FC<{ activity: RegisterActivity; onClose: () 
           <input type="date" className="cv-input" value={form.actualFinish} max={today} disabled={!pourActualsEditable} onChange={(e) => set('actualFinish', e.target.value)} />
         </Field>
         <Field label="Duration">
-          <input className="cv-input" value={`${r.duration} working day(s) · baseline ${r.baselineDuration}`} disabled />
+          <input className="cv-input" value={`${plural(r.duration, 'working day')} · baseline ${plural(r.baselineDuration, 'day')}`} disabled />
         </Field>
         {datesEditable && (form.start !== (r.start || '') || form.finish !== (r.finish || '')) && (
           <div className="full">

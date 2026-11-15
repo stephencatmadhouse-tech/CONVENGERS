@@ -123,6 +123,10 @@ html:not([data-eff='dark']) .cv-card-t,
 html:not([data-eff='dark']) .cv-card-h .cv-card-t {
   color: var(--ds-navy);
 }
+/* keep a gap between the brand accent bar and the card title */
+html:not([data-eff='dark']) .cv-card-h .cv-card-t {
+  padding-left: 10px;
+}
 html:not([data-eff='dark']) .cv-card-h .cv-card-note,
 .cv-card-note {
   padding: 0;

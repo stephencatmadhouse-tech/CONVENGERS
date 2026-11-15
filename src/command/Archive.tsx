@@ -12,6 +12,7 @@ import { ReportContent, reportToCsv } from '../domain/reports.ts';
 import { fmtDate, fmtRange, monthLabel } from '../domain/dates.ts';
 import { Card, Empty, Banner, downloadFile, Modal, pct } from './ui.tsx';
 import { ReportDocument, ReportStatusStamp } from './Reports.tsx';
+import { plural } from '../utils/plural.ts';
 
 export const Archive: React.FC = () => {
   const { reports, snapshots, actions, isAdmin } = useCommand();
@@ -71,7 +72,7 @@ export const Archive: React.FC = () => {
       </div>
       {tree.length ? (
         tree.map((y) => (
-          <Card key={y.year} title={`${y.year}`} note={`${y.months.reduce((s, m) => s + m.reports.length, 0)} report(s)`}>
+          <Card key={y.year} title={`${y.year}`} note={plural(y.months.reduce((s, m) => s + m.reports.length, 0), 'report')}>
             {y.months.map((m) => (
               <div key={m.key} style={{ marginBottom: 12 }}>
                 <div className="cv-kpi-l" style={{ marginBottom: 6 }}>

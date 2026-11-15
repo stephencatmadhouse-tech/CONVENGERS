@@ -9,7 +9,7 @@
 import { ProgressSnapshot, ScopeItem, Milestone, ConcretePour, Episode, Activity } from '../types/index.ts';
 import { RegisterActivity } from './register.ts';
 import { ProjectMetrics } from './metrics.ts';
-import { isValidIso, todayIso } from './dates.ts';
+import { isValidIso, todayIso, fmtDate } from './dates.ts';
 import { parseDateWindow } from '../utils/calculations.ts';
 
 export interface ActivityEditDraft {
@@ -104,7 +104,7 @@ export function dataHealthCheck(input: {
         out.push({
           severity: 'warning',
           area: 'Schedule consistency',
-          message: `${p.floor} ${p.component}: target pour ${p.targetPour} is outside its scope "${scope.name}" (${scope.dateText}). Confirm which date is correct.`,
+          message: `${p.floor} ${p.component}: target pour ${isValidIso(p.targetPour) ? fmtDate(p.targetPour) : p.targetPour} is outside its scope "${scope.name}" (${scope.dateText}). Confirm which date is correct.`,
           refId: `PR-${p.id}`,
         });
       }
@@ -132,7 +132,7 @@ export function dataHealthCheck(input: {
   }
   const complete100NoFinish = input.register.filter((r) => r.kind === 'scope' && r.progress >= 100 && !r.actualFinish).length;
   if (complete100NoFinish)
-    out.push({ severity: 'info', area: 'Actual dates', message: `${complete100NoFinish} completed scope(s) have no actual finish date recorded. Weekly/monthly completion attribution will use their last-updated date.` });
+    out.push({ severity: 'info', area: 'Actual dates', message: `${complete100NoFinish === 1 ? '1 completed scope has' : `${complete100NoFinish} completed scopes have`} no actual finish date recorded. Weekly/monthly completion attribution will use their last-updated date.` });
   return out;
 }
 

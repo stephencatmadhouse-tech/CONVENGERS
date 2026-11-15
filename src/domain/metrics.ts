@@ -11,6 +11,7 @@ import { Milestone } from '../types/index.ts';
 import { RegisterActivity, plannedPercentAt } from './register.ts';
 import { addDays, diffDays, fmtDate, isValidIso, maxIso, minIso, todayIso, workingDaysBetween } from './dates.ts';
 import { PROJECT_START, PROJECT_END, toIsoDate, parseDateWindow } from '../utils/calculations.ts';
+import { plural } from '../utils/plural.ts';
 
 export type HealthLevel = 'On Track' | 'At Risk' | 'Critical';
 
@@ -133,12 +134,12 @@ export function computeMetrics(register: RegisterActivity[], milestones: Milesto
   }
   if (completionVarianceDays > 0) {
     health = completionVarianceDays > 14 ? 'Critical' : health === 'Critical' ? 'Critical' : 'At Risk';
-    healthReasons.push(`Forecast completion ${fmtDate(projected)} is ${completionVarianceDays} day(s) after target`);
+    healthReasons.push(`Forecast completion ${fmtDate(projected)} is ${plural(completionVarianceDays, 'day')} after target`);
   }
   const criticalDelayed = register.filter((r) => r.status === 'Delayed' && (r.priority === 'Critical' || r.isMilestone));
   if (criticalDelayed.length) {
     if (health === 'On Track') health = 'At Risk';
-    healthReasons.push(`${criticalDelayed.length} critical item(s) / milestone(s) delayed`);
+    healthReasons.push(`${plural(criticalDelayed.length, 'critical item or milestone', 'critical items or milestones')} delayed`);
   }
   if (counts.delayed > 0 && health === 'On Track') {
     health = 'At Risk';

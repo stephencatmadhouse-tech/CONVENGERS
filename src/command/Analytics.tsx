@@ -15,6 +15,7 @@ import { addDays, diffDays, fmtDate, fmtRange, monthLabel, monthRange } from '..
 import { snapshotAt } from '../domain/reports.ts';
 import { Card, Kpi, LineChart, BarChart, ProgressBar, Empty, Banner, StatusPill, Pill, pct, STATUS_HEX, kindColor } from './ui.tsx';
 import { PROJECT_START, toIsoDate } from '../utils/calculations.ts';
+import { plural } from '../utils/plural.ts';
 
 export const Analytics: React.FC = () => {
   const { register, metrics: m, snapshots, today, actions, reports } = useCommand();
@@ -126,7 +127,7 @@ export const Analytics: React.FC = () => {
       <div className="cv-kpis">
         <Kpi label="Actual progress" value={pct(m.actualPct)} accent />
         <Kpi label="Planned to date" value={pct(m.plannedPct)} />
-        <Kpi label="Progress variance" value={`${m.variancePct >= 0 ? '+' : ''}${m.variancePct.toFixed(1)} percentage points`} color={m.variancePct < 0 ? '#E5484D' : '#22A06B'} />
+        <Kpi label="Progress variance" value={`${m.variancePct >= 0 ? '+' : ''}${m.variancePct.toFixed(1)} pts`} sub="percentage points, actual vs planned" color={m.variancePct < 0 ? '#E5484D' : '#22A06B'} />
         <Kpi label="SPI" value={m.spi === null ? '—' : m.spi.toFixed(2)} sub="1.00 = on plan" />
         <Kpi label="Completed / delayed" value={`${m.counts.completed} / ${m.counts.delayed}`} sub={`${m.counts.total} activities in register`} />
       </div>
@@ -311,7 +312,7 @@ export const Forecast: React.FC = () => {
   const conflicts = alignment.filter((a) => a.classification === 'Conflict' && a.episode.start && a.episode.start <= to && (a.episode.finish || a.episode.start) >= from);
 
   const section = (title: string, list: typeof items, empty: string) => (
-    <Card title={title} note={`${list.length} item(s)`}>
+    <Card title={title} note={plural(list.length, 'item')}>
       {list.length ? (
         <div className="cv-list">
           {list.slice(0, 12).map((i) => (
@@ -366,7 +367,7 @@ export const Forecast: React.FC = () => {
         <Kpi label="At risk" value={items.filter((i) => i.outlook === 'At risk').length} color="#E5484D" />
         <Kpi label="Concrete pours" value={pours.length} />
         <Kpi label="Inspections / testing" value={inspections.length} />
-        <Kpi label="Shoots" value={shoots.length} sub={`${chars.length} character(s) required`} />
+        <Kpi label="Shoots" value={shoots.length} sub={`${plural(chars.length, 'character')} required`} />
         <Kpi label="Forecast completion" value={fmtDate(m.projectedCompletion)} sub={`Target ${fmtDate(m.targetCompletion)}`} />
       </div>
       <div className="cv-grid cv-g2">
@@ -418,7 +419,7 @@ export const Forecast: React.FC = () => {
           )}
         </Card>
       </div>
-      <Card title="Full outlook" note={`${shown.length} item(s)`}>
+      <Card title="Full outlook" note={plural(shown.length, 'item')}>
         {shown.length ? (
           <div className="cv-table-wrap">
             <table className="cv-table">

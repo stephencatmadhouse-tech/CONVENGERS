@@ -18,13 +18,14 @@ import {
 import { STATUS_COLORS, TYPE_COLORS } from '../constants/assets.ts';
 import { BrandLogo } from './BrandLogo.tsx';
 import { DEFAULT_CONSTRUCTION_OWNER, resolveMeta } from '../domain/register.ts';
-import { themed } from '../utils/themeColors.ts';
+import { themed, themedText } from '../utils/themeColors.ts';
 import {
   parseDateWindow,
   parseIsoDate,
   toIsoDate,
   isPourOverdue,
 } from '../utils/calculations.ts';
+import { fmtDate, fmtRange } from '../domain/dates.ts';
 
 interface UnifiedItem {
   key: string;
@@ -559,7 +560,7 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
                       }`}
                     >
                       <div className="pmc" data-l="Dates">
-                        {toIsoDate(item.start)} {item.start.getTime() !== item.end.getTime() ? `– ${toIsoDate(item.end)}` : ''}
+                        {fmtRange(toIsoDate(item.start), toIsoDate(item.end))}
                       </div>
 
                       <div className="pmc" data-l="Activity">
@@ -583,7 +584,7 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
                           className="pmchip"
                           style={{
                             background: `${typeInfo.color}22`,
-                            color: typeInfo.color,
+                            color: themedText(typeInfoRaw.color),
                             border: `1px solid ${typeInfo.color}`,
                           }}
                         >
@@ -712,7 +713,7 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
                       </span>
                       <b>{item.title}</b>
                       <small>
-                        {toIsoDate(item.start)} {item.owner ? `· ${item.owner}` : ''}
+                        {fmtDate(toIsoDate(item.start))} {item.owner ? `· ${item.owner}` : ''}
                       </small>
                     </button>
                   );

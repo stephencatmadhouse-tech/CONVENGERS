@@ -7,15 +7,11 @@
  * shared publicly.
  */
 
-import React, { useEffect, useState } from "react";
-import { driveObjectUrl, isDriveUrl, openDriveFile } from "./driveClient.ts";
+import React, { useEffect, useState } from 'react';
+import { driveObjectUrl, isDriveUrl, openDriveFile } from './driveClient.ts';
 
-export const SecureImg: React.FC<
-  React.ImgHTMLAttributes<HTMLImageElement> & { src?: string }
-> = ({ src, alt, ...rest }) => {
-  const [url, setUrl] = useState<string | undefined>(
-    isDriveUrl(src) ? undefined : src,
-  );
+export const SecureImg: React.FC<React.ImgHTMLAttributes<HTMLImageElement> & { src?: string }> = ({ src, alt, ...rest }) => {
+  const [url, setUrl] = useState<string | undefined>(isDriveUrl(src) ? undefined : src);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     let alive = true;
@@ -34,28 +30,15 @@ export const SecureImg: React.FC<
   }, [src]);
   if (failed)
     return (
-      <span
-        className="dr-img-missing"
-        role="img"
-        aria-label={alt || "Image not available"}
-      >
+      <span className="dr-img-missing" role="img" aria-label={alt || 'Image not available'}>
         Image not available
       </span>
     );
-  if (!url)
-    return (
-      <span
-        className="dr-img-loading"
-        role="img"
-        aria-label={`Loading ${alt || "image"}`}
-      />
-    );
+  if (!url) return <span className="dr-img-loading" role="img" aria-label={`Loading ${alt || 'image'}`} />;
   return <img src={url} alt={alt} {...rest} />;
 };
 
-export const SecureLink: React.FC<
-  React.AnchorHTMLAttributes<HTMLAnchorElement>
-> = ({ href, children, ...rest }) =>
+export const SecureLink: React.FC<React.AnchorHTMLAttributes<HTMLAnchorElement>> = ({ href, children, ...rest }) =>
   isDriveUrl(href) ? (
     <a
       href={href}

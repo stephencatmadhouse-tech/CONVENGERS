@@ -26,6 +26,7 @@ import { buildPortalSnapshot, canTransition, nextTransitions, portalRecordFor, t
 import { fmtDate } from '../domain/dates.ts';
 import { Banner, Card, Empty, Field, Kpi, Modal, Pill, ConfirmDialog } from './ui.tsx';
 import { ReportStatusStamp } from './Reports.tsx';
+import { plural } from '../utils/plural.ts';
 
 export const STATUS_HEX_PUB: Record<PublishStatus, string> = {
   draft: '#68738A',
@@ -33,6 +34,14 @@ export const STATUS_HEX_PUB: Record<PublishStatus, string> = {
   approved: '#4BE08A',
   published: '#7B4DFF',
   archived: '#9CA3AF',
+};
+
+const KIND_PLURAL: Record<PublicationKind, string> = {
+  snapshot: 'Project status updates',
+  photo: 'Progress photos',
+  document: 'Client documents',
+  consideration: 'Major considerations',
+  update: 'Important updates',
 };
 
 const KIND_LABEL: Record<PublicationKind, string> = {
@@ -358,7 +367,7 @@ export const SnapshotSummary: React.FC<{ s: PortalSnapshot }> = ({ s }) => (
     </div>
     <div className="cv-dim">
       Includes {s.phases.length} construction phases, {s.milestones.length} milestones, {s.completed.length} recently completed, {s.ongoing.length} ongoing and{' '}
-      {s.upcoming.length} upcoming activities, {s.scheduleUpdates.length} schedule change(s). Excludes owners, internal remarks, issues, procurement, budget and
+      {plural(s.upcoming.length, 'upcoming activity', 'upcoming activities')}, {plural(s.scheduleUpdates.length, 'schedule change')}. Excludes owners, internal remarks, issues, procurement, budget and
       production details.
     </div>
   </div>
@@ -395,7 +404,7 @@ const ItemsTab: React.FC<{
   }, [route.param]);
   return (
     <Card
-      title={kinds.map((k) => KIND_LABEL[k]).join(' & ')}
+      title={kinds.map((k, i) => (i ? KIND_PLURAL[k].toLowerCase() : KIND_PLURAL[k])).join(' and ')}
       note={intro}
       actions={
         canEdit && !noCreate ? (

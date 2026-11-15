@@ -595,7 +595,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
             <div style={{ flex: 1, height: '1px', background: 'var(--sx-bg-32)' }} />
           </div>
           <div style={{ fontSize: '12px', color: 'var(--sx-text-2)', textAlign: 'center' }}>
-            Source: project schedule. Schedule assumes Monday–Saturday work; Sundays and listed holidays excluded. Changes sync in real-time to persistent database.
+            Source: project schedule. Schedule assumes Monday–Saturday work; Sundays and listed holidays excluded. Changes sync in real time to the shared project database.
           </div>
           <div className="ver" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--sx-text-3)', textAlign: 'center' }}>
             Version {settings.version} · Updated {new Date(settings.updatedAt).toLocaleString()}

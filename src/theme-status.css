@@ -77,6 +77,8 @@ html[data-eff='dark'] {
   --tl-p-up: #F7F7F2;
   --tl-up-fg: #172033;
   --tl-up-fg2: #68738A;
+  --tl-done-fg: #0A1140;
+  --tl-done-fg2: rgba(10, 17, 64, 0.78);
 }
 html[data-eff='dark'] {
   --tl-c-done: linear-gradient(90deg, #237A4A, #4BE08A);
@@ -87,6 +89,8 @@ html[data-eff='dark'] {
   --tl-p-up: linear-gradient(90deg, #2D143D, #4E1F6B);
   --tl-up-fg: #FFFFFF;
   --tl-up-fg2: rgba(255,255,255,0.85);
+  --tl-done-fg: #FFFFFF;
+  --tl-done-fg2: rgba(255,255,255,0.85);
 }
 
 /* Theme ink for Tailwind text classes in slides & modals */

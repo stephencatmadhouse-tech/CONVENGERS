@@ -15,6 +15,7 @@ import { computeMetrics, ProjectMetrics, round1 } from './metrics.ts';
 import { AlignmentRow, buildAlignment } from './alignment.ts';
 import { buildAttention, buildOutlook, OutlookClass } from './attention.ts';
 import { addDays, fmtDate, fmtRange, monthLabel, monthRange, todayIso, weekRange } from './dates.ts';
+import { plural } from '../utils/plural.ts';
 
 export interface ReportRow {
   id: string;
@@ -200,7 +201,7 @@ export function buildWeeklyContent(
     gain !== null ? `Progress gained this week: ${gain >= 0 ? '+' : ''}${gain} pts.` : 'Weekly progress gain is not available because no progress snapshot was recorded at the start of the week.',
     `${completed.length} activit${completed.length === 1 ? 'y' : 'ies'} completed, ${ongoing.length} ongoing, ${delayed.length} delayed.`,
     nextWeek.length ? `${nextWeek.length} activit${nextWeek.length === 1 ? 'y is' : 'ies are'} scheduled for next week.` : '',
-    issuesOpen.length ? `${issuesOpen.length} open issue(s) / risk(s) on the log.` : '',
+    issuesOpen.length ? `${plural(issuesOpen.length, 'open issue or risk', 'open issues or risks')} on the log.` : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -294,13 +295,13 @@ export function buildMonthlyContent(
   const attention = buildAttention(register, issues, alignment, today).filter((a) => a.severity !== 'info');
   const autoRecommendations = attention.slice(0, 8).map((a) => `${a.category}: ${a.title} — ${a.detail}${a.owner ? ` (Owner: ${a.owner})` : ' (assign an owner)'}`);
   if (nextMonth.some((n) => n.outlook === 'Tentative')) {
-    autoRecommendations.push(`Confirm ${nextMonth.filter((n) => n.outlook === 'Tentative').length} tentative schedule(s) for ${monthLabel(nm.key)}.`);
+    autoRecommendations.push(`Confirm ${plural(nextMonth.filter((n) => n.outlook === 'Tentative').length, 'tentative schedule')} for ${monthLabel(nm.key)}.`);
   }
 
   const autoSummary = [
     `${monthLabel(key)}: overall physical accomplishment ${metrics.actualPct}% vs ${metrics.plannedPct}% planned (${fmtVar(metrics.variancePct)}); health ${metrics.health}.`,
     gain !== null ? `Progress gained during the month: ${gain >= 0 ? '+' : ''}${gain} pts.` : 'Monthly progress gain is unavailable (no snapshot at the start of the month).',
-    `${completed.length} construction activit${completed.length === 1 ? 'y' : 'ies'} completed, ${delayed.length} delayed; ${shootsReg.length} production shoot window(s) in the month.`,
+    `${completed.length} construction activit${completed.length === 1 ? 'y' : 'ies'} completed, ${delayed.length} delayed; ${plural(shootsReg.length, 'production shoot window')} in the month.`,
     `Forecast completion ${fmtDate(metrics.projectedCompletion)} vs target ${fmtDate(metrics.targetCompletion)}.`,
   ].join(' ');
 

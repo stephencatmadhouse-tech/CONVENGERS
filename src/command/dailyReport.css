@@ -49,7 +49,7 @@
   white-space: nowrap;
 }
 .dr-status::before {
-  content: "";
+  content: '';
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -209,12 +209,7 @@
   text-align: center;
 }
 .dr-img-loading {
-  background: linear-gradient(
-    90deg,
-    var(--ds-surface-2, #f8f9fc),
-    var(--ds-line-soft, #f0f1f6),
-    var(--ds-surface-2, #f8f9fc)
-  );
+  background: linear-gradient(90deg, var(--ds-surface-2, #f8f9fc), var(--ds-line-soft, #f0f1f6), var(--ds-surface-2, #f8f9fc));
   background-size: 200% 100%;
   animation: dr-shimmer 1.2s linear infinite;
 }
@@ -233,11 +228,7 @@
   position: sticky;
   bottom: 0;
   padding: 12px 0;
-  background: linear-gradient(
-    to top,
-    var(--ds-surface-2, #f8f9fc) 70%,
-    transparent
-  );
+  background: linear-gradient(to top, var(--ds-surface-2, #f8f9fc) 70%, transparent);
   z-index: 5;
 }
 
@@ -420,11 +411,11 @@
   }
 }
 
-html[data-eff="dark"] .dr-doc:not(.print) h2,
-html[data-eff="dark"] .dr-doc:not(.print) .dr-doc-h h1 {
+html[data-eff='dark'] .dr-doc:not(.print) h2,
+html[data-eff='dark'] .dr-doc:not(.print) .dr-doc-h h1 {
   color: #d9d6ff;
 }
-html[data-eff="dark"] .dr-doc:not(.print) .dr-doc-table th {
+html[data-eff='dark'] .dr-doc:not(.print) .dr-doc-table th {
   background: rgba(255, 255, 255, 0.06);
 }
 

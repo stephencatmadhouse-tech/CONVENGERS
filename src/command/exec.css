@@ -1684,3 +1684,31 @@ html[data-eff='dark'] .ex-wk-col.today .ex-wk-h-cnt {
   line-height: 1.3;
 }
 
+
+/* Calendar event-type legend (filter chips) */
+.ex-legend {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 2px 0 12px;
+}
+.ex-leg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--cv-line);
+  background: var(--cv-panel);
+  color: var(--cv-text);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font: 600 12px 'Barlow', sans-serif;
+  cursor: pointer;
+}
+.ex-leg em {
+  font-style: normal;
+  color: var(--cv-dim);
+}
+.ex-leg.off {
+  opacity: 0.45;
+  text-decoration: line-through;
+}

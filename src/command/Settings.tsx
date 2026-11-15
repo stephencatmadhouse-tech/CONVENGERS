@@ -10,6 +10,8 @@ import { useCommand } from './context.tsx';
 import { dataHealthCheck } from '../domain/validation.ts';
 import { fmtDate } from '../domain/dates.ts';
 import { Card, Banner, Empty, ConfirmDialog, Pill } from './ui.tsx';
+import { plural } from '../utils/plural.ts';
+import { ROLE_LABEL } from '../auth/roles.ts';
 
 export const Settings: React.FC = () => {
   const { data, register, actions, isManager, isAdmin, canEdit, sharedStorage, snapshots, reports, issues, today, isLive, user, uiTheme } = useCommand();
@@ -61,7 +63,7 @@ export const Settings: React.FC = () => {
           </div>
           {localCount > 0 && (
             <div className="cv-row" style={{ marginTop: 10 }}>
-              <Banner kind="warn">{localCount} record(s) exist only on this device.</Banner>
+              <Banner kind="warn">{localCount === 1 ? '1 record exists' : `${localCount} records exist`} only on this device.</Banner>
               <button type="button" className="cv-btn sm" onClick={() => actions.syncLocal()}>
                 Retry upload to shared database
               </button>
@@ -177,14 +179,14 @@ export const Settings: React.FC = () => {
               </button>
             </div>
             <div className="cv-dim">
-              {snapshots.length} snapshot(s) recorded{snapshots.length ? ` · first ${fmtDate(snapshots[0].date)} · latest ${fmtDate(snapshots[snapshots.length - 1].date)}` : ''}.
+              {plural(snapshots.length, 'snapshot')} recorded{snapshots.length ? ` · first ${fmtDate(snapshots[0].date)} · latest ${fmtDate(snapshots[snapshots.length - 1].date)}` : ''}.
               {canEdit ? ' A snapshot is taken automatically once per day while a team member has the dashboard open.' : ' Sign in to record snapshots.'}
             </div>
           </div>
         </Card>
       </div>
 
-      <Card title="Data health check" note={`${findings.length} finding(s) · validation only, nothing is changed`}>
+      <Card title="Data health check" note={`${plural(findings.length, 'finding')} · validation only, nothing is changed`}>
         {findings.length ? (
           <div className="cv-table-wrap" style={{ maxHeight: 360 }}>
             <table className="cv-table">
@@ -213,7 +215,7 @@ export const Settings: React.FC = () => {
         )}
       </Card>
 
-      <Card title="Administration" note={`Signed in as ${user.name} (${user.role})`}>
+      <Card title="Administration" note={`Signed in as ${user.name} (${ROLE_LABEL[user.role] || user.role})`}>
         <div className="cv-row">
           <button type="button" className="cv-btn sm" disabled={!isAdmin} onClick={actions.openAuditLogs}>
             📜 Audit log

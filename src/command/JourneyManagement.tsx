@@ -124,8 +124,8 @@ export const JourneyManagement: React.FC = () => {
     <div className="cv-grid" style={{ gap: 16 }}>
       {!cfg.shared && cfg.loaded && (
         <Banner kind="warn">
-          Shared storage for the client experience settings is not available yet (deploy the updated firestore.rules with the <code>clientConfig</code> rule). Changes
-          saved now stay on this device.
+          The shared database is refusing the client experience settings, so changes are saved on this device only and clients will not see them. An administrator
+          needs to publish the latest <code>firestore.rules</code> (it includes the <code>clientConfig</code> rule) in the Firebase console.
         </Banner>
       )}
       <Card

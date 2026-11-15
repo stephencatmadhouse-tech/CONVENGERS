@@ -14,7 +14,7 @@
  * a manager applies it after approval.
  */
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Camera,
   ImagePlus,
@@ -31,23 +31,16 @@ import {
   AlertTriangle,
   ClipboardList,
   Image as ImageIcon,
-} from "lucide-react";
-import "./dailyReport.css";
-import { useCommand } from "./context.tsx";
-import { Banner, Card, Empty, Field, Modal, SYNC_LABEL } from "./ui.tsx";
-import { useStore } from "../firebase/useStore.ts";
-import {
-  dailyReportStore,
-  siteReportStore,
-  publicationStore,
-} from "../firebase/opsStores.ts";
-import { newId } from "../firebase/collectionStore.ts";
-import { firestoreData } from "../firebase/firestoreData.ts";
-import {
-  isConstructionItem,
-  CONSTRUCTION_CATEGORIES,
-} from "../domain/categories.ts";
-import { fmtDate, fmtTime, isValidIso } from "../domain/dates.ts";
+} from 'lucide-react';
+import './dailyReport.css';
+import { useCommand } from './context.tsx';
+import { Banner, Card, Empty, Field, Modal, SYNC_LABEL } from './ui.tsx';
+import { useStore } from '../firebase/useStore.ts';
+import { dailyReportStore, siteReportStore, publicationStore } from '../firebase/opsStores.ts';
+import { newId } from '../firebase/collectionStore.ts';
+import { firestoreData } from '../firebase/firestoreData.ts';
+import { isConstructionItem, CONSTRUCTION_CATEGORIES } from '../domain/categories.ts';
+import { fmtDate, fmtTime, isValidIso } from '../domain/dates.ts';
 import {
   DR_PROJECT,
   DR_STATUS_LABEL,
@@ -61,68 +54,42 @@ import {
   canEditReport,
   canReview,
   reviewActions,
-} from "../domain/dailyReport.ts";
-import { progressEditable } from "../domain/siteReport.ts";
-import {
-  newFileId,
-  uploadToDrive,
-  validateFile,
-  driveFileUrl,
-  driveObjectUrl,
-  finishPendingRecords,
-  driveStatus,
-  isRecordPending,
-} from "../drive/driveClient.ts";
-import { SecureImg } from "../drive/SecureMedia.tsx";
-import type {
-  DailyReport,
-  DailyReportStatus,
-  DailyReportPhoto,
-  DailyReportActivity,
-  Publication,
-} from "../types/index.ts";
-import { LOGO_SVG } from "../constants/assets.ts";
+} from '../domain/dailyReport.ts';
+import { progressEditable } from '../domain/siteReport.ts';
+import { newFileId, uploadToDrive, validateFile, driveFileUrl, driveObjectUrl, finishPendingRecords, driveStatus, isRecordPending } from '../drive/driveClient.ts';
+import { SecureImg } from '../drive/SecureMedia.tsx';
+import type { DailyReport, DailyReportStatus, DailyReportPhoto, DailyReportActivity, Publication } from '../types/index.ts';
+import { LOGO_SVG } from '../constants/assets.ts';
+import { plural } from '../utils/plural.ts';
 
 const draftKey = (uid: string) => `bb_dcr_draft_${uid}`;
 const nowIso = () => new Date().toISOString();
 
-export const DrStatus: React.FC<{ s: DailyReportStatus; local?: boolean }> = ({
-  s,
-  local,
-}) => (
-  <span className="dr-status" style={{ ["--c" as any]: DR_STATUS_COLOR[s] }}>
+export const DrStatus: React.FC<{ s: DailyReportStatus; local?: boolean }> = ({ s, local }) => (
+  <span className="dr-status" style={{ ['--c' as any]: DR_STATUS_COLOR[s] }}>
     {DR_STATUS_LABEL[s]}
-    {local ? " · on this device" : ""}
+    {local ? ' · on this device' : ''}
   </span>
 );
 
 // =====================================================================
 export const DailyReports: React.FC<{ tab?: string }> = ({ tab }) => {
   const { route, user } = useCommand();
-  const [drive, setDrive] = useState<
-    { configured: boolean } | null | "loading"
-  >("loading");
+  const [drive, setDrive] = useState<{ configured: boolean } | null | 'loading'>('loading');
   useEffect(() => {
     driveStatus().then((s) => setDrive(s));
     void finishPendingRecords();
   }, []);
   return (
     <div className="cv-grid" style={{ gap: 14 }}>
-      {drive !== "loading" && !drive?.configured && (
+      {drive !== 'loading' && !drive?.configured && (
         <Banner kind="warn">
           {drive === null
-            ? "The file storage service cannot be reached — photographs cannot be uploaded right now. Reports can still be saved as drafts."
-            : "Google Drive storage is not configured on the server yet — photographs cannot be uploaded until the administrator completes the setup."}
+            ? 'The file storage service cannot be reached — photographs cannot be uploaded right now. Reports can still be saved as drafts.'
+            : 'Google Drive storage is not configured on the server yet — photographs cannot be uploaded until the administrator completes the setup.'}
         </Banner>
       )}
-      {tab === "history" ? (
-        <ReportHistory openId={route.param} />
-      ) : (
-        <ReportForm
-          key={`${user.id}:${route.param || "new"}`}
-          editId={route.param}
-        />
-      )}
+      {tab === 'history' ? <ReportHistory openId={route.param} /> : <ReportForm key={`${user.id}:${route.param || 'new'}`} editId={route.param} />}
     </div>
   );
 };
@@ -133,16 +100,14 @@ export const DailyReports: React.FC<{ tab?: string }> = ({ tab }) => {
 const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
   const { register, today, user, canEdit, actions, dataSync } = useCommand();
   const store = useStore(dailyReportStore);
-  const [rep, setRep] = useState<DailyReport>(() =>
-    blankDailyReport(today, user),
-  );
+  const [rep, setRep] = useState<DailyReport>(() => blankDailyReport(today, user));
   const files = useRef<Record<string, File>>({});
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [prog, setProg] = useState<Record<string, number>>({});
-  const [busy, setBusy] = useState<"" | "draft" | "submit">("");
+  const [busy, setBusy] = useState<'' | 'draft' | 'submit'>('');
   const [errors, setErrors] = useState<string[]>([]);
   const [msg, setMsg] = useState<{
-    kind: "ok" | "warn" | "error";
+    kind: 'ok' | 'warn' | 'error';
     title: string;
     lines: string[];
     done?: DailyReport;
@@ -159,9 +124,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
       if (!r) return; // wait for the store
       loaded.current = true;
       if (!canEditReport(r, user)) {
-        setErrors([
-          "This report can no longer be edited (it is under review or approved).",
-        ]);
+        setErrors(['This report can no longer be edited (it is under review or approved).']);
         return;
       }
       setRep(structuredClone(r));
@@ -175,13 +138,12 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
         if (saved?.rep?.id) {
           // Photos chosen but not uploaded cannot be restored after closing the page
           saved.rep.photos = saved.rep.photos.map((p) =>
-            p.uploadStatus === "uploaded"
+            p.uploadStatus === 'uploaded'
               ? p
               : {
                   ...p,
-                  uploadStatus: "failed",
-                  error:
-                    "Select this photo again (it was not uploaded before the page closed).",
+                  uploadStatus: 'failed',
+                  error: 'Select this photo again (it was not uploaded before the page closed).',
                 },
           );
           setRep(saved.rep);
@@ -198,10 +160,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
     if (!loaded.current || msg?.done?.id === rep.id) return;
     const t = setTimeout(() => {
       try {
-        localStorage.setItem(
-          draftKey(user.id),
-          JSON.stringify({ rep, savedAt: nowIso() }),
-        );
+        localStorage.setItem(draftKey(user.id), JSON.stringify({ rep, savedAt: nowIso() }));
       } catch {
         // storage full / unavailable
       }
@@ -209,13 +168,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
     return () => clearTimeout(t);
   }, [rep, user.id, msg]);
 
-  const acts = useMemo(
-    () =>
-      register
-        .filter(isConstructionItem)
-        .sort((a, b) => (a.start || "9999").localeCompare(b.start || "9999")),
-    [register],
-  );
+  const acts = useMemo(() => register.filter(isConstructionItem).sort((a, b) => (a.start || '9999').localeCompare(b.start || '9999')), [register]);
   const set = (p: Partial<DailyReport>) => setRep((r) => ({ ...r, ...p }));
   const setAct = (i: number, p: Partial<DailyReportActivity>) =>
     setRep((r) => ({
@@ -227,7 +180,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
       ...r,
       photos: r.photos.map((x) => (x.fileId === fileId ? { ...x, ...p } : x)),
     }));
-  const locked = !canEdit || busy !== "";
+  const locked = !canEdit || busy !== '';
 
   const addPhotos = (list: FileList | null) => {
     if (!list) return;
@@ -246,8 +199,8 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
         fileSize: f.size,
         photoType: PHOTO_TYPES[0],
         activityId: rep.activities[0]?.activityId || undefined,
-        description: "",
-        uploadStatus: "pending",
+        description: '',
+        uploadStatus: 'pending',
       });
     });
     setPreviews((p) => ({ ...p, ...pv }));
@@ -267,7 +220,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
   const uploadPhotos = async (r: DailyReport): Promise<DailyReportPhoto[]> => {
     const out: DailyReportPhoto[] = [];
     for (const p of r.photos) {
-      if (p.uploadStatus === "uploaded") {
+      if (p.uploadStatus === 'uploaded') {
         out.push(p);
         continue;
       }
@@ -275,19 +228,19 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
       if (!f) {
         out.push({
           ...p,
-          uploadStatus: "failed",
-          error: p.error || "Select this photo again.",
+          uploadStatus: 'failed',
+          error: p.error || 'Select this photo again.',
         });
         continue;
       }
-      setPhoto(p.fileId, { uploadStatus: "uploading", error: undefined });
+      setPhoto(p.fileId, { uploadStatus: 'uploading', error: undefined });
       try {
         const act = register.find((a) => a.id === p.activityId);
         const res = await uploadToDrive(
           f,
           {
             fileId: p.fileId,
-            folderKey: "daily",
+            folderKey: 'daily',
             subfolder: r.reference,
             reportingDate: r.date,
             reportId: r.id,
@@ -295,18 +248,13 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
             category: act?.category,
             photoType: p.photoType,
             description: p.description,
-            kind: "photo",
+            kind: 'photo',
           },
           (v) => setProg((x) => ({ ...x, [p.fileId]: v })),
         );
-        if (
-          !res.recorded &&
-          (await finishPendingRecords(), isRecordPending(p.fileId))
-        ) {
+        if (!res.recorded && (await finishPendingRecords(), isRecordPending(p.fileId))) {
           // In Google Drive, but the file record is not confirmed: never report it as uploaded
-          throw new Error(
-            "Stored in Google Drive, but the file record was not confirmed. Press Retry Upload (no duplicate is created).",
-          );
+          throw new Error('Stored in Google Drive, but the file record was not confirmed. Press Retry Upload (no duplicate is created).');
         }
         // A deduplicated upload returns the earlier file of the same report: keep that reference
         const ref = res.file
@@ -319,7 +267,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
         const done: DailyReportPhoto = {
           ...p,
           ...ref,
-          uploadStatus: "uploaded",
+          uploadStatus: 'uploaded',
           error: undefined,
         };
         setPhoto(p.fileId, done);
@@ -327,8 +275,8 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
       } catch (e) {
         const failed: DailyReportPhoto = {
           ...p,
-          uploadStatus: "failed",
-          error: e instanceof Error ? e.message : "Upload failed.",
+          uploadStatus: 'failed',
+          error: e instanceof Error ? e.message : 'Upload failed.',
         };
         setPhoto(p.fileId, failed);
         out.push(failed);
@@ -336,54 +284,44 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
     }
     // Never keep two references to the same file
     const seen = new Set<string>();
-    return out.filter((p) =>
-      seen.has(p.fileId) ? false : (seen.add(p.fileId), true),
-    );
+    return out.filter((p) => (seen.has(p.fileId) ? false : (seen.add(p.fileId), true)));
   };
 
-  const save = (r: DailyReport) =>
-    dailyReportStore.put({ ...r, updatedAt: nowIso(), updatedBy: user.name });
+  const save = (r: DailyReport) => dailyReportStore.put({ ...r, updatedAt: nowIso(), updatedBy: user.name });
 
   const saveDraft = async () => {
-    if (!isValidIso(rep.date)) return setErrors(["Choose the reporting date."]);
+    if (!isValidIso(rep.date)) return setErrors(['Choose the reporting date.']);
     setErrors([]);
     setMsg(null);
-    setBusy("draft");
+    setBusy('draft');
     try {
       const photos = await uploadPhotos(rep);
       const r = {
         ...rep,
         photos,
-        status: (rep.status === "returned"
-          ? "returned"
-          : "draft") as DailyReportStatus,
+        status: (rep.status === 'returned' ? 'returned' : 'draft') as DailyReportStatus,
       };
       const res = await save(r);
       setRep(r);
-      const failed = photos.filter((p) => p.uploadStatus === "failed").length;
+      const failed = photos.filter((p) => p.uploadStatus === 'failed').length;
       setMsg({
-        kind: res === "shared" && !failed ? "ok" : "warn",
-        title:
-          res === "shared" ? "Draft saved" : "Draft saved on this device only",
+        kind: res === 'shared' && !failed ? 'ok' : 'warn',
+        title: res === 'shared' ? 'Draft saved' : 'Draft saved on this device only',
         lines: [
-          res === "shared"
-            ? "The draft is stored in the shared database. Continue editing any time from Report History."
-            : "The shared database did not confirm the save. The draft stays on this device until it can be synced.",
-          ...(failed
-            ? [
-                `${failed} photo(s) could not be uploaded — retry before submitting.`,
-              ]
-            : []),
+          res === 'shared'
+            ? 'The draft is stored in the shared database. Continue editing any time from Report History.'
+            : 'The shared database did not confirm the save. The draft stays on this device until it can be synced.',
+          ...(failed ? [`${plural(failed, 'photo')} could not be uploaded — retry before submitting.`] : []),
         ],
       });
     } catch (e) {
       setMsg({
-        kind: "error",
-        title: "Draft not saved",
-        lines: [e instanceof Error ? e.message : "Unexpected error."],
+        kind: 'error',
+        title: 'Draft not saved',
+        lines: [e instanceof Error ? e.message : 'Unexpected error.'],
       });
     } finally {
-      setBusy("");
+      setBusy('');
     }
   };
 
@@ -392,74 +330,51 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
     // STEP 1 — validate (failed photos that can still be retried do not block)
     const forCheck = {
       ...rep,
-      photos: rep.photos.map((p) =>
-        p.uploadStatus === "failed" && files.current[p.fileId]
-          ? { ...p, uploadStatus: "pending" as const }
-          : p,
-      ),
+      photos: rep.photos.map((p) => (p.uploadStatus === 'failed' && files.current[p.fileId] ? { ...p, uploadStatus: 'pending' as const } : p)),
     };
     const errs = validateDailyReport(forCheck, today);
     setErrors(errs);
     if (errs.length) {
-      document
-        .getElementById("dr-errors")
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById('dr-errors')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     setMsg(null);
-    setBusy("submit");
+    setBusy('submit');
     const problems: string[] = [];
     try {
       // STEP 2 — save the report record with a clear initial state
       let r: DailyReport = {
         ...rep,
-        status: "uploading",
+        status: 'uploading',
         preparedBy: rep.preparedBy || user.name,
         preparedById: rep.preparedById || user.id,
       };
       const s2 = await save(r);
-      if (s2 !== "shared")
-        problems.push(
-          "The report record was not confirmed by the shared database.",
-        );
+      if (s2 !== 'shared') problems.push('The report record was not confirmed by the shared database.');
       // STEP 3 — upload photographs to Google Drive
       const photos = await uploadPhotos(r);
-      const failed = photos.filter((p) => p.uploadStatus !== "uploaded");
-      if (failed.length)
-        problems.push(
-          `${failed.length} photo(s) failed to upload: ${failed.map((p) => p.fileName).join(", ")}.`,
-        );
+      const failed = photos.filter((p) => p.uploadStatus !== 'uploaded');
+      if (failed.length) problems.push(`${plural(failed.length, 'photo')} failed to upload: ${failed.map((p) => p.fileName).join(', ')}.`);
       // STEP 4 — save the Google Drive file references with the report
       r = { ...r, photos };
       const s4 = await save(r);
-      if (s4 !== "shared")
-        problems.push(
-          "The photo references were not confirmed by the shared database.",
-        );
+      if (s4 !== 'shared') problems.push('The photo references were not confirmed by the shared database.');
       // STEP 5 — finalize only when everything is confirmed
       if (!problems.length) {
         const at = nowIso();
         const fin: DailyReport = {
           ...r,
-          status: "submitted",
+          status: 'submitted',
           submittedAt: at,
-          history: [...r.history, { at, by: user.name, to: "submitted" }],
+          history: [...r.history, { at, by: user.name, to: 'submitted' }],
         };
         const s5 = await save(fin);
-        if (s5 === "shared") {
-          await firestoreData
-            .logAudit(
-              user,
-              "SUBMIT_DAILY_REPORT",
-              "DailyReport",
-              fin.id,
-              `${fin.reference} · ${fin.date}`,
-            )
-            .catch(() => undefined);
+        if (s5 === 'shared') {
+          await firestoreData.logAudit(user, 'SUBMIT_DAILY_REPORT', 'DailyReport', fin.id, `${fin.reference} · ${fin.date}`).catch(() => undefined);
           // STEP 6 — confirmation; STEP 7 — the history list updates from the database
           setMsg({
-            kind: "ok",
-            title: "Daily Construction Report successfully submitted.",
+            kind: 'ok',
+            title: 'Daily Construction Report successfully submitted.',
             lines: [],
             done: fin,
           });
@@ -471,35 +386,27 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
           files.current = {};
           setRep(blankDailyReport(today, user));
           setErrors([]);
-          window.scrollTo({ top: 0, behavior: "smooth" });
+          window.scrollTo({ top: 0, behavior: 'smooth' });
           return;
         }
-        problems.push(
-          "The final submission was not confirmed by the shared database.",
-        );
+        problems.push('The final submission was not confirmed by the shared database.');
       }
-      const pend: DailyReport = { ...r, status: "pending" };
+      const pend: DailyReport = { ...r, status: 'pending' };
       await save(pend).catch(() => undefined);
       setRep(pend);
       setMsg({
-        kind: "error",
-        title: "Not submitted yet — Pending Submission",
-        lines: [
-          ...problems,
-          "Your entries are kept. Fix the items above and press Submit Report again; it will not create a duplicate.",
-        ],
+        kind: 'error',
+        title: 'Not submitted yet — Pending Submission',
+        lines: [...problems, 'Your entries are kept. Fix the items above and press Submit Report again; it will not create a duplicate.'],
       });
     } catch (e) {
       setMsg({
-        kind: "error",
-        title: "Not submitted",
-        lines: [
-          e instanceof Error ? e.message : "Unexpected error.",
-          "Your entries are kept — press Submit Report again.",
-        ],
+        kind: 'error',
+        title: 'Not submitted',
+        lines: [e instanceof Error ? e.message : 'Unexpected error.', 'Your entries are kept — press Submit Report again.'],
       });
     } finally {
-      setBusy("");
+      setBusy('');
     }
   };
 
@@ -514,34 +421,21 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
     setRestored(false);
     setErrors([]);
     setMsg(null);
-    actions.navigate("site/new");
+    actions.navigate('site/new');
   };
 
-  if (!canEdit)
-    return (
-      <Banner kind="info">
-        Read-only access: Daily Construction Reports are prepared by site
-        personnel. See Report History.
-      </Banner>
-    );
+  if (!canEdit) return <Banner kind="info">Read-only access: Daily Construction Reports are prepared by site personnel. See Report History.</Banner>;
 
-  const photoUrl = (p: DailyReportPhoto) =>
-    previews[p.fileId] ||
-    (p.uploadStatus === "uploaded" ? driveFileUrl(p.fileId) : undefined);
+  const photoUrl = (p: DailyReportPhoto) => previews[p.fileId] || (p.uploadStatus === 'uploaded' ? driveFileUrl(p.fileId) : undefined);
 
   return (
     <div className="dr-form-wrap">
-      {msg?.done && (
-        <Confirmation
-          r={msg.done}
-          onHistory={() => actions.navigate(`site/history/${msg.done!.id}`)}
-        />
-      )}
+      {msg?.done && <Confirmation r={msg.done} onHistory={() => actions.navigate(`site/history/${msg.done!.id}`)} />}
       {msg && !msg.done && (
         <div className={`dr-msg ${msg.kind}`} role="status">
-          {msg.kind === "ok" ? (
+          {msg.kind === 'ok' ? (
             <CheckCircle2 size={20} aria-hidden />
-          ) : msg.kind === "warn" ? (
+          ) : msg.kind === 'warn' ? (
             <CloudOff size={20} aria-hidden />
           ) : (
             <AlertTriangle size={20} aria-hidden />
@@ -556,30 +450,25 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
       )}
       {restored && !editId && (
         <Banner kind="info">
-          Your unsent report from this device was restored ({rep.reference}).{" "}
+          Your unsent report from this device was restored ({rep.reference}).{' '}
           <button type="button" className="cv-linkbtn" onClick={startNew}>
             Start a new report instead
           </button>
         </Banner>
       )}
-      {rep.status === "returned" && rep.review?.remarks && (
+      {rep.status === 'returned' && rep.review?.remarks && (
         <Banner kind="warn">
           <b>Returned for revision:</b> {rep.review.remarks}
         </Banner>
       )}
-      {dataSync.state !== "live" && (
+      {dataSync.state !== 'live' && (
         <Banner kind="warn">
-          {SYNC_LABEL[dataSync.state]?.label}: drafts are kept on this device
-          and the report cannot be submitted until the shared database is
-          reachable.
+          {SYNC_LABEL[dataSync.state]?.label}: drafts are kept on this device and the report cannot be submitted until the shared database is reachable.
         </Banner>
       )}
 
       {/* REPORT INFORMATION */}
-      <Card
-        title="Report information"
-        note={`${rep.reference} · ${DR_STATUS_LABEL[rep.status]}`}
-      >
+      <Card title="Report information" note={`${rep.reference} · ${DR_STATUS_LABEL[rep.status]}`}>
         <div className="dr-grid">
           <Field label="Project">
             <select className="cv-select" value={rep.projectId} disabled>
@@ -590,25 +479,13 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
             <input className="cv-input" value={rep.projectId} disabled />
           </Field>
           <Field label="Reporting date *">
-            <input
-              type="date"
-              className="cv-input"
-              value={rep.date}
-              max={today}
-              disabled={locked}
-              onChange={(e) => set({ date: e.target.value })}
-            />
+            <input type="date" className="cv-input" value={rep.date} max={today} disabled={locked} onChange={(e) => set({ date: e.target.value })} />
           </Field>
           <Field label="Report reference number">
             <input className="cv-input" value={rep.reference} disabled />
           </Field>
           <Field label="Weather conditions">
-            <select
-              className="cv-select"
-              value={rep.weather}
-              disabled={locked}
-              onChange={(e) => set({ weather: e.target.value })}
-            >
+            <select className="cv-select" value={rep.weather} disabled={locked} onChange={(e) => set({ weather: e.target.value })}>
               <option value="">Not recorded</option>
               {WEATHER.map((w) => (
                 <option key={w}>{w}</option>
@@ -630,11 +507,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
           <Field label="Submission date">
             <input
               className="cv-input"
-              value={
-                rep.submittedAt
-                  ? `${fmtDate(rep.submittedAt.slice(0, 10))} ${fmtTime(rep.submittedAt.slice(11, 16))}`
-                  : "Not yet submitted"
-              }
+              value={rep.submittedAt ? `${fmtDate(rep.submittedAt.slice(0, 10))} ${fmtTime(rep.submittedAt.slice(11, 16))}` : 'Not yet submitted'}
               disabled
             />
           </Field>
@@ -655,14 +528,14 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                 activities: [
                   ...rep.activities,
                   {
-                    activityId: "",
-                    category: "",
-                    name: "",
-                    workDescription: "",
-                    accomplishment: "",
+                    activityId: '',
+                    category: '',
+                    name: '',
+                    workDescription: '',
+                    accomplishment: '',
                     progress: null,
-                    workStatus: "In progress",
-                    remarks: "",
+                    workStatus: 'In progress',
+                    remarks: '',
                   },
                 ],
               })
@@ -672,9 +545,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
           </button>
         }
       >
-        {!rep.activities.length && (
-          <Empty>No activities yet — add the work done today.</Empty>
-        )}
+        {!rep.activities.length && <Empty>No activities yet — add the work done today.</Empty>}
         {rep.activities.map((a, i) => {
           const r = register.find((x) => x.id === a.activityId);
           return (
@@ -705,8 +576,8 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                       const x = register.find((y) => y.id === e.target.value);
                       setAct(i, {
                         activityId: e.target.value,
-                        name: x?.name || "",
-                        category: x?.category || "",
+                        name: x?.name || '',
+                        category: x?.category || '',
                         progress: x && progressEditable(x) ? x.progress : null,
                       });
                     }}
@@ -720,12 +591,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                   </select>
                 </Field>
                 <Field label="Construction category">
-                  <select
-                    className="cv-select"
-                    value={a.category}
-                    disabled={locked}
-                    onChange={(e) => setAct(i, { category: e.target.value })}
-                  >
+                  <select className="cv-select" value={a.category} disabled={locked} onChange={(e) => setAct(i, { category: e.target.value })}>
                     <option value="">—</option>
                     {CONSTRUCTION_CATEGORIES.map((c) => (
                       <option key={c}>{c}</option>
@@ -739,8 +605,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                     disabled={locked}
                     onChange={(e) =>
                       setAct(i, {
-                        workStatus: e.target
-                          .value as DailyReportActivity["workStatus"],
+                        workStatus: e.target.value as DailyReportActivity['workStatus'],
                       })
                     }
                   >
@@ -755,9 +620,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                     rows={2}
                     value={a.workDescription}
                     disabled={locked}
-                    onChange={(e) =>
-                      setAct(i, { workDescription: e.target.value })
-                    }
+                    onChange={(e) => setAct(i, { workDescription: e.target.value })}
                   />
                 </Field>
                 <Field label="Actual accomplishment" className="dr-span2">
@@ -767,9 +630,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                     value={a.accomplishment}
                     disabled={locked}
                     placeholder="What was completed today (quantities, areas)"
-                    onChange={(e) =>
-                      setAct(i, { accomplishment: e.target.value })
-                    }
+                    onChange={(e) => setAct(i, { accomplishment: e.target.value })}
                   />
                 </Field>
                 {r && progressEditable(r) ? (
@@ -786,9 +647,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                       className="dr-range"
                       value={a.progress ?? r.progress}
                       disabled={locked}
-                      onChange={(e) =>
-                        setAct(i, { progress: Number(e.target.value) })
-                      }
+                      onChange={(e) => setAct(i, { progress: Number(e.target.value) })}
                       aria-label="Reported progress"
                     />
                   </Field>
@@ -800,12 +659,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                   )
                 )}
                 <Field label="Remarks" className="dr-span2">
-                  <input
-                    className="cv-input"
-                    value={a.remarks}
-                    disabled={locked}
-                    onChange={(e) => setAct(i, { remarks: e.target.value })}
-                  />
+                  <input className="cv-input" value={a.remarks} disabled={locked} onChange={(e) => setAct(i, { remarks: e.target.value })} />
                 </Field>
               </div>
             </div>
@@ -818,10 +672,10 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
         <div className="dr-grid four">
           {(
             [
-              ["skilled", "Skilled workers"],
-              ["general", "General workers"],
-              ["subcontractor", "Subcontractor personnel"],
-              ["other", "Other personnel"],
+              ['skilled', 'Skilled workers'],
+              ['general', 'General workers'],
+              ['subcontractor', 'Subcontractor personnel'],
+              ['other', 'Other personnel'],
             ] as const
           ).map(([k, l]) => (
             <Field key={k} label={l}>
@@ -859,12 +713,12 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                 materials: [
                   ...rep.materials,
                   {
-                    description: "",
-                    quantity: "",
-                    unit: "",
+                    description: '',
+                    quantity: '',
+                    unit: '',
                     deliveryDate: rep.date,
-                    supplier: "",
-                    remarks: "",
+                    supplier: '',
+                    remarks: '',
                   },
                 ],
               })
@@ -884,9 +738,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                   disabled={locked}
                   onChange={(e) =>
                     set({
-                      materials: rep.materials.map((x, j) =>
-                        j === i ? { ...x, description: e.target.value } : x,
-                      ),
+                      materials: rep.materials.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)),
                     })
                   }
                 />
@@ -899,9 +751,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                   disabled={locked}
                   onChange={(e) =>
                     set({
-                      materials: rep.materials.map((x, j) =>
-                        j === i ? { ...x, quantity: e.target.value } : x,
-                      ),
+                      materials: rep.materials.map((x, j) => (j === i ? { ...x, quantity: e.target.value } : x)),
                     })
                   }
                 />
@@ -914,9 +764,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                   disabled={locked}
                   onChange={(e) =>
                     set({
-                      materials: rep.materials.map((x, j) =>
-                        j === i ? { ...x, unit: e.target.value } : x,
-                      ),
+                      materials: rep.materials.map((x, j) => (j === i ? { ...x, unit: e.target.value } : x)),
                     })
                   }
                 />
@@ -929,9 +777,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                   disabled={locked}
                   onChange={(e) =>
                     set({
-                      materials: rep.materials.map((x, j) =>
-                        j === i ? { ...x, deliveryDate: e.target.value } : x,
-                      ),
+                      materials: rep.materials.map((x, j) => (j === i ? { ...x, deliveryDate: e.target.value } : x)),
                     })
                   }
                 />
@@ -943,9 +789,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                   disabled={locked}
                   onChange={(e) =>
                     set({
-                      materials: rep.materials.map((x, j) =>
-                        j === i ? { ...x, supplier: e.target.value } : x,
-                      ),
+                      materials: rep.materials.map((x, j) => (j === i ? { ...x, supplier: e.target.value } : x)),
                     })
                   }
                 />
@@ -957,22 +801,13 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                   disabled={locked}
                   onChange={(e) =>
                     set({
-                      materials: rep.materials.map((x, j) =>
-                        j === i ? { ...x, remarks: e.target.value } : x,
-                      ),
+                      materials: rep.materials.map((x, j) => (j === i ? { ...x, remarks: e.target.value } : x)),
                     })
                   }
                 />
               </Field>
             </div>
-            <button
-              type="button"
-              className="cv-btn ghost sm"
-              disabled={locked}
-              onClick={() =>
-                set({ materials: rep.materials.filter((_, j) => j !== i) })
-              }
-            >
+            <button type="button" className="cv-btn ghost sm" disabled={locked} onClick={() => set({ materials: rep.materials.filter((_, j) => j !== i) })}>
               <Trash2 size={14} aria-hidden /> Delete
             </button>
           </div>
@@ -992,10 +827,10 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                 equipment: [
                   ...rep.equipment,
                   {
-                    description: "",
-                    quantity: "1",
-                    status: "Operational",
-                    remarks: "",
+                    description: '',
+                    quantity: '1',
+                    status: 'Operational',
+                    remarks: '',
                   },
                 ],
               })
@@ -1015,9 +850,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                   disabled={locked}
                   onChange={(e) =>
                     set({
-                      equipment: rep.equipment.map((x, j) =>
-                        j === i ? { ...x, description: e.target.value } : x,
-                      ),
+                      equipment: rep.equipment.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)),
                     })
                   }
                 />
@@ -1030,9 +863,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                   disabled={locked}
                   onChange={(e) =>
                     set({
-                      equipment: rep.equipment.map((x, j) =>
-                        j === i ? { ...x, quantity: e.target.value } : x,
-                      ),
+                      equipment: rep.equipment.map((x, j) => (j === i ? { ...x, quantity: e.target.value } : x)),
                     })
                   }
                 />
@@ -1044,17 +875,13 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                   disabled={locked}
                   onChange={(e) =>
                     set({
-                      equipment: rep.equipment.map((x, j) =>
-                        j === i ? { ...x, status: e.target.value } : x,
-                      ),
+                      equipment: rep.equipment.map((x, j) => (j === i ? { ...x, status: e.target.value } : x)),
                     })
                   }
                 >
-                  {["Operational", "Idle", "Under repair", "Breakdown"].map(
-                    (s) => (
-                      <option key={s}>{s}</option>
-                    ),
-                  )}
+                  {['Operational', 'Idle', 'Under repair', 'Breakdown'].map((s) => (
+                    <option key={s}>{s}</option>
+                  ))}
                 </select>
               </Field>
               <Field label="Remarks" className="dr-span2">
@@ -1064,22 +891,13 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                   disabled={locked}
                   onChange={(e) =>
                     set({
-                      equipment: rep.equipment.map((x, j) =>
-                        j === i ? { ...x, remarks: e.target.value } : x,
-                      ),
+                      equipment: rep.equipment.map((x, j) => (j === i ? { ...x, remarks: e.target.value } : x)),
                     })
                   }
                 />
               </Field>
             </div>
-            <button
-              type="button"
-              className="cv-btn ghost sm"
-              disabled={locked}
-              onClick={() =>
-                set({ equipment: rep.equipment.filter((_, j) => j !== i) })
-              }
-            >
+            <button type="button" className="cv-btn ghost sm" disabled={locked} onClick={() => set({ equipment: rep.equipment.filter((_, j) => j !== i) })}>
               <Trash2 size={14} aria-hidden /> Delete
             </button>
           </div>
@@ -1091,50 +909,29 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
         <div className="dr-grid">
           {(
             [
-              ["observations", "Site observations"],
-              ["issues", "Issues encountered"],
-              ["delays", "Delays"],
-              ["safety", "Safety concerns"],
-              ["corrective", "Corrective actions"],
-              ["recommendations", "Recommendations"],
+              ['observations', 'Site observations'],
+              ['issues', 'Issues encountered'],
+              ['delays', 'Delays'],
+              ['safety', 'Safety concerns'],
+              ['corrective', 'Corrective actions'],
+              ['recommendations', 'Recommendations'],
             ] as const
           ).map(([k, l]) => (
             <Field key={k} label={l}>
-              <textarea
-                className="cv-textarea"
-                rows={2}
-                value={rep.site[k]}
-                disabled={locked}
-                onChange={(e) =>
-                  set({ site: { ...rep.site, [k]: e.target.value } })
-                }
-              />
+              <textarea className="cv-textarea" rows={2} value={rep.site[k]} disabled={locked} onChange={(e) => set({ site: { ...rep.site, [k]: e.target.value } })} />
             </Field>
           ))}
         </div>
       </Card>
 
       {/* PHOTOS */}
-      <Card
-        title={`Photo documentation · ${rep.photos.length}`}
-        note="Photos are stored in the project's Google Drive folder and linked to this report."
-      >
+      <Card title={`Photo documentation · ${rep.photos.length}`} note="Photos are stored in the project's Google Drive folder and linked to this report.">
         <div className="dr-photo-btns">
-          <label className={`cv-btn ${locked ? "disabled" : ""}`}>
+          <label className={`cv-btn ${locked ? 'disabled' : ''}`}>
             <Camera size={16} aria-hidden /> Take Photo
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              hidden
-              disabled={locked}
-              onChange={(e) => (
-                addPhotos(e.target.files),
-                (e.target.value = "")
-              )}
-            />
+            <input type="file" accept="image/*" capture="environment" hidden disabled={locked} onChange={(e) => (addPhotos(e.target.files), (e.target.value = ''))} />
           </label>
-          <label className={`cv-btn ${locked ? "disabled" : ""}`}>
+          <label className={`cv-btn ${locked ? 'disabled' : ''}`}>
             <ImagePlus size={16} aria-hidden /> Choose Photos
             <input
               type="file"
@@ -1142,10 +939,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
               multiple
               hidden
               disabled={locked}
-              onChange={(e) => (
-                addPhotos(e.target.files),
-                (e.target.value = "")
-              )}
+              onChange={(e) => (addPhotos(e.target.files), (e.target.value = ''))}
             />
           </label>
         </div>
@@ -1164,19 +958,17 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                       </span>
                     )}
                     <span className="dr-photo-state">
-                      {p.uploadStatus === "uploaded"
-                        ? "Uploaded"
-                        : p.uploadStatus === "uploading"
+                      {p.uploadStatus === 'uploaded'
+                        ? 'Uploaded'
+                        : p.uploadStatus === 'uploading'
                           ? `Uploading ${Math.round((pr || 0) * 100)}%`
-                          : p.uploadStatus === "failed"
-                            ? "Failed"
-                            : "Not uploaded"}
+                          : p.uploadStatus === 'failed'
+                            ? 'Failed'
+                            : 'Not uploaded'}
                     </span>
-                    {p.uploadStatus === "uploading" && (
+                    {p.uploadStatus === 'uploading' && (
                       <span className="dr-photo-bar">
-                        <i
-                          style={{ width: `${Math.round((pr || 0) * 100)}%` }}
-                        />
+                        <i style={{ width: `${Math.round((pr || 0) * 100)}%` }} />
                       </span>
                     )}
                   </div>
@@ -1186,9 +978,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                       aria-label="Photo type"
                       value={p.photoType}
                       disabled={locked}
-                      onChange={(e) =>
-                        setPhoto(p.fileId, { photoType: e.target.value })
-                      }
+                      onChange={(e) => setPhoto(p.fileId, { photoType: e.target.value })}
                     >
                       {PHOTO_TYPES.map((t) => (
                         <option key={t}>{t}</option>
@@ -1197,7 +987,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                     <select
                       className="cv-select"
                       aria-label="Related activity"
-                      value={p.activityId || ""}
+                      value={p.activityId || ''}
                       disabled={locked}
                       onChange={(e) =>
                         setPhoto(p.fileId, {
@@ -1219,41 +1009,31 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                       aria-label="Photo description"
                       placeholder="Description"
                       value={p.description}
-                      disabled={locked || p.uploadStatus === "uploaded"}
-                      onChange={(e) =>
-                        setPhoto(p.fileId, { description: e.target.value })
-                      }
+                      disabled={locked || p.uploadStatus === 'uploaded'}
+                      onChange={(e) => setPhoto(p.fileId, { description: e.target.value })}
                     />
                     {p.error && <div className="dr-photo-err">{p.error}</div>}
                     <div className="dr-photo-actions">
-                      {p.uploadStatus === "failed" &&
-                        files.current[p.fileId] && (
-                          <button
-                            type="button"
-                            className="cv-btn sm"
-                            disabled={locked}
-                            onClick={async () => {
-                              setBusy("draft");
-                              const photos = await uploadPhotos({
-                                ...rep,
-                                photos: rep.photos.filter(
-                                  (x) => x.fileId === p.fileId,
-                                ),
-                              });
-                              setPhoto(p.fileId, photos[0]);
-                              setBusy("");
-                            }}
-                          >
-                            <RefreshCw size={14} aria-hidden /> Retry Upload
-                          </button>
-                        )}
-                      {p.uploadStatus !== "uploaded" && (
+                      {p.uploadStatus === 'failed' && files.current[p.fileId] && (
                         <button
                           type="button"
-                          className="cv-btn ghost sm"
+                          className="cv-btn sm"
                           disabled={locked}
-                          onClick={() => removePhoto(p.fileId)}
+                          onClick={async () => {
+                            setBusy('draft');
+                            const photos = await uploadPhotos({
+                              ...rep,
+                              photos: rep.photos.filter((x) => x.fileId === p.fileId),
+                            });
+                            setPhoto(p.fileId, photos[0]);
+                            setBusy('');
+                          }}
                         >
+                          <RefreshCw size={14} aria-hidden /> Retry Upload
+                        </button>
+                      )}
+                      {p.uploadStatus !== 'uploaded' && (
+                        <button type="button" className="cv-btn ghost sm" disabled={locked} onClick={() => removePhoto(p.fileId)}>
                           <Trash2 size={14} aria-hidden /> Remove
                         </button>
                       )}
@@ -1273,25 +1053,13 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
             <input className="cv-input" value={rep.preparedBy} disabled />
           </Field>
           <Field label="Reviewed by">
-            <input
-              className="cv-input"
-              value={rep.review?.reviewedBy || "Pending review"}
-              disabled
-            />
+            <input className="cv-input" value={rep.review?.reviewedBy || 'Pending review'} disabled />
           </Field>
           <Field label="Approval status">
-            <input
-              className="cv-input"
-              value={DR_STATUS_LABEL[rep.status]}
-              disabled
-            />
+            <input className="cv-input" value={DR_STATUS_LABEL[rep.status]} disabled />
           </Field>
           <Field label="Review remarks">
-            <input
-              className="cv-input"
-              value={rep.review?.remarks || "—"}
-              disabled
-            />
+            <input className="cv-input" value={rep.review?.remarks || '—'} disabled />
           </Field>
         </div>
       </Card>
@@ -1307,41 +1075,19 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
       )}
 
       <div className="dr-actions">
-        <button
-          type="button"
-          className="cv-btn"
-          onClick={saveDraft}
-          disabled={!!busy}
-        >
-          <Save size={16} aria-hidden />{" "}
-          {busy === "draft" ? "Saving…" : "Save Draft"}
+        <button type="button" className="cv-btn" onClick={saveDraft} disabled={!!busy}>
+          <Save size={16} aria-hidden /> {busy === 'draft' ? 'Saving…' : 'Save Draft'}
         </button>
-        <button
-          type="button"
-          className="cv-btn"
-          onClick={() => setPreview(true)}
-          disabled={!!busy}
-        >
+        <button type="button" className="cv-btn" onClick={() => setPreview(true)} disabled={!!busy}>
           <Eye size={16} aria-hidden /> Preview Report
         </button>
-        <button
-          type="button"
-          className="cv-btn primary"
-          onClick={submit}
-          disabled={!!busy}
-        >
-          <Send size={16} aria-hidden />{" "}
-          {busy === "submit" ? "Submitting…" : "Submit Report"}
+        <button type="button" className="cv-btn primary" onClick={submit} disabled={!!busy}>
+          <Send size={16} aria-hidden /> {busy === 'submit' ? 'Submitting…' : 'Submit Report'}
         </button>
       </div>
 
       {preview && (
-        <Modal
-          title={`Preview · ${rep.reference}`}
-          sub="Exactly what reviewers will see"
-          onClose={() => setPreview(false)}
-          width={980}
-        >
+        <Modal title={`Preview · ${rep.reference}`} sub="Exactly what reviewers will see" onClose={() => setPreview(false)} width={980}>
           <DailyReportDocument r={rep} photoSrc={(p) => photoUrl(p)} />
         </Modal>
       )}
@@ -1349,10 +1095,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
   );
 };
 
-const Confirmation: React.FC<{ r: DailyReport; onHistory: () => void }> = ({
-  r,
-  onHistory,
-}) => (
+const Confirmation: React.FC<{ r: DailyReport; onHistory: () => void }> = ({ r, onHistory }) => (
   <div className="dr-confirm" role="status">
     <CheckCircle2 size={28} aria-hidden />
     <div>
@@ -1366,17 +1109,16 @@ const Confirmation: React.FC<{ r: DailyReport; onHistory: () => void }> = ({
         <dd>{fmtDate(r.date)}</dd>
         <dt>Submission time</dt>
         <dd>
-          {fmtDate(r.submittedAt!.slice(0, 10))} ·{" "}
-          {new Date(r.submittedAt!).toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            timeZone: "Asia/Manila",
+          {fmtDate(r.submittedAt!.slice(0, 10))} ·{' '}
+          {new Date(r.submittedAt!).toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            timeZone: 'Asia/Manila',
           })}
         </dd>
         <dt>Submission status</dt>
         <dd>
-          <DrStatus s="submitted" /> · {r.photos.length} photo(s) stored in
-          Google Drive
+          <DrStatus s="submitted" /> · {plural(r.photos.length, 'photo')} stored in Google Drive
         </dd>
       </dl>
       <button type="button" className="cv-btn sm" onClick={onHistory}>
@@ -1393,20 +1135,13 @@ const ReportHistory: React.FC<{ openId?: string }> = ({ openId }) => {
   const { user, actions } = useCommand();
   const store = useStore(dailyReportStore);
   const legacy = useStore(siteReportStore);
-  const [f, setF] = useState({ from: "", to: "", status: "", by: "" });
+  const [f, setF] = useState({ from: '', to: '', status: '', by: '' });
   const people = [...new Set(store.items.map((r) => r.preparedBy))].sort();
   const rows = store.items.filter(
-    (r) =>
-      (!f.from || r.date >= f.from) &&
-      (!f.to || r.date <= f.to) &&
-      (!f.status || r.status === f.status) &&
-      (!f.by || r.preparedBy === f.by),
+    (r) => (!f.from || r.date >= f.from) && (!f.to || r.date <= f.to) && (!f.status || r.status === f.status) && (!f.by || r.preparedBy === f.by),
   );
   const open = openId ? store.items.find((r) => r.id === openId) : undefined;
-  if (openId && open)
-    return (
-      <ReportDetail r={open} onBack={() => actions.navigate("site/history")} />
-    );
+  if (openId && open) return <ReportDetail r={open} onBack={() => actions.navigate('site/history')} />;
   return (
     <>
       <Card
@@ -1420,27 +1155,13 @@ const ReportHistory: React.FC<{ openId?: string }> = ({ openId }) => {
             </select>
           </Field>
           <Field label="From">
-            <input
-              type="date"
-              className="cv-input"
-              value={f.from}
-              onChange={(e) => setF({ ...f, from: e.target.value })}
-            />
+            <input type="date" className="cv-input" value={f.from} onChange={(e) => setF({ ...f, from: e.target.value })} />
           </Field>
           <Field label="To">
-            <input
-              type="date"
-              className="cv-input"
-              value={f.to}
-              onChange={(e) => setF({ ...f, to: e.target.value })}
-            />
+            <input type="date" className="cv-input" value={f.to} onChange={(e) => setF({ ...f, to: e.target.value })} />
           </Field>
           <Field label="Status">
-            <select
-              className="cv-select"
-              value={f.status}
-              onChange={(e) => setF({ ...f, status: e.target.value })}
-            >
+            <select className="cv-select" value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })}>
               <option value="">All statuses</option>
               {Object.entries(DR_STATUS_LABEL).map(([k, v]) => (
                 <option key={k} value={k}>
@@ -1450,11 +1171,7 @@ const ReportHistory: React.FC<{ openId?: string }> = ({ openId }) => {
             </select>
           </Field>
           <Field label="Prepared by">
-            <select
-              className="cv-select"
-              value={f.by}
-              onChange={(e) => setF({ ...f, by: e.target.value })}
-            >
+            <select className="cv-select" value={f.by} onChange={(e) => setF({ ...f, by: e.target.value })}>
               <option value="">Everyone</option>
               {people.map((p) => (
                 <option key={p}>{p}</option>
@@ -1486,37 +1203,18 @@ const ReportHistory: React.FC<{ openId?: string }> = ({ openId }) => {
                     <td>{fmtDate(r.date)}</td>
                     <td>{r.projectName}</td>
                     <td>{r.preparedBy}</td>
-                    <td>
-                      {r.submittedAt
-                        ? fmtDate(r.submittedAt.slice(0, 10))
-                        : "—"}
-                    </td>
+                    <td>{r.submittedAt ? fmtDate(r.submittedAt.slice(0, 10)) : '—'}</td>
                     <td>
                       <DrStatus s={r.status} local={r.localOnly} />
                     </td>
-                    <td>
-                      {
-                        r.photos.filter((p) => p.uploadStatus === "uploaded")
-                          .length
-                      }
-                    </td>
+                    <td>{r.photos.filter((p) => p.uploadStatus === 'uploaded').length}</td>
                     <td className="nowrap">
-                      <button
-                        type="button"
-                        className="cv-btn sm"
-                        onClick={() => actions.navigate(`site/history/${r.id}`)}
-                      >
+                      <button type="button" className="cv-btn sm" onClick={() => actions.navigate(`site/history/${r.id}`)}>
                         View Details
-                      </button>{" "}
+                      </button>{' '}
                       {canEditReport(r, user) && (
-                        <button
-                          type="button"
-                          className="cv-btn ghost sm"
-                          onClick={() => actions.navigate(`site/new/${r.id}`)}
-                        >
-                          {r.status === "pending" || r.status === "uploading"
-                            ? "Continue Submission"
-                            : "Edit"}
+                        <button type="button" className="cv-btn ghost sm" onClick={() => actions.navigate(`site/new/${r.id}`)}>
+                          {r.status === 'pending' || r.status === 'uploading' ? 'Continue Submission' : 'Edit'}
                         </button>
                       )}
                     </td>
@@ -1527,23 +1225,18 @@ const ReportHistory: React.FC<{ openId?: string }> = ({ openId }) => {
           </div>
         ) : (
           <Empty>
-            <ClipboardList size={18} aria-hidden /> No Daily Construction
-            Reports match these filters.
+            <ClipboardList size={18} aria-hidden /> No Daily Construction Reports match these filters.
           </Empty>
         )}
       </Card>
       {legacy.items.length > 0 && (
-        <Card
-          title={`Earlier quick site updates · ${legacy.items.length}`}
-          note="Submitted with the previous site-report form. Kept read-only."
-        >
+        <Card title={`Earlier quick site updates · ${legacy.items.length}`} note="Submitted with the previous site-report form. Kept read-only.">
           <ul className="dr-legacy">
             {legacy.items.map((s) => (
               <li key={s.id}>
                 <b>{s.activityName}</b>
                 <span>
-                  {fmtDate(s.date)} · {s.submittedBy} · {s.progressBefore}% →{" "}
-                  {s.progressAfter}%{s.remarks ? ` · ${s.remarks}` : ""}
+                  {fmtDate(s.date)} · {s.submittedBy} · {s.progressBefore}% → {s.progressAfter}%{s.remarks ? ` · ${s.remarks}` : ''}
                 </span>
               </li>
             ))}
@@ -1554,19 +1247,15 @@ const ReportHistory: React.FC<{ openId?: string }> = ({ openId }) => {
   );
 };
 
-const ReportDetail: React.FC<{ r: DailyReport; onBack: () => void }> = ({
-  r,
-  onBack,
-}) => {
+const ReportDetail: React.FC<{ r: DailyReport; onBack: () => void }> = ({ r, onBack }) => {
   const { user, actions, register, isManager } = useCommand();
-  const [remarks, setRemarks] = useState("");
+  const [remarks, setRemarks] = useState('');
   const [busy, setBusy] = useState(false);
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState('');
   const reviewer = canReview(user.role);
 
   const transition = async (to: DailyReportStatus, needsRemarks?: boolean) => {
-    if (needsRemarks && !remarks.trim())
-      return setNote("Add review remarks explaining what to revise.");
+    if (needsRemarks && !remarks.trim()) return setNote('Add review remarks explaining what to revise.');
     setBusy(true);
     const at = nowIso();
     const res = await dailyReportStore.put({
@@ -1578,28 +1267,13 @@ const ReportDetail: React.FC<{ r: DailyReport; onBack: () => void }> = ({
         reviewedAt: at,
         remarks: remarks.trim() || r.review?.remarks,
       },
-      history: [
-        ...r.history,
-        { at, by: user.name, to, note: remarks.trim() || undefined },
-      ],
+      history: [...r.history, { at, by: user.name, to, note: remarks.trim() || undefined }],
       updatedAt: at,
       updatedBy: user.name,
     });
-    await firestoreData
-      .logAudit(
-        user,
-        `DAILY_REPORT_${to.toUpperCase()}`,
-        "DailyReport",
-        r.id,
-        r.reference,
-      )
-      .catch(() => undefined);
-    setNote(
-      res === "shared"
-        ? `Report ${DR_STATUS_LABEL[to].toLowerCase()}.`
-        : "Saved on this device only — not confirmed by the shared database.",
-    );
-    setRemarks("");
+    await firestoreData.logAudit(user, `DAILY_REPORT_${to.toUpperCase()}`, 'DailyReport', r.id, r.reference).catch(() => undefined);
+    setNote(res === 'shared' ? `Report ${DR_STATUS_LABEL[to].toLowerCase()}.` : 'Saved on this device only — not confirmed by the shared database.');
+    setRemarks('');
     setBusy(false);
   };
 
@@ -1612,40 +1286,34 @@ const ReportDetail: React.FC<{ r: DailyReport; onBack: () => void }> = ({
     if (ok)
       await dailyReportStore.put({
         ...r,
-        activities: r.activities.map((x, j) =>
-          j === i ? { ...x, progressApplied: true } : x,
-        ),
+        activities: r.activities.map((x, j) => (j === i ? { ...x, progressApplied: true } : x)),
         updatedAt: nowIso(),
         updatedBy: user.name,
       });
-    setNote(
-      ok
-        ? `Approved progress ${a.progress}% applied to ${act.name}.`
-        : "Progress was not applied.",
-    );
+    setNote(ok ? `Approved progress ${a.progress}% applied to ${act.name}.` : 'Progress was not applied.');
     setBusy(false);
   };
 
   const preparePhoto = async (p: DailyReportPhoto) => {
     const now = nowIso();
     const pub: Publication = {
-      id: newId("PHO"),
-      kind: "photo",
+      id: newId('PHO'),
+      kind: 'photo',
       title: p.description || `${p.photoType} — ${fmtDate(r.date)}`,
-      status: "draft",
+      status: 'draft',
       sourceId: r.id,
       payload: {
         url: driveFileUrl(p.fileId),
         fileId: p.fileId,
         caption: p.description,
         date: r.date,
-        category: "Site progress",
+        category: 'Site progress',
       },
       history: [
         {
           at: now,
           by: user.name,
-          to: "draft",
+          to: 'draft',
           note: `Prepared from approved daily report ${r.reference}`,
         },
       ],
@@ -1656,9 +1324,9 @@ const ReportDetail: React.FC<{ r: DailyReport; onBack: () => void }> = ({
     };
     const res = await publicationStore.put(pub);
     setNote(
-      res === "shared"
-        ? "Photo prepared as a draft in Client Portal Management — it reaches clients only after approval and publishing."
-        : "Draft saved on this device only.",
+      res === 'shared'
+        ? 'Photo prepared as a draft in Client Portal Management — it reaches clients only after approval and publishing.'
+        : 'Draft saved on this device only.',
     );
   };
 
@@ -1667,7 +1335,7 @@ const ReportDetail: React.FC<{ r: DailyReport; onBack: () => void }> = ({
     const urls: Record<string, string> = {};
     await Promise.all(
       r.photos
-        .filter((p) => p.uploadStatus === "uploaded")
+        .filter((p) => p.uploadStatus === 'uploaded')
         .map(async (p) => {
           try {
             urls[p.fileId] = await driveObjectUrl(p.fileId);
@@ -1677,12 +1345,7 @@ const ReportDetail: React.FC<{ r: DailyReport; onBack: () => void }> = ({
         }),
     );
     setBusy(false);
-    actions.printElement(
-      () => (
-        <DailyReportDocument r={r} photoSrc={(p) => urls[p.fileId]} print />
-      ),
-      `${r.reference} — Daily Construction Report`,
-    );
+    actions.printElement(() => <DailyReportDocument r={r} photoSrc={(p) => urls[p.fileId]} print />, `${r.reference} — Daily Construction Report`);
   };
 
   return (
@@ -1694,43 +1357,26 @@ const ReportDetail: React.FC<{ r: DailyReport; onBack: () => void }> = ({
         <DrStatus s={r.status} local={r.localOnly} />
         <span className="dr-spacer" />
         {canEditReport(r, user) && (
-          <button
-            type="button"
-            className="cv-btn sm"
-            onClick={() => actions.navigate(`site/new/${r.id}`)}
-          >
+          <button type="button" className="cv-btn sm" onClick={() => actions.navigate(`site/new/${r.id}`)}>
             <Pencil size={14} aria-hidden /> Edit
           </button>
         )}
-        <button
-          type="button"
-          className="cv-btn primary sm"
-          onClick={exportPdf}
-          disabled={busy}
-        >
+        <button type="button" className="cv-btn primary sm" onClick={exportPdf} disabled={busy}>
           <FileDown size={14} aria-hidden /> Export PDF
         </button>
       </div>
       {note && <Banner kind="info">{note}</Banner>}
       {reviewer && reviewActions(r.status).length > 0 && (
-        <Card
-          title="Review"
-          note="Approving does not change the Master Project Tracker by itself."
-        >
+        <Card title="Review" note="Approving does not change the Master Project Tracker by itself.">
           <Field label="Review remarks">
-            <textarea
-              className="cv-textarea"
-              rows={2}
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-            />
+            <textarea className="cv-textarea" rows={2} value={remarks} onChange={(e) => setRemarks(e.target.value)} />
           </Field>
           <div className="cv-row" style={{ marginTop: 8 }}>
             {reviewActions(r.status).map((a) => (
               <button
                 key={a.to}
                 type="button"
-                className={`cv-btn sm ${a.to === "approved" ? "primary" : a.to === "returned" ? "danger" : ""}`}
+                className={`cv-btn sm ${a.to === 'approved' ? 'primary' : a.to === 'returned' ? 'danger' : ''}`}
                 disabled={busy}
                 onClick={() => transition(a.to, a.needsRemarks)}
               >
@@ -1740,49 +1386,36 @@ const ReportDetail: React.FC<{ r: DailyReport; onBack: () => void }> = ({
           </div>
         </Card>
       )}
-      {r.status === "approved" &&
-        isManager &&
-        r.activities.some((a) => a.progress !== null) && (
-          <Card
-            title="Apply approved progress"
-            note="Updates the Master Project Tracker through the activity update path (recorded in the audit log)."
-          >
-            <ul className="dr-legacy">
-              {r.activities.map((a, i) => {
-                const act = register.find((x) => x.id === a.activityId);
-                if (!act || a.progress === null || !progressEditable(act))
-                  return null;
-                return (
-                  <li key={i}>
-                    <b>{a.name}</b>
-                    <span>
-                      Reported {a.progress}% · tracker {act.progress}%
-                    </span>
-                    {a.progressApplied || act.progress === a.progress ? (
-                      <span className="dr-applied">Applied</span>
-                    ) : (
-                      <button
-                        type="button"
-                        className="cv-btn sm"
-                        disabled={busy}
-                        onClick={() => applyProgress(i)}
-                      >
-                        Apply {a.progress}% to Tracker
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </Card>
-        )}
+      {r.status === 'approved' && isManager && r.activities.some((a) => a.progress !== null) && (
+        <Card title="Apply approved progress" note="Updates the Master Project Tracker through the activity update path (recorded in the audit log).">
+          <ul className="dr-legacy">
+            {r.activities.map((a, i) => {
+              const act = register.find((x) => x.id === a.activityId);
+              if (!act || a.progress === null || !progressEditable(act)) return null;
+              return (
+                <li key={i}>
+                  <b>{a.name}</b>
+                  <span>
+                    Reported {a.progress}% · tracker {act.progress}%
+                  </span>
+                  {a.progressApplied || act.progress === a.progress ? (
+                    <span className="dr-applied">Applied</span>
+                  ) : (
+                    <button type="button" className="cv-btn sm" disabled={busy} onClick={() => applyProgress(i)}>
+                      Apply {a.progress}% to Tracker
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
       <Card title="Report">
         <DailyReportDocument
           r={r}
-          photoSrc={(p) =>
-            p.uploadStatus === "uploaded" ? driveFileUrl(p.fileId) : undefined
-          }
-          onPreparePhoto={r.status === "approved" ? preparePhoto : undefined}
+          photoSrc={(p) => (p.uploadStatus === 'uploaded' ? driveFileUrl(p.fileId) : undefined)}
+          onPreparePhoto={r.status === 'approved' ? preparePhoto : undefined}
         />
       </Card>
     </div>
@@ -1802,7 +1435,7 @@ export const DailyReportDocument: React.FC<{
   const t = (s?: string) => (s && s.trim() ? s : NP);
   const site = r.site;
   return (
-    <article className={`dr-doc ${print ? "print" : ""}`}>
+    <article className={`dr-doc ${print ? 'print' : ''}`}>
       <header className="dr-doc-h">
         <img src={LOGO_SVG} alt="Convengers" />
         <div>
@@ -1831,8 +1464,8 @@ export const DailyReportDocument: React.FC<{
           <dt>Submitted</dt>
           <dd>
             {r.submittedAt
-              ? `${fmtDate(r.submittedAt.slice(0, 10))} ${new Date(r.submittedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Manila" })}`
-              : "Not yet submitted"}
+              ? `${fmtDate(r.submittedAt.slice(0, 10))} ${new Date(r.submittedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' })}`
+              : 'Not yet submitted'}
           </dd>
         </dl>
       </section>
@@ -1856,19 +1489,13 @@ export const DailyReportDocument: React.FC<{
                     <b>{a.name || NP}</b>
                     {a.remarks && <div className="dr-doc-sm">{a.remarks}</div>}
                   </td>
-                  <td>{a.category || "—"}</td>
+                  <td>{a.category || '—'}</td>
                   <td>
                     {a.workDescription && <div>{a.workDescription}</div>}
-                    {a.accomplishment && (
-                      <div className="dr-doc-sm">{a.accomplishment}</div>
-                    )}
+                    {a.accomplishment && <div className="dr-doc-sm">{a.accomplishment}</div>}
                     {!a.workDescription && !a.accomplishment && NP}
                   </td>
-                  <td>
-                    {a.progress === null
-                      ? "—"
-                      : `${a.progress}%${a.progressApplied ? " (applied)" : ""}`}
-                  </td>
+                  <td>{a.progress === null ? '—' : `${a.progress}%${a.progressApplied ? ' (applied)' : ''}`}</td>
                   <td>{a.workStatus}</td>
                 </tr>
               ))}
@@ -1904,8 +1531,8 @@ export const DailyReportDocument: React.FC<{
             <ul className="dr-doc-list">
               {r.equipment.map((q, i) => (
                 <li key={i}>
-                  {q.description} × {q.quantity || "—"} · {q.status}
-                  {q.remarks ? ` · ${q.remarks}` : ""}
+                  {q.description} × {q.quantity || '—'} · {q.status}
+                  {q.remarks ? ` · ${q.remarks}` : ''}
                 </li>
               ))}
             </ul>
@@ -1932,11 +1559,11 @@ export const DailyReportDocument: React.FC<{
                 <tr key={i}>
                   <td>{m.description}</td>
                   <td>
-                    {m.quantity || "—"} {m.unit}
+                    {m.quantity || '—'} {m.unit}
                   </td>
-                  <td>{m.deliveryDate ? fmtDate(m.deliveryDate) : "—"}</td>
-                  <td>{m.supplier || "—"}</td>
-                  <td>{m.remarks || "—"}</td>
+                  <td>{m.deliveryDate ? fmtDate(m.deliveryDate) : '—'}</td>
+                  <td>{m.supplier || '—'}</td>
+                  <td>{m.remarks || '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -1969,33 +1596,17 @@ export const DailyReportDocument: React.FC<{
             {r.photos.map((p) => (
               <figure key={p.fileId}>
                 {photoSrc(p) ? (
-                  <SecureImg
-                    src={photoSrc(p)}
-                    alt={p.description || p.fileName}
-                  />
+                  <SecureImg src={photoSrc(p)} alt={p.description || p.fileName} />
                 ) : (
-                  <span className="dr-img-missing">
-                    {p.uploadStatus === "uploaded"
-                      ? "Image not available"
-                      : "Not uploaded"}
-                  </span>
+                  <span className="dr-img-missing">{p.uploadStatus === 'uploaded' ? 'Image not available' : 'Not uploaded'}</span>
                 )}
                 <figcaption>
                   <b>{p.photoType}</b>
-                  {p.description ? ` · ${p.description}` : ""}
-                  {p.activityId ? (
-                    <div className="dr-doc-sm">
-                      {r.activities.find((a) => a.activityId === p.activityId)
-                        ?.name || p.activityId}
-                    </div>
-                  ) : null}
+                  {p.description ? ` · ${p.description}` : ''}
+                  {p.activityId ? <div className="dr-doc-sm">{r.activities.find((a) => a.activityId === p.activityId)?.name || p.activityId}</div> : null}
                 </figcaption>
-                {onPreparePhoto && p.uploadStatus === "uploaded" && (
-                  <button
-                    type="button"
-                    className="cv-btn sm dr-noprint"
-                    onClick={() => onPreparePhoto(p)}
-                  >
+                {onPreparePhoto && p.uploadStatus === 'uploaded' && (
+                  <button type="button" className="cv-btn sm dr-noprint" onClick={() => onPreparePhoto(p)}>
                     Prepare for Client Portal
                   </button>
                 )}
@@ -2012,22 +1623,17 @@ export const DailyReportDocument: React.FC<{
           <dt>Prepared by</dt>
           <dd>{r.preparedBy}</dd>
           <dt>Reviewed by</dt>
-          <dd>{r.review?.reviewedBy || "Pending review"}</dd>
+          <dd>{r.review?.reviewedBy || 'Pending review'}</dd>
           <dt>Approval status</dt>
           <dd>{DR_STATUS_LABEL[r.status]}</dd>
           <dt>Review date</dt>
-          <dd>
-            {r.review?.reviewedAt
-              ? fmtDate(r.review.reviewedAt.slice(0, 10))
-              : "—"}
-          </dd>
+          <dd>{r.review?.reviewedAt ? fmtDate(r.review.reviewedAt.slice(0, 10)) : '—'}</dd>
           <dt>Review remarks</dt>
           <dd>{t(r.review?.remarks)}</dd>
         </dl>
       </section>
       <footer className="dr-doc-f">
-        Convengers Bahay Build · Daily Construction Report {r.reference} ·
-        Generated {fmtDate(new Date().toISOString().slice(0, 10))}
+        Convengers Bahay Build · Daily Construction Report {r.reference} · Generated {fmtDate(new Date().toISOString().slice(0, 10))}
       </footer>
     </article>
   );

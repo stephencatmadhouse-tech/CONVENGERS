@@ -316,7 +316,7 @@ export const ReportsPage: React.FC<{ type: ReportType }> = ({ type }) => {
 };
 
 export const ReportStatusStamp: React.FC<{ report?: ProjectReport }> = ({ report }) => {
-  if (!report) return <span className="cv-stamp" style={{ color: '#9A9AA3', borderColor: '#9A9AA3' }}>Not generated</span>;
+  if (!report) return <span className="cv-stamp" style={{ color: '#68738A', borderColor: '#9A9AA3' }}>Not generated</span>;
   const map: Record<string, [string, string, string]> = {
     draft: ['Draft', '#8A5300', '#F5A623'],
     review: ['For Review', '#8A5300', '#F5A623'],

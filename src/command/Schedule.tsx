@@ -16,6 +16,7 @@ import { StatusPill, Pill, Empty, Card, Modal, kindColor, STREAM_HEX } from './u
 import { procurementStore, manpowerStore } from '../firebase/opsStores.ts';
 import { useStore } from '../firebase/useStore.ts';
 import { deliveryEvents, manpowerEvents, isDeliveryLate } from './Operations.tsx';
+import { plural } from '../utils/plural.ts';
 
 type Layer = 'construction' | 'pours' | 'milestones' | 'production' | 'deliveries' | 'manpower';
 
@@ -279,7 +280,7 @@ const AgendaList: React.FC<{ items: RegisterActivity[]; classByEp: Map<string, A
               <div className="cv-li-t">{r.name}</div>
               <div className="cv-li-s">
                 {r.workstream} · {fmtRange(r.start, r.finish)} · {r.owner || 'Unassigned'}
-                {r.kind === 'episode' && r.characters.length ? ` · ${r.characters.length} character(s)` : ''}
+                {r.kind === 'episode' && r.characters.length ? ` · ${plural(r.characters.length, 'character')}` : ''}
               </div>
               {r.dependsOn.length > 0 && <div className="cv-li-s">Depends on {r.dependsOn.length} activit{r.dependsOn.length === 1 ? 'y' : 'ies'}</div>}
             </div>

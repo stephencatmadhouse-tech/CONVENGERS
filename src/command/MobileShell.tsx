@@ -43,6 +43,7 @@ import { authService } from '../firebase/authService.ts';
 import { LOGO_SVG } from '../constants/assets.ts';
 import { Sheet, InstallRow } from '../portal/MobilePortal.tsx';
 import { useInstallState, applyUpdate } from '../pwa/pwa.ts';
+import { plural } from '../utils/plural.ts';
 
 const TABS = [
   { id: 'command', label: 'Home', icon: Home, route: 'command' },
@@ -294,7 +295,7 @@ export const MobileDashboard: React.FC = () => {
                 <button type="button" className="mb-row" onClick={() => actions.openActivity(r.id)}>
                   <b>{r.name}</b>
                   <span>
-                    {r.workstream} · {r.finish ? `${diffDays(r.finish, today)} day(s) past ${fmtDate(r.finish)}` : 'no target date'} · {r.owner || 'Unassigned'}
+                    {r.workstream} · {r.finish ? `${plural(diffDays(r.finish, today), 'day')} past ${fmtDate(r.finish)}` : 'no target date'} · {r.owner || 'Unassigned'}
                   </span>
                 </button>
               </li>

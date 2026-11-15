@@ -11,6 +11,7 @@ import { RegisterActivity } from './register.ts';
 import { AlignmentRow } from './alignment.ts';
 import { addDays, diffDays, fmtDate, todayIso } from './dates.ts';
 import { dependencyConflicts } from './metrics.ts';
+import { plural } from '../utils/plural.ts';
 
 export type AttentionCategory =
   | 'Critical delay'
@@ -58,7 +59,7 @@ export function buildAttention(
           category: 'Delayed milestone',
           severity: 'critical',
           title: r.name,
-          detail: `Milestone date ${fmtDate(r.finish)} passed ${late} day(s) ago without completion.`,
+          detail: `Milestone date ${fmtDate(r.finish)} passed ${plural(late, 'day')} ago without completion.`,
           owner: r.owner,
           due: r.finish,
           activityId: r.id,
@@ -69,7 +70,7 @@ export function buildAttention(
           category: critical ? 'Critical delay' : 'Overdue',
           severity: critical || late > 7 ? 'critical' : 'warn',
           title: r.name,
-          detail: `${r.workstream} · due ${fmtDate(r.finish)} · ${late} day(s) overdue · ${r.progress}% ${r.progressBasis === 'physical' ? 'complete' : 'stage'}`,
+          detail: `${r.workstream} · due ${fmtDate(r.finish)} · ${plural(late, 'day')} overdue · ${r.progress}% complete${r.progressBasis === 'stage' ? ' (by stage)' : ''}`,
           owner: r.owner,
           due: r.finish,
           activityId: r.id,
@@ -107,7 +108,7 @@ export function buildAttention(
         category: 'Upcoming deadline',
         severity: 'info',
         title: r.name,
-        detail: `${r.workstream} · due ${fmtDate(r.finish)} (${diffDays(today, r.finish)} day(s)) · ${r.progress}%`,
+        detail: `${r.workstream} · due ${fmtDate(r.finish)} (in ${plural(diffDays(today, r.finish), 'day')}) · ${r.progress}%`,
         owner: r.owner,
         due: r.finish,
         activityId: r.id,
