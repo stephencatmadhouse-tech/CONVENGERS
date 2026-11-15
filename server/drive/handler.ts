@@ -556,10 +556,23 @@ async function credentials(req: IncomingMessage, res: ServerResponse) {
     rootName = f.name;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    const data = (e as any)?.response?.data || {};
+    const code = String(data.error || (/(invalid_grant|unauthorized_client|invalid_client)/.exec(msg) || [])[1] || '');
+    const detail = typeof data.error_description === 'string' ? data.error_description : '';
+    const why: Record<string, string> = {
+      invalid_client:
+        'The Client ID or Client secret is not correct. Copy both again from Google Cloud (Clients → your client); if you added a new secret, use that one.',
+      unauthorized_client:
+        'The refresh token was created with a different client. In the OAuth Playground, tick “Use your own OAuth credentials” with this Client ID and secret before authorizing, then copy the new refresh token.',
+      invalid_grant:
+        'The refresh token is not valid: it was copied incompletely, has expired or was revoked, or is the access token (starts with ya29) instead of the refresh token (starts with 1//). Create a new one in the OAuth Playground.',
+    };
     return send(res, 400, {
-      error: /invalid_grant|unauthorized_client|invalid_client|authentication failed/i.test(msg)
-        ? 'Google rejected these credentials. Check the Client ID and Client secret, and create a new refresh token in the OAuth Playground with the same client.'
-        : `Google Drive could not be reached with these credentials: ${msg}`,
+      error: why[code]
+        ? `Google rejected these credentials (${code}${detail ? `: ${detail}` : ''}). ${why[code]}`
+        : /authentication failed/i.test(msg)
+          ? 'Google did not return an access token for these credentials. Create a new refresh token in the OAuth Playground with this client.'
+          : `Google Drive could not be reached with these credentials: ${msg}`,
     });
   }
   await saveStoredCredentials(env, { ...value, savedBy: caller.name || caller.email, savedAt: new Date().toISOString() });
