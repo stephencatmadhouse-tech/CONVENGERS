@@ -135,6 +135,8 @@ export interface PortalJourneyStage {
   imageUrl?: string;
   /** Picture of the illustration sheet to use when the sheet has fewer pictures than stages. */
   sheetIndex?: number;
+  /** Stage rule (selects the built-in illustration). */
+  rule?: string;
   activities: { name: string; status: ClientStatus; finish?: string }[];
 }
 
@@ -344,6 +346,7 @@ export function buildPortalSnapshot(
           remark: st.remark,
           imageUrl: st.imageUrl,
           sheetIndex: st.sheetIndex,
+          rule: st.rule,
           activities: st.activities.map((a) => ({ name: a.name, status: clientStatus(a.status), finish: a.finish })),
         })),
       };

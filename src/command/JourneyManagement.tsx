@@ -169,11 +169,11 @@ export const JourneyManagement: React.FC = () => {
       )}
       <Card
         title="Stage illustrations"
-        note={`Upload one sheet with a picture per stage (read left to right, top to bottom; set its columns and rows), or set an image per stage below. A sheet with fewer pictures than stages (such as the nine-picture sheet) is reused: each stage shows the closest picture.`}
+        note="The twelve Bahay Build stage illustrations are built in and shown by default. To replace them, upload a sheet with one picture per stage (read left to right, top to bottom; set its columns and rows), or set an image for a single stage below."
       >
         <div className="jm-sheet">
           <div className="jm-sheet-prev">
-            {cur.sheetUrl ? <img src={cur.sheetUrl} alt="Stage illustration sheet" /> : <div className="jm-empty-art"><ImageIcon size={22} aria-hidden /> No sheet uploaded — placeholder drawings are shown</div>}
+            {cur.sheetUrl ? <img src={cur.sheetUrl} alt="Stage illustration sheet" /> : <div className="jm-empty-art"><ImageIcon size={22} aria-hidden /> No sheet uploaded — the built-in stage illustrations are shown</div>}
           </div>
           <div className="cv-grid" style={{ gap: 10 }}>
             <Field label="Upload stage sheet (PNG or JPG)">
@@ -216,7 +216,7 @@ export const JourneyManagement: React.FC = () => {
             return (
               <div key={s.id} className={`jm-row ${s.visible ? '' : 'hidden'}`}>
                 <div className="jm-art">
-                  <StageArt stage={{ index: i, name: s.name, imageUrl: s.imageUrl, sheetIndex: s.sheetIndex }} journey={{ sheetUrl: cur.sheetUrl, sheetCols: cur.sheetCols, sheetRows: cur.sheetRows }} stageCount={cur.stages.length} />
+                  <StageArt stage={{ index: i, id: s.id, rule: s.rule, name: s.name, imageUrl: s.imageUrl, sheetIndex: s.sheetIndex }} journey={{ sheetUrl: cur.sheetUrl, sheetCols: cur.sheetCols, sheetRows: cur.sheetRows }} stageCount={cur.stages.length} />
                   <span className="jm-num">{String(i + 1).padStart(2, '0')}</span>
                 </div>
                 <div className="jm-main">

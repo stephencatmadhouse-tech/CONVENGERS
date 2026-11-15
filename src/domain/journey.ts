@@ -245,6 +245,37 @@ export function defaultJourney(): JourneyConfig {
   return { id: 'journey', stages: DEFAULT_STAGES.map((s) => ({ ...s })), sheetCols: 3, sheetRows: 3 };
 }
 
+/**
+ * Built-in illustrations: the twelve-stage isometric sequence of the Bahay Build
+ * house (public/assets/journey), one picture per stage, chosen by the stage rule.
+ */
+const BUILTIN_ART_BY_RULE: Record<string, number> = {
+  site: 1,
+  foundation: 2,
+  ground: 3,
+  second: 4,
+  third: 5,
+  framing: 5,
+  walls: 6,
+  mep: 7,
+  roofFraming: 8,
+  roofing: 9,
+  enclosure: 10,
+  interior: 11,
+  closeout: 12,
+  finishing: 12,
+};
+export const BUILTIN_ART_COUNT = 12;
+export function builtinArt(stage: { rule?: string; id?: string }, stageCount: number): string | undefined {
+  let n = stage.rule ? BUILTIN_ART_BY_RULE[stage.rule] : undefined;
+  // Status updates published before stages carried their rule: default ids of the twelve-stage layout
+  if (!n && stageCount === BUILTIN_ART_COUNT && stage.id) {
+    const m = /^st-(\d{2})$/.exec(stage.id);
+    if (m) n = Number(m[1]);
+  }
+  return n ? `/assets/journey/stage-${String(n).padStart(2, '0')}.webp` : undefined;
+}
+
 /** Which tile of the illustration sheet a stage uses (see `JourneyStage.sheetIndex`). */
 export function sheetTile(stage: { index: number; sheetIndex?: number }, stageCount: number, cols = 3, rows = 3): number | null {
   const tiles = cols * rows;
@@ -303,6 +334,8 @@ export interface StageView {
   remark?: string;
   imageUrl?: string;
   sheetIndex?: number;
+  /** Auto-link rule of the stage (selects the built-in illustration). */
+  rule?: string;
   activities: { name: string; status: string; progress: number; finish?: string; category: string }[];
   activityIds: string[];
 }
@@ -346,6 +379,7 @@ export function computeJourney(cfg: JourneyConfig, register: RegisterActivity[],
         remark: s.clientRemark?.trim() || undefined,
         imageUrl: s.imageUrl || undefined,
         sheetIndex: s.sheetIndex,
+        rule: s.rule,
         activities: list.map((r) => ({ name: r.name, status: r.status, progress: r.progress, finish: r.finish, category: r.category })),
         activityIds: list.map((r) => r.id),
       };
