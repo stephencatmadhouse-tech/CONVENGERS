@@ -132,7 +132,7 @@ export const Archive: React.FC = () => {
         <Empty>No reports have been saved yet. Generate a weekly or monthly report in “Weekly & Monthly Reports”.</Empty>
       )}
 
-      <Card title="Progress snapshot history" note="Daily point-in-time records used for trends. Read-only.">
+      <Card title="Progress History" note="Daily point-in-time records used for trends. Read-only.">
         {snapshots.length ? (
           <div className="cv-table-wrap" style={{ maxHeight: 360 }}>
             <table className="cv-table">
@@ -176,7 +176,7 @@ export const Archive: React.FC = () => {
           width={1100}
           footer={
             <button type="button" className="cv-btn" onClick={() => printReport(viewing)}>
-              🖨 Print / PDF
+              Export PDF
             </button>
           }
         >

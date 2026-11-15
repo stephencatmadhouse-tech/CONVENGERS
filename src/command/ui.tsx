@@ -73,12 +73,29 @@ export const Pill: React.FC<{ label: string; color?: string; title?: string }> =
   );
 };
 
+/**
+ * Controlled activity status dictionary (display labels; stored values are unchanged):
+ * Not Started · Planned · In Progress · Completed · On Hold · Delayed · Cancelled
+ */
+export const STATUS_LABEL: Record<string, string> = {
+  Upcoming: 'Planned',
+  Ongoing: 'In Progress',
+  Completed: 'Completed',
+  Delayed: 'Delayed',
+  'On Hold': 'On Hold',
+  'Not started': 'Not Started',
+  'Not Started': 'Not Started',
+  'In progress': 'In Progress',
+  Cancelled: 'Cancelled',
+};
+export const statusLabel = (s: string) => STATUS_LABEL[s] || s;
+
 export const StatusPill: React.FC<{ status: string }> = ({ status }) => {
   const c = STATUS_HEX[status] || '#9A9AA3';
   // Solid status badges (Convengers status language): green / purple / red / blue / gray
   return (
     <span className="cv-pill cv-status" style={{ background: c, color: '#fff', borderColor: c }}>
-      {status}
+      {statusLabel(status)}
     </span>
   );
 };
@@ -418,3 +435,23 @@ export function pct(n: number | null | undefined, digits = 1): string {
   if (n === null || n === undefined || isNaN(n)) return '—';
   return `${n.toFixed(digits)}%`;
 }
+
+// ---------------- Shared-database sync status ----------------
+export const SYNC_LABEL: Record<string, { label: string; detail: string; color: string }> = {
+  live: { label: 'Live sync', detail: 'Connected: project data is confirmed by the shared database and changes reach every user.', color: '#1F9D68' },
+  connecting: { label: 'Connecting…', detail: 'Waiting for the shared database to confirm the project data.', color: '#7A7D8F' },
+  cached: { label: 'Offline — last synced data', detail: 'No connection: showing the last data received from the shared database. Changes will sync when the connection returns.', color: '#D97706' },
+  device: { label: 'Device data — not synced', detail: 'The shared database has not confirmed this data. This device is showing its own saved copy; it is not approved shared project data.', color: '#D97706' },
+  denied: { label: 'Not synced — access refused', detail: 'The shared database refused access (security rules not deployed or account not authorized). This device is showing its own saved copy.', color: '#DC3545' },
+  error: { label: 'Sync error', detail: 'The shared database could not be read. This device is showing its own saved copy.', color: '#DC3545' },
+};
+
+/** LIVE SYNC is shown only when the shared database has actually confirmed the data. */
+export const SyncChip: React.FC<{ state: string; compact?: boolean }> = ({ state, compact }) => {
+  const s = SYNC_LABEL[state] || SYNC_LABEL.connecting;
+  return (
+    <span className={`cv-sync ${compact ? 'compact' : ''}`} title={s.detail} role="status" aria-label={`Data sync: ${s.label}. ${s.detail}`} style={{ ['--sync' as any]: s.color }}>
+      <i aria-hidden /> {s.label}
+    </span>
+  );
+};

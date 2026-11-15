@@ -11,6 +11,7 @@ import React, { useMemo, useState } from 'react';
 import { RegisterActivity } from '../domain/register.ts';
 import { validateActivityEdit, findDuplicates } from '../domain/validation.ts';
 import { fmtDate, fmtRange } from '../domain/dates.ts';
+import { CONSTRUCTION_CATEGORIES } from '../domain/categories.ts';
 import { useCommand, ActivityPatch } from './context.tsx';
 import { Modal, Field, Banner, StatusPill, Pill, ProgressBar, PRIORITY_HEX } from './ui.tsx';
 import { documentStore } from '../firebase/opsStores.ts';
@@ -57,6 +58,7 @@ export const ActivityEditor: React.FC<{ activity: RegisterActivity; onClose: () 
     owner: r.owner,
     supporting: r.supporting,
     department: r.department,
+    category: r.categorySet ? r.category : '',
     priority: r.priority,
     commitment: r.commitment,
     dependsOn: r.dependsOn,
@@ -117,6 +119,7 @@ export const ActivityEditor: React.FC<{ activity: RegisterActivity; onClose: () 
     if (form.owner !== r.owner) patch.owner = form.owner;
     if (form.supporting !== r.supporting) patch.supporting = form.supporting;
     if (form.department !== r.department) patch.department = form.department;
+    if (form.category !== (r.categorySet ? r.category : '')) patch.category = form.category;
     if (form.priority !== r.priority) patch.priority = form.priority;
     if (form.commitment !== r.commitment) patch.commitment = form.commitment;
     if (JSON.stringify(form.dependsOn) !== JSON.stringify(r.dependsOn)) patch.dependsOn = form.dependsOn;
@@ -197,6 +200,16 @@ export const ActivityEditor: React.FC<{ activity: RegisterActivity; onClose: () 
         <Field label="Workstream">
           <input className="cv-input" value={r.workstream} disabled />
         </Field>
+        {r.stream !== 'Production' && (
+          <Field label="Construction category" hint={form.category ? 'Set by the project team' : `Automatic: ${r.category}`}>
+            <select className="cv-select" value={form.category} disabled={!canEdit} onChange={(e) => set('category', e.target.value)}>
+              <option value="">Automatic ({r.category})</option>
+              {CONSTRUCTION_CATEGORIES.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </Field>
+        )}
         <Field label="Scope of work">
           <input className="cv-input" value={r.scopeOfWork} disabled />
         </Field>
@@ -209,19 +222,19 @@ export const ActivityEditor: React.FC<{ activity: RegisterActivity; onClose: () 
 
       <fieldset className="cv-fieldset" disabled={!canEdit}>
         <legend>Schedule — planned vs actual</legend>
-        <Field label="Baseline (original plan)" hint={r.revisionCount ? `Preserved · ${r.revisionCount} revision(s)` : 'Current dates are the baseline'}>
+        <Field label="Baseline dates (original plan)" hint={r.revisionCount ? `Preserved · ${r.revisionCount} revision(s)` : 'Current dates are the baseline'}>
           <input className="cv-input" value={fmtRange(r.plannedStart, r.plannedFinish)} disabled />
         </Field>
-        <Field label={r.kind === 'episode' ? 'Shoot start' : r.kind === 'pour' ? 'Target pour' : 'Current start'}>
+        <Field label={r.kind === 'episode' ? 'Shoot start' : r.kind === 'pour' ? 'Target pour' : 'Revised start'}>
           <input type="date" className="cv-input" value={form.start} disabled={!datesEditable} onChange={(e) => set('start', e.target.value)} />
         </Field>
-        <Field label={r.kind === 'episode' ? 'Shoot end' : r.kind === 'pour' ? 'Target completion' : 'Current finish'}>
+        <Field label={r.kind === 'episode' ? 'Shoot end' : r.kind === 'pour' ? 'Target completion' : 'Revised completion'}>
           <input type="date" className="cv-input" value={form.finish} disabled={!datesEditable} onChange={(e) => set('finish', e.target.value)} />
         </Field>
         <Field label={r.kind === 'pour' ? 'Actual pour' : 'Actual start'}>
           <input type="date" className="cv-input" value={form.actualStart} max={today} disabled={!pourActualsEditable} onChange={(e) => set('actualStart', e.target.value)} />
         </Field>
-        <Field label={r.kind === 'pour' ? 'Actual completion' : 'Actual finish'}>
+        <Field label="Actual completion">
           <input type="date" className="cv-input" value={form.actualFinish} max={today} disabled={!pourActualsEditable} onChange={(e) => set('actualFinish', e.target.value)} />
         </Field>
         <Field label="Duration">

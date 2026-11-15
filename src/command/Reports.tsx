@@ -180,7 +180,7 @@ export const ReportsPage: React.FC<{ type: ReportType }> = ({ type }) => {
         <ReportStatusStamp report={saved} />
         <span className="cv-spacer" />
         <button type="button" className="cv-btn sm" onClick={print}>
-          🖨 Print / PDF
+          Export PDF
         </button>
         <button type="button" className="cv-btn sm" onClick={exportCsv}>
           ⬇ CSV
@@ -247,7 +247,7 @@ export const ReportsPage: React.FC<{ type: ReportType }> = ({ type }) => {
             </div>
             <div className="cv-row" style={{ marginTop: 12 }}>
               <button type="button" className="cv-btn" disabled={busy || (!dirty && !!saved)} onClick={() => saveDraft(saved?.status === 'review' ? 'review' : 'draft')}>
-                {busy ? 'Saving…' : saved ? 'Save' : 'Generate & save draft'}
+                {busy ? 'Saving…' : saved ? 'Save Changes' : 'Generate Draft Report'}
               </button>
               {saved?.status !== 'review' && (
                 <button type="button" className="cv-btn" disabled={busy} onClick={() => saveDraft('review')}>
@@ -411,14 +411,14 @@ const Narr: React.FC<{ text?: string; fallback?: string }> = ({ text, fallback }
 const ProgressStrip: React.FC<{ c: ReportContent }> = ({ c }) => (
   <div className="cv-kpis">
     <Kpi label="Actual accomplishment" value={pct(c.metrics.actualPct)} accent sub="Weighted physical progress" />
-    <Kpi label="Planned accomplishment" value={pct(c.metrics.plannedPct)} sub="Baseline plan" />
-    <Kpi label="Variance" value={fmtVar(c.metrics.variancePct)} color={c.metrics.variancePct < 0 ? '#E5484D' : '#22A06B'} sub={c.metrics.spi ? `SPI ${c.metrics.spi}` : ''} />
+    <Kpi label="Planned progress" value={pct(c.metrics.plannedPct)} sub="Baseline plan" />
+    <Kpi label="Progress variance" value={fmtVar(c.metrics.variancePct)} color={c.metrics.variancePct < 0 ? '#E5484D' : '#22A06B'} sub={c.metrics.spi ? `SPI ${c.metrics.spi}` : ''} />
     <Kpi
       label={c.kind === 'weekly' ? 'Gained this week' : 'Gained this month'}
       value={c.progressGain === null ? 'n/a' : `${c.progressGain >= 0 ? '+' : ''}${c.progressGain} pts`}
       sub={c.progressGain === null ? 'No snapshot at period start' : `${c.progressStart.actual}% → ${c.progressEnd.actual}%`}
     />
-    <Kpi label="Projected completion" value={fmtDate(c.metrics.projectedCompletion)} sub={`Target ${fmtDate(c.metrics.targetCompletion)}`} />
+    <Kpi label="Forecast completion" value={fmtDate(c.metrics.projectedCompletion)} sub={`Target ${fmtDate(c.metrics.targetCompletion)}`} />
   </div>
 );
 

@@ -353,3 +353,89 @@ test('firestore.rules public portal kinds match the app and internal collections
     assert.ok(!/if true/.test(read), `${col} must not be public`);
   }
 });
+
+// ---------------- 2.0: categories, construction journey, forecast, client snapshot ----------------
+import { categoryProgress, classifyCategory, CONSTRUCTION_CATEGORIES } from './categories.ts';
+import { computeJourney, defaultJourney, assignStages, currentStageIndex } from './journey.ts';
+import { forecastCompletion } from './metrics.ts';
+import { clientStatus } from './portal.ts';
+
+test('categories: every construction scope is classified and weighted category progress adds up to Actual Progress', () => {
+  const r = buildRegister(input, TODAY);
+  const m = computeMetrics(r, INITIAL_MILESTONES, TODAY);
+  const scopes = r.filter((x) => x.kind === 'scope');
+  assert.ok(scopes.every((s) => (CONSTRUCTION_CATEGORIES as readonly string[]).includes(s.category)));
+  const total = scopes.reduce((a, s) => a + s.weight, 0);
+  const cats = categoryProgress(r, TODAY);
+  const sum = cats.reduce((a, c) => {
+    const w = scopes.filter((s) => s.category === c.name).reduce((x, s) => x + s.weight, 0);
+    return a + (c.actual ?? 0) * w;
+  }, 0) / total;
+  assert.ok(Math.abs(sum - m.actualPct) < 0.15, `categories ${sum} vs overall ${m.actualPct}`);
+  assert.equal(classifyCategory({ name: 'Electrical rough-ins', kind: 'scope', phase: 'Finishing', stream: 'Construction' } as any), 'Electrical Works');
+  assert.equal(classifyCategory({ name: 'Punchlist / rectification', kind: 'scope', phase: 'Finishing', stream: 'Construction' } as any), 'Punch Listing');
+});
+
+test('category override from the activity editor replaces the derived category', () => {
+  const sc = INITIAL_SCOPES[0];
+  const reg = buildRegister({ ...input, overrides: { ...INITIAL_OVERRIDES, [`sc|${sc.id}`]: { key: `sc|${sc.id}`, category: 'Turnover' } } }, TODAY);
+  const a = reg.find((x) => x.sourceId === sc.id)!;
+  assert.equal(a.category, 'Turnover');
+  assert.equal(a.categorySet, true);
+});
+
+test('journey: stage progress comes from linked activities, nothing is double counted, explicit links win', () => {
+  const r = buildRegister(input, TODAY);
+  const cfg = defaultJourney();
+  const links = assignStages(cfg, r);
+  const all = [...links.values()].flat().map((x) => x.id);
+  assert.equal(all.length, new Set(all).size, 'each activity in at most one stage');
+  const stages = computeJourney(cfg, r, TODAY);
+  assert.equal(stages.length, 9);
+  assert.ok(stages.every((s) => s.progress === null || (s.progress >= 0 && s.progress <= 100)));
+  // A stage without links reports "pending" (null), never an invented figure
+  const empty = stages.find((s) => !s.linked);
+  if (empty) assert.equal(empty.progress, null);
+  // Explicit links override automatic ones and are removed from the automatic pool
+  const pick = r.find((x) => x.kind === 'scope')!;
+  cfg.stages[8].activityIds = [pick.id];
+  const after = assignStages(cfg, r);
+  assert.deepEqual(after.get(cfg.stages[8].id)!.map((x) => x.id), [pick.id]);
+  assert.ok(![...after.entries()].some(([id, list]) => id !== cfg.stages[8].id && list.some((x) => x.id === pick.id)));
+  assert.equal(currentStageIndex([{ status: 'Completed' }, { status: 'In Progress' }, { status: 'Upcoming' }]), 1);
+});
+
+test('forecast: one authoritative forecast date shared by the client snapshot and the dashboards', () => {
+  const r = buildRegister(input, TODAY);
+  const m = computeMetrics(r, INITIAL_MILESTONES, TODAY);
+  const snap = buildPortalSnapshot(r, INITIAL_MILESTONES, m, TODAY);
+  assert.equal(snap.forecastCompletion, forecastCompletion(m));
+  assert.equal(forecastCompletion(m), m.projectedCompletion);
+  assert.equal(snap.actualPct, m.actualPct);
+  assert.equal(snap.status, m.health);
+});
+
+test('client snapshot: categories, activities and journey stay client-safe and use the client status vocabulary', () => {
+  const r = buildRegister(input, TODAY);
+  const m = computeMetrics(r, INITIAL_MILESTONES, TODAY);
+  const snap = buildPortalSnapshot(r, INITIAL_MILESTONES, m, TODAY, { profile: { id: 'profile', clientName: 'Sample Client', location: 'Sample City' } });
+  const allowed = ['Upcoming', 'In Progress', 'Completed', 'Schedule Update Required'];
+  assert.ok(snap.activities!.every((a) => allowed.includes(a.status)));
+  assert.ok(snap.categories!.every((c) => allowed.includes(c.status)));
+  assert.ok(snap.journey!.stages.every((s) => allowed.includes(s.status)));
+  const json = JSON.stringify(snap);
+  const owners = [...new Set(r.map((x) => x.owner).filter(Boolean))];
+  owners.forEach((o) => assert.ok(!json.includes(o), `owner "${o}" must not reach the client`));
+  assert.equal(snap.profile?.clientName, 'Sample Client');
+  assert.equal(clientStatus('Delayed'), 'Schedule Update Required');
+  assert.equal(clientStatus('Ongoing'), 'In Progress');
+});
+
+test('roles 2.0: Project Director manages, Construction Manager and Quality edit operations', () => {
+  assert.equal(landingModule('director'), 'command');
+  assert.equal(landingModule('construction_manager'), 'construction');
+  assert.ok(canOpenModule('director', 'publishing') && canOpenModule('director', 'journey'));
+  assert.ok(canOpenModule('construction_manager', 'schedule') && !canOpenModule('construction_manager', 'publishing'));
+  assert.ok(canOpenModule('quality', 'issues') && !canOpenModule('quality', 'journey'));
+  assert.ok(canReadPortalDocuments(mkUser('director')));
+});

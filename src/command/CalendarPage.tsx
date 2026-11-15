@@ -18,7 +18,7 @@ import { useStore } from '../firebase/useStore.ts';
 import { procurementStore, eventStore } from '../firebase/opsStores.ts';
 import { newId } from '../firebase/collectionStore.ts';
 import { CAL_TYPES, CAL_COLOR, CalItem, CalType, buildCalendar, buildForecast, inRange, weekLabel } from '../domain/calendarEvents.ts';
-import { addDays, diffDays, fmtDate, isValidIso, monthLabel, monthRange, weekRange } from '../domain/dates.ts';
+import { addDays, diffDays, fmtDate, fmtTime, isValidIso, monthLabel, monthRange, weekRange } from '../domain/dates.ts';
 import { CalendarEvent, CalendarEventType } from '../types/index.ts';
 
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -45,7 +45,7 @@ const ItemLine: React.FC<{ i: CalItem; onClick: () => void; showDate?: boolean }
     )}
     <span className="ex-agi-b">
       <span className="ex-agi-t">
-        {i.time && <span className="ex-agi-time">{i.time}</span>}
+        {i.time && <span className="ex-agi-time">{fmtTime(i.time)}</span>}
         {i.title}
       </span>
       <span className="ex-agi-s">
@@ -169,7 +169,7 @@ export const EventDetail: React.FC<{ item: CalItem; manual?: CalendarEvent; onCl
   return (
     <Modal
       title={item.title}
-      sub={`${item.type} · ${item.marker} · ${fmtDate(item.date)}${item.time ? ` ${item.time}` : ''}`}
+      sub={`${item.type} · ${item.marker} · ${fmtDate(item.date)}${item.time ? ` · ${fmtTime(item.time)}` : ''}`}
       onClose={onClose}
       width={560}
       footer={
@@ -322,7 +322,7 @@ export const EventEditor: React.FC<{ initial?: CalendarEvent; date: string; onCl
             Cancel
           </button>
           <button type="button" className="cv-btn primary" onClick={save}>
-            Save
+            Save Changes
           </button>
         </>
       }
@@ -425,7 +425,7 @@ export const CalendarPage: React.FC<{ view?: string; param?: string }> = ({ view
           <span className="cv-dim" style={{ fontSize: 12 }}>Asia/Manila · weeks start Monday</span>
           {isManager && (
             <button type="button" className="cv-btn sm primary" onClick={() => setEditing({ date: view === 'agenda' ? today : anchor })}>
-              <Plus size={14} aria-hidden /> Add event
+              <Plus size={14} aria-hidden /> Add New Event
             </button>
           )}
         </div>

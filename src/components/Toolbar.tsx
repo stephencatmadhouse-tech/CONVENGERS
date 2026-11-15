@@ -252,11 +252,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       )}
 
       <button id="print" type="button" onClick={onPrintPdf}>
-        <Printer {...ico} /> Print / save PDF
+        <Printer {...ico} /> Export PDF · Slides
       </button>
 
       <button id="pmrep" type="button" onClick={onPrintReport}>
-        <FileText {...ico} /> Print report
+        <FileText {...ico} /> Export PDF · Report
       </button>
 
       {!compact && onDownloadHtml && (
@@ -278,7 +278,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       )}
 
       {/* Backup Import: Hidden in viewer/presentation mode */}
-      {!compact && user && (user.role === 'admin' || user.role === 'manager') && !isAdminPresentationMode && (
+      {!compact && user && (user.role === 'admin' || user.role === 'director' || user.role === 'manager') && !isAdminPresentationMode && (
         <>
           <button id="pmimp" type="button" onClick={() => fileInputRef.current?.click()}>
             Import backup

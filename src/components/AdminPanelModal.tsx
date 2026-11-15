@@ -253,9 +253,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               >
                                 <optgroup label="Internal — Project Management System">
                                   <option value="admin">System Administrator</option>
+                                  <option value="director">Project Director</option>
                                   <option value="manager">Project Manager</option>
+                                  <option value="construction_manager">Construction Manager</option>
                                   <option value="engineer">Site Engineer</option>
                                   <option value="production">Production Coordinator</option>
+                                  <option value="quality">Quality Personnel</option>
                                   <option value="staff">Internal Team Member</option>
                                   <option value="viewer">Internal Viewer (read-only)</option>
                                 </optgroup>

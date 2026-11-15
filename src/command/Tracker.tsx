@@ -38,10 +38,13 @@ export const Tracker: React.FC = () => {
   const [department, setDepartment] = useState('');
   const [deadline, setDeadline] = useState('');
   const [sort, setSort] = useState<{ k: SortKey; dir: 1 | -1 }>({ k: 'start', dir: 1 });
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState<false | 'activity' | 'milestone'>(false);
 
   useEffect(() => {
     if (params.status !== undefined) setStatus(params.status);
+    // Quick actions: #/tracker/register/new and #/tracker/register/new-milestone
+    if (route.param === 'new') setAdding('activity');
+    if (route.param === 'new-milestone') setAdding('milestone');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route.param]);
 
@@ -248,8 +251,8 @@ export const Tracker: React.FC = () => {
           ⬇ CSV
         </button>
         {isManager && (
-          <button type="button" className="cv-btn primary sm" onClick={() => setAdding(true)}>
-            + Add activity
+          <button type="button" className="cv-btn primary sm" onClick={() => setAdding('activity')}>
+            Add New Activity
           </button>
         )}
       </div>
@@ -328,14 +331,14 @@ export const Tracker: React.FC = () => {
           </button>
         </Empty>
       )}
-      {adding && <AddActivityModal onClose={() => setAdding(false)} />}
+      {adding && <AddActivityModal milestone={adding === 'milestone'} onClose={() => setAdding(false)} />}
     </div>
   );
 };
 
-const AddActivityModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+const AddActivityModal: React.FC<{ onClose: () => void; milestone?: boolean }> = ({ onClose, milestone }) => {
   const { register, actions, user } = useCommand();
-  const [f, setF] = useState({ title: '', category: 'Construction' as ActivityCategory, startDate: '', endDate: '', owner: '', description: '', notes: '' });
+  const [f, setF] = useState({ title: '', category: (milestone ? 'Milestone' : 'Construction') as ActivityCategory, startDate: '', endDate: '', owner: '', description: '', notes: '' });
   const [saving, setSaving] = useState(false);
   const errors: string[] = [];
   if (!f.title.trim()) errors.push('Activity name is required.');

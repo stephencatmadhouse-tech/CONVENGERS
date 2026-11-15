@@ -115,7 +115,17 @@ export function workingDaysBetween(startIso?: string, endIso?: string): number {
   return calculateWorkingDays(s, e);
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// Platform date standard: "November 15, 2026" (full month name, Asia/Manila calendar dates)
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+/** Platform time standard: "8:30 AM" (input "08:30" or "20:15"). */
+export function fmtTime(hhmm?: string): string {
+  if (!hhmm || !/^\d{1,2}:\d{2}/.test(hhmm)) return '';
+  const [h, m] = hhmm.split(':').map(Number);
+  const ap = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${ap}`;
+}
 
 export function fmtDate(iso?: string, withYear = true): string {
   const d = parseIsoDate(iso);

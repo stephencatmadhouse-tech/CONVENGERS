@@ -25,6 +25,13 @@ import {
   FolderOpen,
   Send,
   ExternalLink,
+  ChevronDown,
+  UserCog,
+  ScrollText,
+  CalendarClock,
+  Box,
+  ShieldCheck,
+  RefreshCw,
   Gauge,
   Bell,
   CalendarDays,
@@ -50,6 +57,8 @@ import { Settings } from './Settings.tsx';
 import { ExecutiveDashboard } from './ExecutiveDashboard.tsx';
 import { NotificationsPage, useNotifications } from './Notifications.tsx';
 import { CalendarPage } from './CalendarPage.tsx';
+import { JourneyManagement } from './JourneyManagement.tsx';
+import { RolesPermissions, SyncPanel } from './SystemAdmin.tsx';
 
 export type SlideKey = 'overview' | 'upcoming' | 'gf' | '2f' | '3f' | 'pours' | 'production' | 'episodes' | 'master' | 'methodology' | 'watch' | 'notes';
 
@@ -87,7 +96,7 @@ const RAW_SECTIONS: Section[] = [
   {
     id: 'calendar',
     num: '00',
-    label: 'Calendar',
+    label: 'Project Calendar',
     title: 'Project Calendar',
     sub: 'Milestones, construction targets, concrete pours, production dates, inspections, deliveries, handover and calendar entries — with the 60-day forecast.',
     tabs: [
@@ -101,7 +110,7 @@ const RAW_SECTIONS: Section[] = [
     id: 'procurement',
     num: '00',
     label: 'Procurement & Materials',
-    title: 'Procurement & Materials Monitoring',
+    title: 'Procurement & Materials',
     sub: 'Material requirements, procurement status, suppliers, purchase and delivery schedules, pending orders, received materials and delayed deliveries.',
   },
   {
@@ -114,14 +123,14 @@ const RAW_SECTIONS: Section[] = [
   {
     id: 'publishing',
     num: '00',
-    label: 'Client Portal Publishing',
-    title: 'Client Portal Publishing',
+    label: 'Client Portal Management',
+    title: 'Client Portal Management',
     sub: 'Prepare, review, approve and publish client-safe information to the Executive & Client Portal. Only published items are visible to external users.',
     tabs: [
       { id: 'overview', label: 'Overview' },
-      { id: 'snapshot', label: 'Project status updates' },
-      { id: 'considerations', label: 'Considerations & updates' },
-      { id: 'gallery', label: 'Progress gallery' },
+      { id: 'snapshot', label: 'Project Status Updates' },
+      { id: 'considerations', label: 'Updates & Announcements' },
+      { id: 'gallery', label: 'Progress Gallery' },
       { id: 'documents', label: 'Documents' },
       { id: 'reports', label: 'Reports' },
     ],
@@ -136,8 +145,8 @@ const RAW_SECTIONS: Section[] = [
   {
     id: 'overview',
     num: '02',
-    label: 'Project Overview',
-    title: 'Project Overview',
+    label: 'Project Presentation',
+    title: 'Project Presentation',
     sub: 'The established Convengers presentation slides — executive overview, methodology, watch items and schedule notes.',
     tabs: [
       { id: 'slide', label: 'Executive overview', slide: 'overview' },
@@ -176,8 +185,8 @@ const RAW_SECTIONS: Section[] = [
   {
     id: 'production',
     num: '05',
-    label: 'Production Management',
-    title: 'Production Management',
+    label: 'Production Monitoring',
+    title: 'Production Monitoring',
     sub: 'Production calendar, episodes and cross-calendar alignment with construction.',
     tabs: [
       { id: 'calendar', label: 'Production calendar', slide: 'production' },
@@ -218,22 +227,50 @@ const RAW_SECTIONS: Section[] = [
   {
     id: 'analytics',
     num: '09',
-    label: 'Performance Analytics',
-    title: 'Performance Analytics',
-    sub: 'Planned vs actual, trends, workstreams, milestones, construction and production schedule performance — and the forward outlook.',
+    label: 'Project Performance',
+    title: 'Project Performance',
+    sub: 'Planned vs actual progress, trends, workstreams, milestones, and construction and production schedule performance.',
+  },
+  {
+    id: 'schedule',
+    num: '00',
+    label: 'Schedule Monitoring',
+    title: 'Schedule Monitoring',
+    sub: 'Forecast completion, schedule risks and the next-month outlook, with production and construction alignment.',
     tabs: [
-      { id: 'performance', label: 'Performance' },
-      { id: 'forecast', label: 'Forecast & next-month outlook' },
+      { id: 'forecast', label: 'Forecast & Outlook' },
+      { id: 'alignment', label: 'Production & Construction Alignment' },
     ],
+  },
+  {
+    id: 'journey',
+    num: '00',
+    label: '3D Construction Journey',
+    title: '3D Construction Journey Management',
+    sub: 'Configure the construction stages clients see: names, order, descriptions, illustrations and linked activities. Progress is calculated from the Master Project Tracker.',
+  },
+  {
+    id: 'roles',
+    num: '00',
+    label: 'Roles & Permissions',
+    title: 'Roles & Permissions',
+    sub: 'What each role can see and do. Access is enforced by the database security rules, not only by the interface.',
+  },
+  {
+    id: 'sync',
+    num: '00',
+    label: 'Database Synchronization',
+    title: 'Database Synchronization',
+    sub: 'Shared-database connection status, device-only records and synchronization recovery.',
   },
   {
     id: 'issues',
     num: '10',
     label: 'Issues & Accountability',
     title: 'Issues & Accountability',
-    sub: 'Management attention list, issues / risks / decisions log and ownership of every task.',
+    sub: 'Items requiring attention, the issues, risks and decisions log, and ownership of every task.',
     tabs: [
-      { id: 'attention', label: 'Management attention' },
+      { id: 'attention', label: 'Items Requiring Attention' },
       { id: 'log', label: 'Issues, risks & decisions' },
       { id: 'owners', label: 'Accountability' },
     ],
@@ -241,40 +278,46 @@ const RAW_SECTIONS: Section[] = [
   {
     id: 'archive',
     num: '11',
-    label: 'Project Archive',
-    title: 'Project Archive',
+    label: 'Project Records Archive',
+    title: 'Project Records Archive',
     sub: 'Historical weekly and monthly reports by year and month, plus progress snapshot history.',
   },
   {
     id: 'settings',
     num: '12',
-    label: 'Settings & Data',
-    title: 'Settings & Data Management',
+    label: 'Data & Settings',
+    title: 'Data & Settings',
     sub: 'Storage, backup and recovery, baseline, data health, printing and administration.',
   },
 ];
 
 /** Navigation order and grouping (numbers follow this order). */
 const ORDER: [string, string][] = [
-  ['command', 'Operations'],
-  ['executive', 'Operations'],
-  ['notifications', 'Operations'],
-  ['calendar', 'Operations'],
-  ['tracker', 'Operations'],
-  ['construction', 'Operations'],
-  ['production', 'Operations'],
-  ['timeline', 'Operations'],
-  ['milestones', 'Operations'],
-  ['procurement', 'Operations'],
-  ['issues', 'Operations'],
-  ['reports', 'Reporting & Publishing'],
-  ['analytics', 'Reporting & Publishing'],
-  ['documents', 'Reporting & Publishing'],
-  ['publishing', 'Reporting & Publishing'],
-  ['archive', 'Reporting & Publishing'],
-  ['overview', 'Presentation & System'],
-  ['settings', 'Presentation & System'],
+  ['command', 'Overview'],
+  ['executive', 'Overview'],
+  ['notifications', 'Overview'],
+  ['tracker', 'Project Management'],
+  ['timeline', 'Project Management'],
+  ['calendar', 'Project Management'],
+  ['milestones', 'Project Management'],
+  ['construction', 'Construction Operations'],
+  ['production', 'Construction Operations'],
+  ['procurement', 'Construction Operations'],
+  ['schedule', 'Monitoring & Control'],
+  ['issues', 'Monitoring & Control'],
+  ['analytics', 'Monitoring & Control'],
+  ['reports', 'Reports & Documents'],
+  ['documents', 'Reports & Documents'],
+  ['archive', 'Reports & Documents'],
+  ['overview', 'Reports & Documents'],
+  ['publishing', 'Client Experience'],
+  ['journey', 'Client Experience'],
+  ['roles', 'System Administration'],
+  ['settings', 'System Administration'],
+  ['sync', 'System Administration'],
 ];
+
+export const NAV_GROUPS = ['Overview', 'Project Management', 'Construction Operations', 'Monitoring & Control', 'Reports & Documents', 'Client Experience', 'System Administration'];
 
 export const SECTIONS: Section[] = ORDER.map(([id, group], idx) => {
   const sec = RAW_SECTIONS.find((x) => x.id === id)!;
@@ -300,11 +343,19 @@ const ICONS: Record<string, LucideIcon> = {
   executive: Gauge,
   notifications: Bell,
   calendar: CalendarDays,
+  schedule: CalendarClock,
+  journey: Box,
+  roles: ShieldCheck,
+  sync: RefreshCw,
 };
 
 export function parseRoute(hash: string): { section: string; tab?: string; param?: string } {
   const h = hash.replace(/^#\/?/, '');
-  const [section, tab, ...rest] = h.split('/');
+  let [section, tab, ...rest] = h.split('/');
+  // Addresses from before the 2.0 navigation
+  if (section === 'analytics' && tab === 'forecast') {
+    section = 'schedule';
+  }
   const sec = SECTIONS.find((s) => s.id === section) ? section : 'command';
   return { section: sec, tab: tab || undefined, param: rest.join('/') || undefined };
 }
@@ -320,8 +371,25 @@ export function useHashRoute() {
 }
 
 export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; renderDeck: () => React.ReactNode }> = ({ renderSlide, renderDeck }) => {
-  const { route, actions, attention, user, metrics } = useCommand();
+  const { route, actions, attention, user, metrics, isAdmin, dataSync } = useCommand();
   const [navOpen, setNavOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('convengers_nav_collapsed') || '{}');
+    } catch {
+      return {};
+    }
+  });
+  const toggleGroup = (g: string) =>
+    setCollapsed((c) => {
+      const n = { ...c, [g]: !c[g] };
+      try {
+        localStorage.setItem('convengers_nav_collapsed', JSON.stringify(n));
+      } catch {
+        // per-device convenience only
+      }
+      return n;
+    });
   // Modules available to this role (navigation level; data is protected server-side)
   const visible = SECTIONS.filter((s) => canOpenModule(user.role, s.id));
   const allowed = canOpenModule(user.role, route.section);
@@ -379,7 +447,15 @@ export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; re
       case 'reports':
         return tab?.id === 'summary' ? <SummaryReports /> : <ReportsPage key={tab?.id} type={tab?.id === 'monthly' ? 'monthly' : 'weekly'} />;
       case 'analytics':
-        return tab?.id === 'forecast' ? <Forecast /> : <Analytics />;
+        return <Analytics />;
+      case 'schedule':
+        return tab?.id === 'alignment' ? <AlignmentView /> : <Forecast />;
+      case 'journey':
+        return <JourneyManagement />;
+      case 'roles':
+        return <RolesPermissions />;
+      case 'sync':
+        return <SyncPanel />;
       case 'issues':
         return tab?.id === 'log' ? <IssueLog /> : tab?.id === 'owners' ? <Accountability /> : <AttentionList />;
       case 'archive':
@@ -395,29 +471,62 @@ export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; re
     <div className={`cv-shell ${navOpen ? 'nav-open' : ''}`}>
       <div className="cv-backdrop" onClick={() => setNavOpen(false)} />
       <nav className="cv-sidebar" aria-label="Command Center sections">
-        <div className="cv-side-title">Project Management System</div>
-        {visible.map((s, i) => (
-          <React.Fragment key={s.id}>
-          {s.group !== visible[i - 1]?.group && <div className="cv-side-group">{s.group}</div>}
-          <button
-            key={s.id}
-            type="button"
-            className={`cv-nav-btn ${s.id === section.id ? 'on' : ''}`}
-            onClick={() => actions.navigate(s.id)}
-            aria-current={s.id === section.id ? 'page' : undefined}
-          >
-            {ICONS[s.id] ? React.createElement(ICONS[s.id], { size: 18, strokeWidth: 1.9, className: 'cv-nav-ico', 'aria-hidden': true }) : null}
-            <span className="cv-nav-label">{s.label}</span>
-            <span className="cv-nav-num">{s.num}</span>
-            {s.id === 'issues' && critical > 0 && <span className="cv-nav-badge" title="Critical attention items">{critical}</span>}
-            {s.id === 'notifications' && unread > 0 && <span className="cv-nav-badge" title="Unread notifications">{unread > 99 ? '99+' : unread}</span>}
-          </button>
-          </React.Fragment>
-        ))}
-        <a className="cv-nav-btn cv-portal-link" href="#/portal/overview">
-          <ExternalLink size={18} strokeWidth={1.9} className="cv-nav-ico" aria-hidden />
-          <span className="cv-nav-label">Client portal (public view)</span>
-        </a>
+        <div className="cv-side-title">Master Project Tracker</div>
+        {NAV_GROUPS.map((g) => {
+          const items = visible.filter((s) => s.group === g);
+          const extras =
+            g === 'Client Experience'
+              ? [{ id: 'portal-preview', label: 'Client Portal Preview', icon: ExternalLink, href: '#/portal/overview' }]
+              : g === 'System Administration' && isAdmin
+                ? [
+                    { id: 'users', label: 'User Management', icon: UserCog, onClick: actions.openAdminPanel },
+                    { id: 'audit', label: 'Audit Logs', icon: ScrollText, onClick: actions.openAuditLogs },
+                  ]
+                : [];
+          if (!items.length && !extras.length) return null;
+          const hasActive = items.some((s) => s.id === section.id);
+          const isOpen = hasActive || !collapsed[g];
+          return (
+            <div key={g} className={`cv-navgrp ${isOpen ? 'open' : ''}`}>
+              <button type="button" className="cv-side-group cv-navgrp-h" aria-expanded={isOpen} onClick={() => !hasActive && toggleGroup(g)}>
+                <span>{g}</span>
+                <ChevronDown size={14} aria-hidden className="cv-navgrp-chev" />
+              </button>
+              {isOpen && (
+                <div className="cv-navgrp-b">
+                  {items.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={`cv-nav-btn ${s.id === section.id ? 'on' : ''}`}
+                      onClick={() => actions.navigate(s.id)}
+                      aria-current={s.id === section.id ? 'page' : undefined}
+                    >
+                      {ICONS[s.id] ? React.createElement(ICONS[s.id], { size: 18, strokeWidth: 1.9, className: 'cv-nav-ico', 'aria-hidden': true }) : null}
+                      <span className="cv-nav-label">{s.label}</span>
+                      {s.id === 'issues' && critical > 0 && <span className="cv-nav-badge" title="Critical attention items">{critical}</span>}
+                      {s.id === 'notifications' && unread > 0 && <span className="cv-nav-badge" title="Unread notifications">{unread > 99 ? '99+' : unread}</span>}
+                      {s.id === 'sync' && dataSync.state !== 'live' && <span className="cv-nav-badge warn" title="Not synced">!</span>}
+                    </button>
+                  ))}
+                  {extras.map((x) =>
+                    'href' in x ? (
+                      <a key={x.id} className="cv-nav-btn cv-portal-link" href={x.href}>
+                        <x.icon size={18} strokeWidth={1.9} className="cv-nav-ico" aria-hidden />
+                        <span className="cv-nav-label">{x.label}</span>
+                      </a>
+                    ) : (
+                      <button key={x.id} type="button" className="cv-nav-btn" onClick={x.onClick}>
+                        <x.icon size={18} strokeWidth={1.9} className="cv-nav-ico" aria-hidden />
+                        <span className="cv-nav-label">{x.label}</span>
+                      </button>
+                    )
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
         <div className="cv-side-foot">
           <div>
             Health: <b>{metrics.health}</b> · {metrics.actualPct}% actual

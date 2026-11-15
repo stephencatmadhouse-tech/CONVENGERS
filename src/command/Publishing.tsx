@@ -8,10 +8,14 @@
  * Every transition is recorded on the publication and in the audit log.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useCommand } from './context.tsx';
 import { Publication, PublicationKind, PublishStatus } from '../types/index.ts';
-import { publicationStore, portalStore } from '../firebase/opsStores.ts';
+import { publicationStore, portalStore, clientConfigStore } from '../firebase/opsStores.ts';
+import { useClientConfig } from '../firebase/useClientConfig.ts';
+import { forecastCompletion } from '../domain/metrics.ts';
+import { SyncChip, SYNC_LABEL } from './ui.tsx';
+import type { ProjectProfile } from '../domain/journey.ts';
 import { useStore } from '../firebase/useStore.ts';
 import { newId } from '../firebase/collectionStore.ts';
 import { uploadFile } from '../firebase/files.ts';
@@ -77,7 +81,7 @@ export const Publishing: React.FC<{ tab?: string }> = ({ tab = 'overview' }) => 
           <b>not</b> visible to external users.
         </Banner>
       )}
-      {tab === 'overview' && <LiveOverview pubs={pubs.items} portalCount={portal.items.length} />}
+      {tab === 'overview' && <LiveOverview pubs={pubs.items} portalCount={portal.items.length} portalItems={portal.items} />}
       {tab === 'snapshot' && <SnapshotTab items={list(['snapshot'])} onEdit={setEditing} onStep={(p, to) => setConfirm({ p, to })} />}
       {tab === 'considerations' && (
         <ItemsTab
@@ -134,7 +138,11 @@ export const Publishing: React.FC<{ tab?: string }> = ({ tab = 'overview' }) => 
   );
 };
 
-const LiveOverview: React.FC<{ pubs: Publication[]; portalCount: number }> = ({ pubs, portalCount }) => {
+const LiveOverview: React.FC<{ pubs: Publication[]; portalCount: number; portalItems: { kind: string; publishedAt: string; content: any; localOnly?: boolean }[] }> = ({
+  pubs,
+  portalCount,
+  portalItems,
+}) => {
   const { actions, reports } = useCommand();
   const by = (s: PublishStatus) => pubs.filter((p) => p.status === s).length;
   const repPublished = reports.filter((r) => r.status === 'published').length;
@@ -163,6 +171,8 @@ const LiveOverview: React.FC<{ pubs: Publication[]; portalCount: number }> = ({ 
         <Kpi label="Drafts" value={by('draft')} />
         <Kpi label="Published reports" value={repPublished} />
       </div>
+      <LiveVsPublished portalItems={portalItems} />
+      <ProfileEditor />
       <Card title="Waiting for action">
         {pubs.filter((p) => p.status === 'review' || p.status === 'approved').length ? (
           <div className="cv-list">
@@ -268,9 +278,18 @@ const PubTable: React.FC<{ items: Publication[]; onEdit: (p: Publication) => voi
 };
 
 const SnapshotTab: React.FC<{ items: Publication[]; onEdit: (p: Publication) => void; onStep: (p: Publication, to: PublishStatus) => void }> = ({ items, onEdit, onStep }) => {
-  const { register, data, metrics, today, user, actions, canEdit } = useCommand();
-  const preview = useMemo(() => buildPortalSnapshot(register, data.milestones, metrics, today), [register, data.milestones, metrics, today]);
+  const { register, data, metrics, today, user, actions, canEdit, dataSync } = useCommand();
+  const cfg = useClientConfig();
+  const preview = useMemo(
+    () => buildPortalSnapshot(register, data.milestones, metrics, today, { journey: cfg.journey, profile: cfg.profile }),
+    [register, data.milestones, metrics, today, cfg.journey, cfg.profile]
+  );
+  const synced = dataSync.state === 'live';
   const create = async () => {
+    if (!synced) {
+      actions.toast('Not created: the project data on this device is not confirmed by the shared database.');
+      return;
+    }
     const now = new Date().toISOString();
     const p: Publication = {
       id: newId('SNP'),
@@ -294,15 +313,24 @@ const SnapshotTab: React.FC<{ items: Publication[]; onEdit: (p: Publication) => 
     <>
       <Card
         title="Project status update for the portal"
-        note="Freezes today's client-safe figures into a draft. The portal shows the most recently published update."
+        note="Freezes today's client-safe figures (progress, categories, construction journey stages, milestones) into a draft. The portal shows the most recently published update."
         actions={
           canEdit && (
-            <button type="button" className="cv-btn primary sm" onClick={create}>
-              + Create draft from current data
-            </button>
+            <>
+              <SyncChip state={dataSync.state} />
+              <button type="button" className="cv-btn primary sm" onClick={create} disabled={!synced} title={synced ? undefined : SYNC_LABEL[dataSync.state]?.detail}>
+                Add New Status Update
+              </button>
+            </>
           )
         }
       >
+        {!synced && (
+          <Banner kind="warn">
+            A status update can only be created from data confirmed by the shared database. {SYNC_LABEL[dataSync.state]?.detail} Device-only data is never published
+            to the client portal.
+          </Banner>
+        )}
         <SnapshotSummary s={preview} />
       </Card>
       <Card title="Status updates">
@@ -336,7 +364,7 @@ const ItemsTab: React.FC<{
   onStep: (p: Publication, to: PublishStatus) => void;
   noCreate?: boolean;
 }> = ({ kinds, items, intro, onEdit, onStep, noCreate }) => {
-  const { canEdit, user, today } = useCommand();
+  const { canEdit, user, today, route } = useCommand();
   const blank = (kind: PublicationKind): Publication => {
     const now = new Date().toISOString();
     return {
@@ -352,6 +380,11 @@ const ItemsTab: React.FC<{
       updatedBy: user.name,
     };
   };
+  // Quick action: #/publishing/gallery/new opens a new photo
+  useEffect(() => {
+    if (route.param === 'new' && canEdit && !noCreate) onEdit(blank(kinds[0]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route.param]);
   return (
     <Card
       title={kinds.map((k) => KIND_LABEL[k]).join(' & ')}
@@ -361,7 +394,7 @@ const ItemsTab: React.FC<{
           <>
             {kinds.map((k) => (
               <button key={k} type="button" className="cv-btn primary sm" onClick={() => onEdit(blank(k))}>
-                + {KIND_LABEL[k]}
+                Add New {KIND_LABEL[k]}
               </button>
             ))}
           </>
@@ -403,6 +436,7 @@ const ReportsTab: React.FC = () => {
 
 const PublicationEditor: React.FC<{ pub: Publication; onClose: () => void }> = ({ pub, onClose }) => {
   const { user, actions, canEdit, isAdmin } = useCommand();
+  const journeyStages = [...useClientConfig().journey.stages].sort((a, b) => a.order - b.order);
   const [f, setF] = useState<Publication>(pub);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -470,7 +504,7 @@ const PublicationEditor: React.FC<{ pub: Publication; onClose: () => void }> = (
           </button>
           {editable && (
             <button type="button" className="cv-btn primary" disabled={busy || !f.title.trim()} onClick={save}>
-              {busy ? 'Saving…' : 'Save'}
+              {busy ? 'Saving…' : 'Save Changes'}
             </button>
           )}
         </>
@@ -496,8 +530,16 @@ const PublicationEditor: React.FC<{ pub: Publication; onClose: () => void }> = (
               </Field>
               {f.kind === 'consideration' && (
                 <>
-                  <Field label="Category">
-                    <input className="cv-input" value={f.payload.category || ''} onChange={(e) => setPayload('category', e.target.value)} placeholder="e.g. Schedule, Weather, Permits" />
+                  <Field label="Category" hint="Client action required and schedule adjustments get their own sections on the client portal.">
+                    <select className="cv-select" value={f.payload.category || ''} onChange={(e) => setPayload('category', e.target.value)}>
+                      <option value="">Important announcement</option>
+                      {['Important announcement', 'Client action required', 'Schedule adjustment', 'Weather', 'Permits', 'Design change'].map((c) => (
+                        <option key={c}>{c}</option>
+                      ))}
+                      {f.payload.category && !['Important announcement', 'Client action required', 'Schedule adjustment', 'Weather', 'Permits', 'Design change'].includes(f.payload.category) && (
+                        <option>{f.payload.category}</option>
+                      )}
+                    </select>
                   </Field>
                   <Field label="Schedule impact (optional)" className="full">
                     <input className="cv-input" value={f.payload.impact || ''} onChange={(e) => setPayload('impact', e.target.value)} />
@@ -524,6 +566,16 @@ const PublicationEditor: React.FC<{ pub: Publication; onClose: () => void }> = (
                 <select className="cv-select" value={f.payload.category || 'Site progress'} onChange={(e) => setPayload('category', e.target.value)}>
                   {['Site progress', 'Structural progress', 'Completed works', 'Monthly documentation'].map((c) => (
                     <option key={c}>{c}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Construction Journey stage" hint="Shown as actual site progress for this stage in the 3D Construction Journey.">
+                <select className="cv-select" value={f.payload.stageId || ''} onChange={(e) => setPayload('stageId', e.target.value || undefined)}>
+                  <option value="">Match by date</option>
+                  {journeyStages.map((st) => (
+                    <option key={st.id} value={st.id}>
+                      {String(st.order).padStart(2, '0')} · {st.name}
+                    </option>
                   ))}
                 </select>
               </Field>
@@ -572,5 +624,104 @@ const PublicationEditor: React.FC<{ pub: Publication; onClose: () => void }> = (
         </fieldset>
       )}
     </Modal>
+  );
+};
+
+// ---------------- Live vs published consistency ----------------
+const LiveVsPublished: React.FC<{ portalItems: { kind: string; publishedAt: string; content: any; localOnly?: boolean }[] }> = ({ portalItems }) => {
+  const { metrics, actions } = useCommand();
+  const pub = portalItems.filter((p) => p.kind === 'snapshot' && !p.localOnly).sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))[0];
+  const snap = pub?.content as PortalSnapshot | undefined;
+  const rows: { label: string; live: string; published: string }[] = [
+    { label: 'Actual Progress', live: `${metrics.actualPct.toFixed(1)}%`, published: snap ? `${snap.actualPct.toFixed(1)}%` : '—' },
+    { label: 'Planned Progress', live: `${metrics.plannedPct.toFixed(1)}%`, published: snap ? `${snap.plannedPct.toFixed(1)}%` : '—' },
+    { label: 'Project Status', live: metrics.health, published: snap ? snap.status : '—' },
+    { label: 'Original Target Completion', live: fmtDate(metrics.targetCompletion), published: snap?.targetCompletion ? fmtDate(snap.targetCompletion) : '—' },
+    {
+      label: 'Forecast Completion',
+      live: fmtDate(forecastCompletion(metrics)),
+      published: snap ? fmtDate(snap.forecastCompletion || snap.projectedCompletion) : '—',
+    },
+  ];
+  const outdated = !snap || rows.some((r) => r.live !== r.published);
+  return (
+    <Card
+      title="Client portal vs live project data"
+      note={snap ? `Client portal shows the status published on ${fmtDate(pub!.publishedAt.slice(0, 10))} (as of ${fmtDate(snap.asOf)}).` : 'No project status has been published yet.'}
+      actions={
+        <button type="button" className="cv-btn sm" onClick={() => actions.navigate('publishing/snapshot')}>
+          {outdated ? 'Prepare an updated status' : 'View status updates'}
+        </button>
+      }
+    >
+      {outdated ? (
+        <Banner kind="warn">The client portal is not showing the latest figures. Publish a new project status update so both views match.</Banner>
+      ) : (
+        <Banner kind="ok">The client portal matches the live project figures.</Banner>
+      )}
+      <div className="cv-table-wrap">
+        <table className="cv-table">
+          <thead>
+            <tr>
+              <th>Indicator</th>
+              <th>Live (internal)</th>
+              <th>Published (client portal)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.label}>
+                <td>{r.label}</td>
+                <td>
+                  <b>{r.live}</b>
+                </td>
+                <td style={{ color: r.live !== r.published ? 'var(--cv-red-text)' : undefined }}>{r.published}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+};
+
+// ---------------- Project profile shown on the client dashboard ----------------
+const ProfileEditor: React.FC = () => {
+  const { isManager, user, actions } = useCommand();
+  const cfg = useClientConfig();
+  const [f, setF] = useState<ProjectProfile | null>(null);
+  const cur = f || cfg.profile;
+  const save = async () => {
+    const rec: ProjectProfile = { ...cur, id: 'profile', updatedAt: new Date().toISOString(), updatedBy: user.name };
+    const res = await clientConfigStore.put(rec as any);
+    setF(null);
+    actions.toast(res === 'shared' ? 'Project profile saved — it appears on the portal with the next published status update' : 'Saved on this device only');
+  };
+  return (
+    <Card title="Project profile" note="Shown on the client dashboard. Published with the next project status update.">
+      <div className="cv-grid cv-g3">
+        <Field label="Client name">
+          <input className="cv-input" value={cur.clientName || ''} disabled={!isManager} onChange={(e) => setF({ ...cur, clientName: e.target.value })} />
+        </Field>
+        <Field label="Project location">
+          <input className="cv-input" value={cur.location || ''} disabled={!isManager} onChange={(e) => setF({ ...cur, location: e.target.value })} />
+        </Field>
+        <Field label="Welcome message (optional)">
+          <input className="cv-input" value={cur.welcome || ''} disabled={!isManager} onChange={(e) => setF({ ...cur, welcome: e.target.value })} />
+        </Field>
+      </div>
+      {isManager && (
+        <div className="cv-row" style={{ marginTop: 10 }}>
+          <button type="button" className="cv-btn primary sm" onClick={save} disabled={!f}>
+            Save Changes
+          </button>
+          {f && (
+            <button type="button" className="cv-btn ghost sm" onClick={() => setF(null)}>
+              Cancel
+            </button>
+          )}
+        </div>
+      )}
+    </Card>
   );
 };

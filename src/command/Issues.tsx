@@ -5,7 +5,7 @@
  * 10 — ISSUES & ACCOUNTABILITY
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useCommand } from './context.tsx';
 import { ProjectIssue, IssueSeverity, IssueStatus, IssueType, Publication } from '../types/index.ts';
 import { publicationStore } from '../firebase/opsStores.ts';
@@ -93,8 +93,13 @@ function newIssueId(): string {
 }
 
 export const IssueLog: React.FC = () => {
-  const { issues, canEdit, actions, register, isAdmin, sharedStorage } = useCommand();
+  const { issues, canEdit, actions, register, isAdmin, sharedStorage, route } = useCommand();
   const [editing, setEditing] = useState<ProjectIssue | null>(null);
+  // Quick action: #/issues/log/new opens a blank issue
+  useEffect(() => {
+    if (route.param === 'new' && canEdit) setEditing(blank());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route.param]);
   const [status, setStatus] = useState<string>('open');
   const [type, setType] = useState<string>('');
   const [q, setQ] = useState('');
@@ -152,7 +157,7 @@ export const IssueLog: React.FC = () => {
         <span className="cv-spacer" />
         {canEdit && (
           <button type="button" className="cv-btn primary sm" onClick={() => setEditing(blank())}>
-            + Log issue / risk / decision
+            Add New Issue
           </button>
         )}
       </div>
@@ -283,7 +288,7 @@ const IssueEditor: React.FC<{ issue: ProjectIssue; onClose: () => void; canDelet
           </button>
           {canEdit && (
             <button type="button" className="cv-btn primary" onClick={save} disabled={busy || errors.length > 0}>
-              {busy ? 'Saving…' : 'Save'}
+              {busy ? 'Saving…' : 'Save Changes'}
             </button>
           )}
         </>

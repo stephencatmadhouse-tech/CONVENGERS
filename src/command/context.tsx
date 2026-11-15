@@ -20,6 +20,7 @@ import { RegisterActivity } from '../domain/register.ts';
 import { ProjectMetrics } from '../domain/metrics.ts';
 import { AlignmentRow } from '../domain/alignment.ts';
 import { AttentionItem } from '../domain/attention.ts';
+import type { DataSyncState } from '../firebase/firestoreData.ts';
 
 export interface ActivityPatch {
   name?: string;
@@ -32,6 +33,7 @@ export interface ActivityPatch {
   owner?: string;
   supporting?: string;
   department?: string;
+  category?: string;
   priority?: ActivityOverride['priority'];
   commitment?: ActivityOverride['commitment'];
   dependsOn?: string[];
@@ -86,6 +88,8 @@ export interface CommandState {
   isManager: boolean;
   isAdmin: boolean;
   isLive: boolean;
+  /** Shared-database sync status of the core project data (drives the LIVE SYNC indicator). */
+  dataSync: DataSyncState;
   route: { section: string; tab?: string; param?: string };
   actions: CommandActions;
 }

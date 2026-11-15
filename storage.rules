@@ -13,14 +13,14 @@ service firebase.storage {
     }
     function isInternal() {
       return request.auth != null && status() == 'active'
-        && role() in ['admin', 'manager', 'engineer', 'production', 'staff', 'viewer'];
+        && role() in ['admin', 'director', 'manager', 'construction_manager', 'engineer', 'production', 'quality', 'staff', 'viewer'];
     }
     function isStaff() {
       return request.auth != null && status() == 'active'
-        && role() in ['admin', 'manager', 'engineer', 'production', 'staff'];
+        && role() in ['admin', 'director', 'manager', 'construction_manager', 'engineer', 'production', 'quality', 'staff'];
     }
     function isManager() {
-      return request.auth != null && status() == 'active' && role() in ['admin', 'manager'];
+      return request.auth != null && status() == 'active' && role() in ['admin', 'director', 'manager'];
     }
     function isExternal() {
       return request.auth != null && status() == 'active'

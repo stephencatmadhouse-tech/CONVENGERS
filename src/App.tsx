@@ -23,6 +23,7 @@ import {
   ProjectReport,
 } from './types/index.ts';
 import { Toolbar } from './components/Toolbar.tsx';
+import { isManagerRole } from './auth/roles.ts';
 import { BrandHeader } from './components/BrandHeader.tsx';
 import { OverviewSlide } from './components/OverviewSlide.tsx';
 import { UpcomingActivitiesSlide } from './components/UpcomingActivitiesSlide.tsx';
@@ -61,10 +62,12 @@ import { makeSnapshot } from './domain/validation.ts';
 import { todayIso, toScopeDateText, isValidIso } from './domain/dates.ts';
 import { CommandProvider, CommandState, ActivityPatch } from './command/context.tsx';
 import { sanitizeReport } from './domain/portal.ts';
-import { portalStore, procurementStore, manpowerStore, documentStore, publicationStore } from './firebase/opsStores.ts';
+import { portalStore, procurementStore, manpowerStore, documentStore, publicationStore, INTERNAL_STORES, clientConfigStore } from './firebase/opsStores.ts';
 import { Shell, SlideKey, useHashRoute } from './command/Shell.tsx';
 import { ActivityEditor } from './command/ActivityEditor.tsx';
 import { NotificationsProvider, NotificationBell } from './command/Notifications.tsx';
+import { SyncChip } from './command/ui.tsx';
+import type { DataSyncState } from './firebase/firestoreData.ts';
 import { ConfirmDialog } from './command/ui.tsx';
 import './command/command.css';
 
@@ -91,6 +94,8 @@ export default function App() {
   const [remoteFocusMap, setRemoteFocusMap] = useState<Record<string, RemoteFocus>>({});
   const [loading, setLoading] = useState(false);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
+  const [dataSync, setDataSync] = useState<DataSyncState>(() => firestoreData.getSyncState());
+  useEffect(() => firestoreData.subscribeSync(setDataSync), []);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isEditingText, setIsEditingText] = useState(false);
   const isEditingTextRef = useRef(false);
@@ -307,7 +312,7 @@ export default function App() {
   useEffect(() => {
     const unsubAuth = authService.onUserChange((fbUser) => {
       setData((prev) => (prev ? { ...prev, user: fbUser } : prev));
-      if (fbUser && (fbUser.role === 'admin' || fbUser.role === 'manager')) {
+      if (fbUser && (isManagerRole(fbUser.role))) {
         firestoreData.seedInitialDataIfEmpty(fbUser);
       }
     });
@@ -325,7 +330,7 @@ export default function App() {
     });
 
     const initialUser = authService.getCurrentUser();
-    if (initialUser.role === 'admin' || initialUser.role === 'manager') {
+    if (isManagerRole(initialUser.role)) {
       firestoreData.seedInitialDataIfEmpty(initialUser);
     }
 
@@ -339,7 +344,7 @@ export default function App() {
   const isViewer = !user || user.role === 'viewer' || user.role === 'pending' || isAdminPresentationMode;
   const canEdit = !isViewer;
   const isAdmin = Boolean(user && user.role === 'admin' && !isAdminPresentationMode);
-  const isManager = Boolean(user && (user.role === 'admin' || user.role === 'manager') && !isAdminPresentationMode);
+  const isManager = Boolean(user && isManagerRole(user.role) && !isAdminPresentationMode);
 
   // Subscribe to Firestore audit logs for active admins only
   useEffect(() => {
@@ -1262,7 +1267,7 @@ export default function App() {
     }
     try {
       const meta: Partial<ActivityOverride> = {};
-      (['supporting', 'department', 'priority', 'commitment', 'dependsOn', 'concern', 'correctiveAction', 'resolutionDate', 'onHold'] as const).forEach((k) => {
+      (['supporting', 'department', 'category', 'priority', 'commitment', 'dependsOn', 'concern', 'correctiveAction', 'resolutionDate', 'onHold'] as const).forEach((k) => {
         if (patch[k] !== undefined) (meta as any)[k] = patch[k];
       });
       if (r.kind !== 'pour') {
@@ -1482,6 +1487,7 @@ export default function App() {
     isManager,
     isAdmin,
     isLive: isLiveConnected,
+    dataSync,
     route,
     actions: {
       navigate,
@@ -1497,8 +1503,9 @@ export default function App() {
       captureSnapshot,
       freezeBaseline,
       syncLocal: async () => {
-        const n = await controlStore.syncLocal();
-        showToast(n ? `Uploaded ${n} record(s) to the shared database` : 'Shared storage still unavailable — records remain on this device');
+        let n = await controlStore.syncLocal();
+        for (const st of [...INTERNAL_STORES, clientConfigStore, portalStore]) n += await st.syncLocal();
+        showToast(n ? `Uploaded ${n} device-only record(s) to the shared database` : 'Shared storage still unavailable — records remain on this device');
       },
       exportBackup: handleExportBackup,
       importBackup: (f) => setPendingImport(f),
@@ -1671,7 +1678,12 @@ export default function App() {
       <BrandHeader />
       {/* Sticky Toolbar */}
       <Toolbar
-        extra={<NotificationBell />}
+        extra={
+          <>
+            <SyncChip state={dataSync.state} compact />
+            <NotificationBell />
+          </>
+        }
         user={user}
         settings={data.settings}
         isEditing={isEditingText}
@@ -1737,7 +1749,7 @@ export default function App() {
             } else {
               showToast(`Welcome to Madhouse Team, ${signedInUser.name} (${signedInUser.role.toUpperCase()})`);
             }
-            if (signedInUser.role === 'admin' || signedInUser.role === 'manager') {
+            if (isManagerRole(signedInUser.role)) {
               firestoreData.seedInitialDataIfEmpty(signedInUser);
             }
           }}
@@ -1761,7 +1773,7 @@ export default function App() {
             } else {
               showToast(`Welcome to Madhouse Team, ${signedInUser.name} (${signedInUser.role.toUpperCase()})`);
             }
-            if (signedInUser.role === 'admin' || signedInUser.role === 'manager') {
+            if (isManagerRole(signedInUser.role)) {
               firestoreData.seedInitialDataIfEmpty(signedInUser);
             }
           }}

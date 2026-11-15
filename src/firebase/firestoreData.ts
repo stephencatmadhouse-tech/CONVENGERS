@@ -271,6 +271,17 @@ function parseScopesFromPageHtml(html: string, stamp: string, userName: string):
   return null;
 }
 
+
+/** Core project collections that must be confirmed by the server for "Live sync". */
+export const CORE_SYNC_COLLECTIONS = ['milestones', 'scopes', 'pours', 'episodes', 'activities', 'overrides'];
+export type SyncColState = 'cache' | 'server' | 'denied' | 'error';
+export interface DataSyncState {
+  /** live = server-confirmed shared data · connecting = waiting · cached = offline copy of shared data ·
+   *  device = only this device's copy · denied = server refused (security rules) · error = other failure */
+  state: 'live' | 'connecting' | 'cached' | 'device' | 'denied' | 'error';
+  collections: Record<string, SyncColState>;
+}
+
 export class FirestoreDataService {
   private hasSyncedBaseline = false;
   private seedPromise: Promise<void> | null = null;
@@ -400,13 +411,69 @@ export class FirestoreDataService {
     return this.seedPromise;
   }
 
+  // --- Shared-database sync status ---
+  // A collection counts as synced only after the SERVER (not the local cache)
+  // has delivered it. Errors (e.g. rules not yet deployed) are recorded so
+  // the UI never shows "Live sync" while the app is showing device data.
+  private syncCols: Record<string, SyncColState> = {};
+  private syncListeners = new Set<(s: DataSyncState) => void>();
+  private syncTimer: ReturnType<typeof setTimeout> | null = null;
+  private syncTimedOut = false;
+
+  private emitSync() {
+    const st = this.getSyncState();
+    this.syncListeners.forEach((l) => l(st));
+  }
+  public markSync(col: string, fromCache: boolean) {
+    const prev = this.syncCols[col];
+    const next: SyncColState = fromCache ? (prev === 'server' ? 'server' : 'cache') : 'server';
+    if (prev !== next) {
+      this.syncCols[col] = next;
+      this.emitSync();
+    }
+  }
+  public markSyncError(col: string, err: unknown) {
+    const code = (err as any)?.code;
+    this.syncCols[col] = code === 'permission-denied' ? 'denied' : 'error';
+    this.emitSync();
+  }
+  public getSyncState(): DataSyncState {
+    const vals = CORE_SYNC_COLLECTIONS.map((c) => this.syncCols[c]);
+    const online = typeof navigator === 'undefined' ? true : navigator.onLine;
+    let state: DataSyncState['state'];
+    if (vals.some((v) => v === 'denied')) state = 'denied';
+    else if (vals.some((v) => v === 'error')) state = 'error';
+    else if (vals.every((v) => v === 'server') && online) state = 'live';
+    else if (!online || this.syncTimedOut) state = vals.some((v) => v === 'cache' || v === 'server') ? 'cached' : 'device';
+    else state = 'connecting';
+    return { state, collections: { ...this.syncCols } };
+  }
+  public subscribeSync(cb: (s: DataSyncState) => void): () => void {
+    this.syncListeners.add(cb);
+    cb(this.getSyncState());
+    if (!this.syncTimer) {
+      this.syncTimer = setTimeout(() => {
+        this.syncTimedOut = true;
+        this.emitSync();
+      }, 10000);
+      if (typeof window !== 'undefined') {
+        window.addEventListener('online', () => this.emitSync());
+        window.addEventListener('offline', () => this.emitSync());
+      }
+    }
+    return () => {
+      this.syncListeners.delete(cb);
+    };
+  }
+
   // --- Real-time Listeners ---
   public subscribeAll(onData: (data: Partial<FullDashboardData>) => void): () => void {
     const unsubs: Array<() => void> = [];
 
     // Milestones
     unsubs.push(
-      onSnapshot(collection(db, 'milestones'), (snap) => {
+      onSnapshot(collection(db, 'milestones'), { includeMetadataChanges: true }, (snap) => {
+        this.markSync('milestones', snap.metadata.fromCache);
         if (!snap.empty) {
           const list: Milestone[] = [];
           snap.forEach((d) => list.push(d.data() as Milestone));
@@ -414,13 +481,15 @@ export class FirestoreDataService {
           onData({ milestones: list });
         }
       }, (err) => {
+        this.markSyncError('milestones', err);
         console.warn('Firestore milestones snapshot notice:', err?.message || err);
       })
     );
 
     // Scopes
     unsubs.push(
-      onSnapshot(collection(db, 'scopes'), (snap) => {
+      onSnapshot(collection(db, 'scopes'), { includeMetadataChanges: true }, (snap) => {
+        this.markSync('scopes', snap.metadata.fromCache);
         if (!snap.empty) {
           const list: ScopeItem[] = [];
           snap.forEach((d) => list.push(d.data() as ScopeItem));
@@ -428,26 +497,30 @@ export class FirestoreDataService {
           onData({ scopes: list });
         }
       }, (err) => {
+        this.markSyncError('scopes', err);
         console.warn('Firestore scopes snapshot notice:', err?.message || err);
       })
     );
 
     // Pours
     unsubs.push(
-      onSnapshot(collection(db, 'pours'), (snap) => {
+      onSnapshot(collection(db, 'pours'), { includeMetadataChanges: true }, (snap) => {
+        this.markSync('pours', snap.metadata.fromCache);
         if (!snap.empty) {
           const list: ConcretePour[] = [];
           snap.forEach((d) => list.push(d.data() as ConcretePour));
           onData({ pours: list });
         }
       }, (err) => {
+        this.markSyncError('pours', err);
         console.warn('Firestore pours snapshot notice:', err?.message || err);
       })
     );
 
     // Episodes
     unsubs.push(
-      onSnapshot(collection(db, 'episodes'), (snap) => {
+      onSnapshot(collection(db, 'episodes'), { includeMetadataChanges: true }, (snap) => {
+        this.markSync('episodes', snap.metadata.fromCache);
         if (!snap.empty) {
           const list: Episode[] = [];
           snap.forEach((d) => list.push(d.data() as Episode));
@@ -455,24 +528,28 @@ export class FirestoreDataService {
           onData({ episodes: list });
         }
       }, (err) => {
+        this.markSyncError('episodes', err);
         console.warn('Firestore episodes snapshot notice:', err?.message || err);
       })
     );
 
     // Activities
     unsubs.push(
-      onSnapshot(collection(db, 'activities'), (snap) => {
+      onSnapshot(collection(db, 'activities'), { includeMetadataChanges: true }, (snap) => {
+        this.markSync('activities', snap.metadata.fromCache);
         const list: Activity[] = [];
         snap.forEach((d) => list.push(d.data() as Activity));
         onData({ activities: list });
       }, (err) => {
+        this.markSyncError('activities', err);
         console.warn('Firestore activities snapshot notice:', err?.message || err);
       })
     );
 
     // Overrides
     unsubs.push(
-      onSnapshot(collection(db, 'overrides'), (snap) => {
+      onSnapshot(collection(db, 'overrides'), { includeMetadataChanges: true }, (snap) => {
+        this.markSync('overrides', snap.metadata.fromCache);
         const map: Record<string, ActivityOverride> = {};
         snap.forEach((d) => {
           const item = d.data() as ActivityOverride;
@@ -481,19 +558,22 @@ export class FirestoreDataService {
         });
         onData({ overrides: map });
       }, (err) => {
+        this.markSyncError('overrides', err);
         console.warn('Firestore overrides snapshot notice:', err?.message || err);
       })
     );
 
     // Characters
     unsubs.push(
-      onSnapshot(collection(db, 'characters'), (snap) => {
+      onSnapshot(collection(db, 'characters'), { includeMetadataChanges: true }, (snap) => {
+        this.markSync('characters', snap.metadata.fromCache);
         if (!snap.empty) {
           const list: Character[] = [];
           snap.forEach((d) => list.push(d.data() as Character));
           onData({ characters: list });
         }
       }, (err) => {
+        this.markSyncError('characters', err);
         console.warn('Firestore characters snapshot notice:', err?.message || err);
       })
     );

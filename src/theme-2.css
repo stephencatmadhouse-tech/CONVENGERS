@@ -1,0 +1,686 @@
+/* =====================================================================
+   CONVENGERS BAHAY BUILD 2.0 — DESIGN SYSTEM
+   One design language for the internal Command Center, the client portal,
+   modals and reports. Loaded last; presentation slides keep their own look.
+
+   Type   Inter — Regular body · Medium labels · SemiBold headings · Bold figures
+   Colour white / off-white surfaces · navy primary · Convengers purple accent
+   Shape  12px cards · 8px controls · 999px badges · restrained shadows
+   ===================================================================== */
+
+:root {
+  --ds-font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --ds-navy: #1e1b4b;
+  --ds-navy-2: #2e2a6b;
+  --ds-navy-soft: #eef0f8;
+  --ds-accent: #7026c8;
+  --ds-accent-soft: #f4effc;
+  --ds-ink: #1f2133;
+  --ds-text: #2f3142;
+  --ds-muted: #5f6275;
+  --ds-dim: #7a7d8f;
+  --ds-line: #e6e7ef;
+  --ds-line-soft: #f0f1f6;
+  --ds-surface: #ffffff;
+  --ds-surface-2: #f8f9fc;
+  --ds-ok: #1f9d68;
+  --ds-warn: #d97706;
+  --ds-bad: #dc3545;
+  --ds-radius: 12px;
+  --ds-radius-sm: 8px;
+  --ds-shadow: 0 1px 2px rgba(30, 27, 75, 0.05), 0 4px 14px rgba(30, 27, 75, 0.05);
+  /* type scale */
+  --ds-h1: 28px;
+  --ds-h2: 17px;
+  --ds-h3: 15px;
+  --ds-body: 14px;
+  --ds-small: 12.5px;
+  --ds-label: 12px;
+}
+
+/* ---------- Typography: Inter everywhere except slides, code and the wordmark ---------- */
+.cv-shell :where(*):not(.cv-slidehost *):not(.cv-mono):not(code),
+.cv-modal-bg :where(*):not(.cv-mono):not(code),
+.pt :where(*):not(code),
+.toolbar :where(*),
+.ex-np :where(*),
+.shbox :where(*),
+.pmrep-container :where(*),
+#cv-print-root :where(*) {
+  font-family: var(--ds-font) !important;
+}
+.cv-shell,
+.pt,
+.cv-modal-bg,
+.pmrep-container {
+  font-family: var(--ds-font);
+  font-feature-settings: 'cv11', 'ss01';
+}
+
+/* Section heading */
+.cv-kicker {
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.08em !important;
+}
+.cv-h1 {
+  font-weight: 700 !important;
+  font-size: var(--ds-h1) !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.02em !important;
+  text-transform: none !important;
+}
+.cv-sub {
+  font-size: var(--ds-body) !important;
+  line-height: 1.55 !important;
+}
+html:not([data-eff='dark']) .cv-h1 {
+  color: var(--ds-navy);
+}
+@media (max-width: 900px) {
+  .cv-h1 {
+    font-size: 23px !important;
+  }
+}
+
+/* ---------- Cards: clean header, no banners ---------- */
+html:not([data-eff='dark']) .cv-card {
+  border: 1px solid var(--ds-line);
+  border-radius: var(--ds-radius);
+  box-shadow: var(--ds-shadow);
+  padding: 16px 18px;
+}
+html:not([data-eff='dark']) .cv-card-h {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 0 0 12px;
+  padding: 0;
+  border-radius: 0;
+}
+html:not([data-eff='dark']) .cv-card-h::before {
+  display: none;
+}
+html:not([data-eff='dark']) .cv-card-h > div:first-child {
+  display: block;
+  min-width: 0;
+}
+.cv-card-t,
+html:not([data-eff='dark']) .cv-card-h .cv-card-t {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  font-weight: 600 !important;
+  font-size: var(--ds-h2) !important;
+  line-height: 1.35 !important;
+  letter-spacing: -0.01em !important;
+  text-transform: none !important;
+}
+html:not([data-eff='dark']) .cv-card-t,
+html:not([data-eff='dark']) .cv-card-h .cv-card-t {
+  color: var(--ds-navy);
+}
+html:not([data-eff='dark']) .cv-card-h .cv-card-note,
+.cv-card-note {
+  padding: 0;
+  margin-top: 2px;
+  font-size: var(--ds-small);
+  line-height: 1.45;
+}
+html:not([data-eff='dark']) .cv-card-h .cv-card-note {
+  color: var(--ds-dim);
+}
+html:not([data-eff='dark']) .cv-card-h > .cv-row {
+  padding: 0;
+}
+
+/* ---------- KPI cards ---------- */
+html:not([data-eff='dark']) .cv-kpi {
+  border: 1px solid var(--ds-line);
+  border-radius: var(--ds-radius);
+  box-shadow: none;
+  background: var(--ds-surface);
+}
+.cv-kpi-l,
+html:not([data-eff='dark']) .cv-kpi-l {
+  font-weight: 500 !important;
+  font-size: var(--ds-label) !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+html:not([data-eff='dark']) .cv-kpi-l {
+  color: var(--ds-muted);
+}
+.cv-kpi-v,
+html:not([data-eff='dark']) .cv-kpi-v {
+  font-weight: 700 !important;
+  font-size: 26px !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.15 !important;
+}
+html:not([data-eff='dark']) .cv-kpi-v {
+  color: var(--ds-navy);
+}
+html:not([data-eff='dark']) .cv-kpi-v.y {
+  color: var(--ds-accent);
+}
+.cv-kpi-s {
+  font-size: var(--ds-small) !important;
+}
+html:not([data-eff='dark']) .cv-kpi-ico {
+  color: var(--ds-navy);
+}
+
+/* ---------- Tables ---------- */
+html:not([data-eff='dark']) .cv-table th {
+  background: var(--ds-surface-2);
+  color: var(--ds-muted);
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.01em !important;
+  text-transform: none !important;
+  border-bottom: 1px solid var(--ds-line);
+}
+html:not([data-eff='dark']) .cv-table tbody tr:nth-child(even) td {
+  background: transparent;
+}
+html:not([data-eff='dark']) .cv-table td {
+  border-bottom-color: var(--ds-line-soft);
+}
+html:not([data-eff='dark']) .cv-table tbody tr.clickable:hover td,
+html:not([data-eff='dark']) .cv-table tbody tr.ex-click:hover td {
+  background: var(--ds-surface-2);
+}
+
+/* ---------- Buttons ---------- */
+.cv-btn {
+  min-height: 36px;
+  border-radius: var(--ds-radius-sm);
+  font-weight: 600 !important;
+  font-size: 13.5px !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+.cv-btn.sm {
+  min-height: 32px;
+  font-size: 13px !important;
+}
+html:not([data-eff='dark']) .cv-btn.sm:not(.primary):not(.danger) {
+  border-radius: var(--ds-radius-sm);
+}
+html:not([data-eff='dark']) .cv-btn {
+  background: var(--ds-surface);
+  color: var(--ds-navy);
+  border: 1px solid #cfd2e2;
+}
+html:not([data-eff='dark']) .cv-btn:hover:not(:disabled) {
+  border-color: var(--ds-navy);
+  background: var(--ds-navy-soft);
+}
+html:not([data-eff='dark']) .cv-btn.primary,
+html:not([data-eff='dark']) .cv-btn.purple {
+  background: var(--ds-navy);
+  border-color: var(--ds-navy);
+  color: #ffffff;
+}
+html:not([data-eff='dark']) .cv-btn.primary:hover:not(:disabled),
+html:not([data-eff='dark']) .cv-btn.purple:hover:not(:disabled) {
+  background: var(--ds-navy-2);
+  border-color: var(--ds-navy-2);
+}
+html:not([data-eff='dark']) .cv-btn.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ds-navy);
+}
+html:not([data-eff='dark']) .cv-btn.ghost:hover:not(:disabled) {
+  background: var(--ds-navy-soft);
+}
+html:not([data-eff='dark']) .cv-btn.danger {
+  background: #fff;
+  border-color: #f1b8bd;
+  color: var(--ds-bad);
+}
+
+/* ---------- Form controls ---------- */
+.cv-input,
+.cv-select,
+.cv-textarea {
+  font-size: 14px !important;
+  border-radius: var(--ds-radius-sm) !important;
+}
+html:not([data-eff='dark']) .cv-input,
+html:not([data-eff='dark']) .cv-select,
+html:not([data-eff='dark']) .cv-textarea {
+  border: 1px solid #d6d8e5;
+  background: #fff;
+  color: var(--ds-ink);
+}
+html:not([data-eff='dark']) .cv-input:focus,
+html:not([data-eff='dark']) .cv-select:focus,
+html:not([data-eff='dark']) .cv-textarea:focus {
+  outline: none;
+  border-color: var(--ds-navy);
+  box-shadow: 0 0 0 3px rgba(30, 27, 75, 0.12);
+}
+.cv-field > span {
+  font-weight: 500 !important;
+  font-size: var(--ds-label) !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+/* ---------- Badges / pills ---------- */
+.cv-pill,
+.cv-pill.cv-status {
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+.cv-chip {
+  font-weight: 500 !important;
+}
+
+/* ---------- Tabs ---------- */
+.cv-tab {
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+.cv-tab.on {
+  font-weight: 600 !important;
+}
+
+/* ---------- Executive dashboard & calendar elements ---------- */
+.ex-kpi-v {
+  font-weight: 700 !important;
+  font-size: 28px !important;
+  letter-spacing: -0.02em;
+}
+.ex-kpi-l {
+  font-weight: 600 !important;
+}
+.ex-caltitle {
+  font-weight: 700 !important;
+  font-size: 18px !important;
+  letter-spacing: -0.01em !important;
+}
+.ex-fct b,
+.ex-pc-pct {
+  font-weight: 700 !important;
+}
+html:not([data-eff='dark']) .ex-tabs button.on,
+html:not([data-eff='dark']) .ex-seg button.on {
+  background: var(--ds-navy);
+  border-color: var(--ds-navy);
+}
+
+/* ---------- Modals ---------- */
+.cv-modal .cv-card-t {
+  font-size: 18px !important;
+}
+
+/* ---------- Sidebar ---------- */
+.cv-nav-label {
+  font-weight: 500 !important;
+  font-size: 14px !important;
+}
+.cv-side-group {
+  font-weight: 600 !important;
+  font-size: 11px !important;
+  letter-spacing: 0.1em !important;
+}
+.cv-side-title {
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+}
+
+/* ---------- Client portal ---------- */
+.pt-h1 {
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  text-transform: none !important;
+}
+.pt-h2,
+.pt-card > .pt-h2:first-child {
+  display: block;
+  min-height: 0;
+  margin: 0 0 12px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--ds-navy);
+  font-weight: 600 !important;
+  font-size: var(--ds-h2) !important;
+  letter-spacing: -0.01em !important;
+  text-transform: none !important;
+}
+.pt-card:has(> .pt-h2:first-child) {
+  background: #fff;
+}
+.pt-kicker {
+  font-weight: 600 !important;
+  letter-spacing: 0.08em !important;
+}
+.pt-kpi-l {
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+.pt-kpi-v {
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* ---------- Sync status chip ---------- */
+.cv-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--sync) 45%, transparent);
+  background: color-mix(in srgb, var(--sync) 9%, #ffffff);
+  color: color-mix(in srgb, var(--sync) 80%, #1f2133);
+  font: 600 12px var(--ds-font) !important;
+  white-space: nowrap;
+}
+.cv-sync i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sync);
+}
+.toolbar .cv-sync {
+  font-size: 12px !important;
+  color: color-mix(in srgb, var(--sync) 80%, #1f2133) !important;
+}
+
+/* ---------- Command Center 2.0: quick actions & zones ---------- */
+.cc-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cc-quick-b {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: var(--ds-radius-sm);
+  border: 1px solid var(--ds-line);
+  background: var(--ds-surface);
+  color: var(--ds-navy);
+  font: 600 13.5px var(--ds-font);
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(30, 27, 75, 0.04);
+}
+.cc-quick-b:hover {
+  border-color: var(--ds-navy);
+  background: var(--ds-navy-soft);
+}
+.cc-quick-b svg {
+  color: var(--ds-accent);
+}
+.cc-zoneb {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 3fr);
+}
+@media (max-width: 1000px) {
+  .cc-zoneb {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.cc-mini {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.cc-mini.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 560px) {
+  .cc-mini,
+  .cc-mini.three {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.cc-mini-b {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--ds-line);
+  background: var(--ds-surface-2);
+  cursor: pointer;
+  font-family: var(--ds-font);
+  color: var(--ds-text);
+}
+.cc-mini-b:hover {
+  border-color: var(--ds-navy);
+}
+.cc-mini-b b {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ds-navy);
+}
+.cc-mini-b span {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ds-muted);
+}
+.cc-mini-b.bad b {
+  color: var(--ds-bad);
+}
+.cc-mini-b.warn b {
+  color: var(--ds-warn);
+}
+.cc-mini-b.ok b {
+  color: var(--ds-ok);
+}
+.cc-mgmt td {
+  vertical-align: top;
+  font-size: 13px;
+}
+.cc-ws {
+  display: grid;
+  gap: 2px 28px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 900px) {
+  .cc-ws {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.cv-linkbtn {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ds-accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ---------- Collapsible navigation groups ---------- */
+.cv-navgrp {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+.cv-navgrp-h {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+.cv-navgrp-chev {
+  transition: transform 0.15s ease;
+  transform: rotate(-90deg);
+  opacity: 0.7;
+}
+.cv-navgrp.open .cv-navgrp-chev {
+  transform: rotate(0deg);
+}
+.cv-navgrp-b {
+  display: grid;
+  gap: 2px;
+}
+.cv-nav-badge.warn {
+  background: #d97706;
+}
+
+/* ---------- 3D Construction Journey Management ---------- */
+.jm-sheet {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .jm-sheet {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.jm-sheet-prev img {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--ds-line);
+}
+.jm-empty-art {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  min-height: 160px;
+  border: 1px dashed #cfd2e2;
+  border-radius: 12px;
+  color: var(--ds-dim);
+  font-size: 13px;
+  text-align: center;
+  padding: 12px;
+}
+.jm-list {
+  display: grid;
+  gap: 12px;
+}
+.jm-row {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--ds-line);
+  border-radius: 12px;
+  background: #fff;
+}
+.jm-row.hidden {
+  background: var(--ds-surface-2);
+  opacity: 0.8;
+}
+@media (max-width: 700px) {
+  .jm-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.jm-art {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f6f8f3;
+  align-self: start;
+}
+.jm-num {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--ds-navy);
+  color: #fff;
+  font: 700 11px var(--ds-font);
+}
+.jm-main {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.jm-line {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.jm-name {
+  font-weight: 600 !important;
+}
+.jm-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 12.5px;
+  color: var(--ds-muted);
+}
+.jm-facts b {
+  color: var(--ds-navy);
+}
+.jm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.jm-actions label.cv-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.jm-actions label.cv-btn.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.jm-spacer {
+  flex: 1;
+}
+.jm-links {
+  display: grid;
+  gap: 2px;
+  max-height: 52vh;
+  overflow-y: auto;
+}
+.jm-link {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--ds-line-soft);
+  cursor: pointer;
+}
+.jm-link input {
+  margin-top: 3px;
+  accent-color: var(--ds-navy);
+}
+.jm-link span {
+  display: grid;
+}
+.jm-link b {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.jm-link em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--ds-dim);
+}

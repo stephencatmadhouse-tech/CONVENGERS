@@ -95,7 +95,7 @@ export const Documents: React.FC = () => {
     };
     const res = await publicationStore.put(pub);
     await firestoreData.logAudit(user, 'PREPARE_PUBLICATION', 'Publication', pub.id, pub.title);
-    actions.toast(res === 'shared' ? 'Draft created in Client Portal Publishing — submit it for review' : 'Draft saved on this device only');
+    actions.toast(res === 'shared' ? 'Draft created in Client Portal Management — submit it for review' : 'Draft saved on this device only');
     actions.navigate(`publishing/${isPhoto ? 'gallery' : 'documents'}`);
   };
 
@@ -127,7 +127,7 @@ export const Documents: React.FC = () => {
         <span className="cv-spacer" />
         {canEdit && (
           <button type="button" className="cv-btn primary sm" onClick={() => setEditing(blank())}>
-            + Upload / add document
+            Add New Document
           </button>
         )}
       </div>
@@ -267,7 +267,7 @@ export const DocumentEditor: React.FC<{
           </button>
           {canEdit && (
             <button type="button" className="cv-btn primary" disabled={busy || !valid} onClick={save}>
-              {busy ? (file ? 'Uploading…' : 'Saving…') : 'Save'}
+              {busy ? (file ? 'Uploading…' : 'Saving…') : 'Save Changes'}
             </button>
           )}
         </>

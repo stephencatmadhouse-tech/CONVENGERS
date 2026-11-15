@@ -67,7 +67,7 @@ export interface Viewer {
 /** What a role is allowed to be notified about. */
 export type NotifScope = 'all' | 'assigned' | 'readonly';
 export function notifScope(role: UserRole): NotifScope {
-  if (role === 'admin' || role === 'manager') return 'all';
+  if (role === 'admin' || role === 'director' || role === 'manager') return 'all';
   if (role === 'viewer') return 'readonly';
   return 'assigned';
 }

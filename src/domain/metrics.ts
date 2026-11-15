@@ -133,7 +133,7 @@ export function computeMetrics(register: RegisterActivity[], milestones: Milesto
   }
   if (completionVarianceDays > 0) {
     health = completionVarianceDays > 14 ? 'Critical' : health === 'Critical' ? 'Critical' : 'At Risk';
-    healthReasons.push(`Projected completion ${fmtDate(projected)} is ${completionVarianceDays} day(s) after target`);
+    healthReasons.push(`Forecast completion ${fmtDate(projected)} is ${completionVarianceDays} day(s) after target`);
   }
   const criticalDelayed = register.filter((r) => r.status === 'Delayed' && (r.priority === 'Critical' || r.isMilestone));
   if (criticalDelayed.length) {
@@ -172,6 +172,17 @@ export function computeMetrics(register: RegisterActivity[], milestones: Milesto
     episodesTotal: eps.length,
     elapsedPct,
   };
+}
+
+/**
+ * FORECAST COMPLETION — the single authoritative forecast date used by every
+ * dashboard, report and the client portal: the latest finish in the current
+ * (revised) schedule. Project Status is computed from this same date, so the
+ * two can never contradict each other. The pace-based date (`paceCompletion`)
+ * is only ever shown as a secondary, indicative note.
+ */
+export function forecastCompletion(m: Pick<ProjectMetrics, 'projectedCompletion' | 'targetCompletion'>): string {
+  return m.projectedCompletion || m.targetCompletion;
 }
 
 export function round1(n: number): number {

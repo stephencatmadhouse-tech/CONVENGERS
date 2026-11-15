@@ -107,7 +107,7 @@ const ExecutiveSummaryPage: React.FC<{ register: RegisterActivity[]; metrics: Pr
                 <b>{m.targetCompletion ? fmtDate(m.targetCompletion) : 'Pending update'}</b>
               </div>
               <div>
-                <span>Projected completion</span>
+                <span>Forecast completion</span>
                 <b>{m.projectedCompletion ? fmtDate(m.projectedCompletion) : 'Pending update'}</b>
               </div>
               <div>

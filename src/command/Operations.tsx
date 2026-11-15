@@ -143,7 +143,7 @@ export const Procurement: React.FC = () => {
         </button>
         {canEdit && (
           <button type="button" className="cv-btn primary sm" onClick={() => setEditing(blank())}>
-            + Add material / order
+            Add New Material / Order
           </button>
         )}
       </div>
@@ -267,7 +267,7 @@ const ProcurementEditor: React.FC<{ item: ProcurementItem; onClose: () => void; 
           </button>
           {canEdit && (
             <button type="button" className="cv-btn primary" disabled={busy || errors.length > 0} onClick={save}>
-              {busy ? 'Saving…' : 'Save'}
+              {busy ? 'Saving…' : 'Save Changes'}
             </button>
           )}
         </>
@@ -393,7 +393,7 @@ export const Manpower: React.FC = () => {
             </label>
             {canEdit && (
               <button type="button" className="cv-btn primary sm" onClick={() => setEditing(blank())}>
-                + Add manpower plan
+                Add New Manpower Plan
               </button>
             )}
           </>
@@ -528,7 +528,7 @@ const ManpowerEditor: React.FC<{ item: ManpowerPlan; canDelete: boolean; onClose
                 onClose();
               }}
             >
-              Save
+              Save Changes
             </button>
           )}
         </>

@@ -20,7 +20,9 @@
 
 import { Milestone, ProjectReport, PublishStatus, Publication, PublicationEvent, UserRole } from '../types/index.ts';
 import { RegisterActivity } from './register.ts';
-import { ProjectMetrics, round1 } from './metrics.ts';
+import { ProjectMetrics, round1, forecastCompletion, projectStartDate } from './metrics.ts';
+import { categoryProgress, isConstructionItem, type CategoryProgress } from './categories.ts';
+import { computeJourney, defaultJourney, type JourneyConfig, type ProjectProfile } from './journey.ts';
 import { addDays, fmtDate, fmtRange, monthLabel, todayIso } from './dates.ts';
 import type { ReportContent, WeeklyContent, MonthlyContent, ReportRow } from './reports.ts';
 
@@ -81,6 +83,72 @@ export interface PortalSnapshot {
   milestones: PortalMilestone[];
   scheduleUpdates: { label: string; from: string; to: string; at?: string }[];
   counts: { completed: number; ongoing: number; upcoming: number; delayed: number; total: number };
+  // ---- 2.0 additions (optional: older published snapshots do not have them) ----
+  /** Authoritative forecast completion (same value as the internal Forecast Completion). */
+  forecastCompletion?: string;
+  startDate?: string;
+  profile?: { clientName?: string; location?: string; welcome?: string };
+  categories?: PortalCategory[];
+  /** Client-safe list of construction activities (no people, remarks or internal notes). */
+  activities?: PortalActivity[];
+  journey?: PortalJourney;
+}
+
+export type ClientStatus = 'Upcoming' | 'In Progress' | 'Completed' | 'Schedule Update Required';
+
+export interface PortalCategory {
+  name: string;
+  actual: number | null;
+  planned: number | null;
+  status: ClientStatus;
+  count: number;
+  completed: number;
+  latest?: string;
+  latestDate?: string;
+  target?: string;
+}
+
+export interface PortalActivity {
+  name: string;
+  phase: string;
+  category: string;
+  start?: string;
+  finish?: string;
+  actualFinish?: string;
+  status: ClientStatus;
+  progress: number;
+  commitment: string;
+}
+
+export interface PortalJourneyStage {
+  id: string;
+  index: number;
+  name: string;
+  description: string;
+  progress: number | null;
+  planned: number | null;
+  status: ClientStatus;
+  start?: string;
+  finish?: string;
+  actualFinish?: string;
+  remark?: string;
+  imageUrl?: string;
+  activities: { name: string; status: ClientStatus; finish?: string }[];
+}
+
+export interface PortalJourney {
+  sheetUrl?: string;
+  sheetCols?: number;
+  sheetRows?: number;
+  stages: PortalJourneyStage[];
+}
+
+/** Controlled client status vocabulary. */
+export function clientStatus(s: string): ClientStatus {
+  if (s === 'Completed') return 'Completed';
+  if (s === 'Delayed') return 'Schedule Update Required';
+  if (s === 'Ongoing' || s === 'In Progress') return 'In Progress';
+  return 'Upcoming';
 }
 
 export type PortalRecordKind = 'snapshot' | 'report' | 'photo' | 'document' | 'consideration' | 'update';
@@ -118,10 +186,10 @@ const PHASE_LABEL: Record<string, string> = {
 
 const CLIENT_STATUS: Record<string, string> = {
   Completed: 'Completed',
-  Ongoing: 'In progress',
-  Delayed: 'Behind schedule',
-  Upcoming: 'Scheduled',
-  'On Hold': 'On hold',
+  Ongoing: 'In Progress',
+  Delayed: 'Schedule Update Required',
+  Upcoming: 'Upcoming',
+  'On Hold': 'Upcoming',
 };
 
 function item(r: RegisterActivity): PortalItem {
@@ -143,7 +211,8 @@ export function buildPortalSnapshot(
   register: RegisterActivity[],
   milestones: Milestone[],
   metrics: ProjectMetrics,
-  today: string = todayIso()
+  today: string = todayIso(),
+  extras: { journey?: JourneyConfig; profile?: ProjectProfile } = {}
 ): PortalSnapshot {
   const construction = register.filter((r) => r.kind === 'scope' || r.kind === 'pour');
   const ms = register.filter((r) => r.kind === 'milestone');
@@ -226,6 +295,56 @@ export function buildPortalSnapshot(
       delayed: construction.filter((r) => r.status === 'Delayed').length,
       total: construction.length,
     },
+    forecastCompletion: forecastCompletion(metrics),
+    startDate: projectStartDate(),
+    profile: extras.profile
+      ? { clientName: extras.profile.clientName?.trim() || undefined, location: extras.profile.location?.trim() || undefined, welcome: extras.profile.welcome?.trim() || undefined }
+      : undefined,
+    categories: categoryProgress(register, today).map((c: CategoryProgress) => ({
+      name: c.name,
+      actual: c.actual,
+      planned: c.planned,
+      status: clientStatus(c.status === 'In Progress' ? 'Ongoing' : c.status),
+      count: c.count,
+      completed: c.completed,
+      latest: c.latest?.name,
+      latestDate: c.latest?.date,
+      target: c.target,
+    })),
+    activities: register.filter(isConstructionItem).map((r) => ({
+      name: r.name,
+      phase: PHASE_LABEL[r.workstream] || r.workstream,
+      category: r.category,
+      start: r.start,
+      finish: r.finish,
+      actualFinish: r.actualFinish,
+      status: clientStatus(r.status),
+      progress: r.progress,
+      commitment: r.commitment,
+    })),
+    journey: (() => {
+      const cfg = extras.journey || defaultJourney();
+      return {
+        sheetUrl: cfg.sheetUrl || undefined,
+        sheetCols: cfg.sheetCols || 3,
+        sheetRows: cfg.sheetRows || 3,
+        stages: computeJourney(cfg, register, today).map((st) => ({
+          id: st.id,
+          index: st.index,
+          name: st.name,
+          description: st.description,
+          progress: st.progress,
+          planned: st.planned,
+          status: clientStatus(st.status === 'In Progress' ? 'Ongoing' : st.status),
+          start: st.start,
+          finish: st.finish,
+          actualFinish: st.actualFinish,
+          remark: st.remark,
+          imageUrl: st.imageUrl,
+          activities: st.activities.map((a) => ({ name: a.name, status: clientStatus(a.status), finish: a.finish })),
+        })),
+      };
+    })(),
   };
 }
 
@@ -351,8 +470,8 @@ export function nextTransitions(status: PublishStatus): Transition[] {
 export function canTransition(from: PublishStatus, to: PublishStatus, role: UserRole): boolean {
   const t = nextTransitions(from).find((x) => x.to === to);
   if (!t) return false;
-  if (t.managerOnly) return role === 'admin' || role === 'manager';
-  return ['admin', 'manager', 'engineer', 'production', 'staff'].includes(role);
+  if (t.managerOnly) return role === 'admin' || role === 'director' || role === 'manager';
+  return ['admin', 'director', 'manager', 'construction_manager', 'engineer', 'production', 'quality', 'staff'].includes(role);
 }
 
 export function transitionPublication(p: Publication, to: PublishStatus, by: string, note?: string): Publication {

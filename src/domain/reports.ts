@@ -301,7 +301,7 @@ export function buildMonthlyContent(
     `${monthLabel(key)}: overall physical accomplishment ${metrics.actualPct}% vs ${metrics.plannedPct}% planned (${fmtVar(metrics.variancePct)}); health ${metrics.health}.`,
     gain !== null ? `Progress gained during the month: ${gain >= 0 ? '+' : ''}${gain} pts.` : 'Monthly progress gain is unavailable (no snapshot at the start of the month).',
     `${completed.length} construction activit${completed.length === 1 ? 'y' : 'ies'} completed, ${delayed.length} delayed; ${shootsReg.length} production shoot window(s) in the month.`,
-    `Projected completion ${fmtDate(metrics.projectedCompletion)} vs target ${fmtDate(metrics.targetCompletion)}.`,
+    `Forecast completion ${fmtDate(metrics.projectedCompletion)} vs target ${fmtDate(metrics.targetCompletion)}.`,
   ].join(' ');
 
   return {
@@ -347,8 +347,9 @@ function pickMetrics(m: ProjectMetrics): WeeklyContent['metrics'] {
   };
 }
 
+/** Platform standard for progress variance: "-1.2 percentage points". */
 export function fmtVar(v: number): string {
-  return `${v >= 0 ? '+' : ''}${v.toFixed(1)} pts`;
+  return `${v >= 0 ? '+' : ''}${v.toFixed(1)} percentage points`;
 }
 
 export const weeklyReportId = (anyDate: string) => `W-${weekRange(anyDate).start}`;

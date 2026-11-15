@@ -70,7 +70,7 @@ export const CollaboratorBar: React.FC<CollaboratorBarProps> = ({
           className={`w-2 h-2 rounded-full inline-block ${isLiveConnected ? 'animate-pulse' : ''}`}
           style={{ background: isLiveConnected ? '#4BE08A' : offline ? '#C7C7D0' : 'var(--sxa-bg-1)' }}
         />
-        <span>{isLiveConnected ? 'LIVE SYNC' : offline ? 'PRESENCE OFFLINE' : 'CONNECTING...'}</span>
+        <span title="Shows teammates who are editing at the same time. Project data sync is shown separately (Live sync).">{isLiveConnected ? 'Co-editing on' : offline ? 'Co-editing off' : 'Co-editing: connecting…'}</span>
       </div>
 
       {/* Collaborators Avatar Stack (Google Sheets style) */}

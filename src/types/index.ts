@@ -12,7 +12,10 @@
  */
 export type UserRole =
   | 'admin'
+  | 'director'
   | 'manager'
+  | 'construction_manager'
+  | 'quality'
   | 'engineer'
   | 'production'
   | 'staff'
@@ -211,6 +214,8 @@ export interface ActivityOverride {
   correctiveAction?: string;
   resolutionDate?: string; // YYYY-MM-DD
   department?: string;
+  /** Construction category for client-facing grouping (e.g. "Structural Works"). */
+  category?: string;
 }
 
 export type IssueType = 'Issue' | 'Risk' | 'Decision';

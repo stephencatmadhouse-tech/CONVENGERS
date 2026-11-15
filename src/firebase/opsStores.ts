@@ -20,6 +20,7 @@ import {
   CalendarEvent,
 } from '../types/index.ts';
 import { PUBLIC_PORTAL_KINDS, type PortalRecord } from '../domain/portal.ts';
+import type { ClientConfigDoc } from '../domain/journey.ts';
 
 const byDateDesc = (k: string) => (a: any, b: any) => String(b[k] || '').localeCompare(String(a[k] || ''));
 
@@ -31,6 +32,8 @@ export const documentStore = new CollectionStore<ProjectDocument>('documents', b
 export const publicationStore = new CollectionStore<Publication>('publications', byDateDesc('updatedAt'));
 /** Manually added calendar entries (server rules: internal read; admin / manager write). */
 export const eventStore = new CollectionStore<CalendarEvent>('events', (a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+/** Client experience configuration: construction journey stages and the project profile (server rules: internal read; admin / manager write). */
+export const clientConfigStore = new CollectionStore<ClientConfigDoc>('clientConfig');
 export const portalStore = new CollectionStore<PortalRecord>('portal', byDateDesc('publishedAt'));
 /** Public client-facing dashboard: published records of the public kinds only (readable without sign-in). */
 export const publicPortalStore = new CollectionStore<PortalRecord>('portal', byDateDesc('publishedAt'), [where('kind', 'in', PUBLIC_PORTAL_KINDS)]);

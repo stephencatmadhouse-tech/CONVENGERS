@@ -11,12 +11,15 @@
 
 import { User, UserRole } from '../types/index.ts';
 
-export const INTERNAL_ROLES: UserRole[] = ['admin', 'manager', 'engineer', 'production', 'staff', 'viewer'];
+export const INTERNAL_ROLES: UserRole[] = ['admin', 'director', 'manager', 'construction_manager', 'engineer', 'production', 'quality', 'staff', 'viewer'];
 export const EXTERNAL_ROLES: UserRole[] = ['owner', 'executive', 'client', 'stakeholder'];
 
 export const ROLE_LABEL: Record<UserRole, string> = {
   admin: 'System Administrator',
+  director: 'Project Director',
   manager: 'Project Manager',
+  construction_manager: 'Construction Manager',
+  quality: 'Quality Personnel',
   engineer: 'Site Engineer',
   production: 'Production Coordinator',
   staff: 'Internal Team Member',
@@ -45,12 +48,12 @@ export function audienceOf(u?: User | null): Audience {
 
 /** Can edit operational records (staff level and above). */
 export function canEditOperations(role: UserRole): boolean {
-  return ['admin', 'manager', 'engineer', 'production', 'staff'].includes(role);
+  return ['admin', 'director', 'manager', 'construction_manager', 'engineer', 'production', 'quality', 'staff'].includes(role);
 }
 
 /** Project Manager level: schedules, approvals and publishing. */
 export function isManagerRole(role: UserRole): boolean {
-  return role === 'admin' || role === 'manager';
+  return role === 'admin' || role === 'director' || role === 'manager';
 }
 
 export function isAdminRole(role: UserRole): boolean {
@@ -64,6 +67,10 @@ export function isAdminRole(role: UserRole): boolean {
 // server-side by firestore.rules.
 
 const ALL_MODULES = [
+  'schedule',
+  'journey',
+  'roles',
+  'sync',
   'command',
   'executive',
   'notifications',
@@ -86,20 +93,28 @@ const ALL_MODULES = [
 
 const MODULES_BY_ROLE: Partial<Record<UserRole, string[]>> = {
   admin: ALL_MODULES,
+  director: ALL_MODULES,
   manager: ALL_MODULES,
+  // Construction Manager — construction, schedule and quality modules
+  construction_manager: ['command', 'executive', 'notifications', 'calendar', 'tracker', 'construction', 'timeline', 'milestones', 'procurement', 'schedule', 'issues', 'analytics', 'reports', 'documents', 'archive', 'overview', 'settings', 'roles', 'sync'],
+  // Quality Personnel — inspections, issues and construction records
+  quality: ['command', 'notifications', 'calendar', 'tracker', 'construction', 'milestones', 'issues', 'reports', 'documents', 'overview', 'settings', 'roles', 'sync'],
   // Site Engineer — construction-related modules
-  engineer: ['command', 'notifications', 'calendar', 'tracker', 'construction', 'timeline', 'milestones', 'procurement', 'issues', 'reports', 'documents', 'overview', 'settings'],
+  engineer: ['command', 'notifications', 'calendar', 'tracker', 'construction', 'timeline', 'milestones', 'procurement', 'schedule', 'issues', 'reports', 'documents', 'overview', 'settings', 'roles', 'sync'],
   // Production Coordinator — production and integrated scheduling modules
-  production: ['command', 'notifications', 'calendar', 'tracker', 'production', 'timeline', 'milestones', 'issues', 'reports', 'documents', 'overview', 'settings'],
+  production: ['command', 'notifications', 'calendar', 'tracker', 'production', 'timeline', 'milestones', 'schedule', 'issues', 'reports', 'documents', 'overview', 'settings', 'roles', 'sync'],
   // Authorized team members — their assigned records and supporting modules
-  staff: ['command', 'notifications', 'calendar', 'tracker', 'issues', 'reports', 'documents', 'overview', 'settings'],
+  staff: ['command', 'notifications', 'calendar', 'tracker', 'issues', 'reports', 'documents', 'overview', 'settings', 'roles', 'sync'],
   // Internal read-only viewer — everything except publishing
   viewer: ALL_MODULES.filter((m) => m !== 'publishing'),
 };
 
 const LANDING_BY_ROLE: Partial<Record<UserRole, string>> = {
   admin: 'command',
+  director: 'command',
   manager: 'command',
+  construction_manager: 'construction',
+  quality: 'construction',
   engineer: 'construction',
   production: 'production',
   staff: 'tracker',

@@ -6,9 +6,11 @@
  */
 
 import React, { useMemo } from 'react';
-import { TrendingUp, Target, Activity, CalendarCheck, CalendarClock, Gauge, CircleCheck, Hourglass, CircleAlert, CalendarDays, ShieldAlert, Siren, User as UserIcon, ChevronRight } from 'lucide-react';
+import { TrendingUp, Target, Activity, CalendarCheck, CalendarClock, Gauge, CalendarDays, ShieldAlert, ChevronRight, Plus, Flag, Camera, FileText } from 'lucide-react';
 import { useCommand } from './context.tsx';
-import { Card, Kpi, HealthBadge, StatusPill, ProgressBar, Empty, Pill, pct, kindColor, HEALTH_HEX, tintBg } from './ui.tsx';
+import { Card, Kpi, HealthBadge, StatusPill, ProgressBar, Empty, Pill, pct, kindColor, HEALTH_HEX, tintBg, Banner, SyncChip, SYNC_LABEL, PRIORITY_HEX, statusLabel } from './ui.tsx';
+import { forecastCompletion } from '../domain/metrics.ts';
+import { canOpenModule } from '../auth/roles.ts';
 import { addDays, diffDays, fmtDate, fmtRange } from '../domain/dates.ts';
 import { ALIGNMENT_COLORS, alignmentSummary } from '../domain/alignment.ts';
 import { fmtVar } from '../domain/reports.ts';
@@ -19,8 +21,9 @@ import { useStore } from '../firebase/useStore.ts';
 import { isDeliveryLate } from './Operations.tsx';
 
 export const CommandCenter: React.FC = () => {
-  const { register, metrics, alignment, attention, today, actions, issues, isLive, sharedStorage, snapshots } = useCommand();
+  const { register, metrics, attention, today, actions, issues, reports, snapshots, canEdit, isManager, dataSync, user } = useCommand();
   const m = metrics;
+  const pubs = useStore(publicationStore);
   // Week-on-week change, shown only when a recorded snapshot 7–10 days old exists (never estimated)
   const weekAgo = useMemo(() => {
     const from = addDays(today, -10);
@@ -28,8 +31,9 @@ export const CommandCenter: React.FC = () => {
     return [...snapshots].filter((s) => s.date >= from && s.date <= to).sort((a, b) => b.date.localeCompare(a.date))[0];
   }, [snapshots, today]);
   const trend = weekAgo ? Math.round((m.actualPct - weekAgo.actualPct) * 10) / 10 : null;
-
   const thisWeekEnd = addDays(today, 7);
+  const forecast = forecastCompletion(m);
+
   const ops = useMemo(() => {
     const completedRecent = register
       .filter((r) => r.status === 'Completed')
@@ -46,29 +50,100 @@ export const CommandCenter: React.FC = () => {
       register
         .filter((r) => (r.kind === 'milestone' || r.kind === 'pour') && r.status !== 'Completed')
         .sort((a, b) => (a.finish || a.start || '').localeCompare(b.finish || b.start || ''))
-        .slice(0, 6),
+        .slice(0, 5),
     [register]
   );
 
-  const windowEnd = addDays(today, 21);
-  const upcomingShoots = alignment.filter((a) => a.episode.status !== 'Completed' && a.episode.start && a.episode.start <= windowEnd && (a.episode.finish || a.episode.start) >= today);
-  const upcomingConstruction = register.filter((r) => r.stream === 'Construction' && r.status !== 'Completed' && r.start && r.start <= windowEnd && (r.finish || r.start) >= today).slice(0, 8);
-  const summary = alignmentSummary(alignment);
-  const topAttention = attention.filter((a) => a.severity !== 'info').slice(0, 8);
-  const decisions = attention.filter((a) => a.category === 'Decision required');
   const openIssues = issues.filter((i) => i.status !== 'Resolved' && i.status !== 'Closed');
+  const criticalIssues = openIssues.filter((i) => i.severity === 'Critical');
+  const pendingApprovals = [
+    ...reports.filter((r) => r.status === 'review').map((r) => ({ id: r.id, title: r.title || 'Report for review', kind: 'Report', since: r.updatedAt, by: r.updatedBy, route: `reports/${r.type === 'monthly' ? 'monthly' : 'weekly'}` })),
+    ...pubs.items.filter((p) => p.status === 'review').map((p) => ({ id: p.id, title: p.title, kind: 'Client publication', since: p.updatedAt, by: p.updatedBy, route: 'publishing' })),
+  ];
+
+  // ZONE C — consolidated management actions
+  const mgmt: MgmtAction[] = useMemo(() => {
+    const out: MgmtAction[] = [];
+    attention
+      .filter((a) => a.severity !== 'info')
+      .forEach((a) => {
+        const act = a.activityId ? register.find((x) => x.id === a.activityId) : undefined;
+        out.push({
+          id: a.id,
+          title: a.title,
+          type: a.category,
+          related: act ? `${act.id} · ${act.workstream}` : '—',
+          responsible: a.owner || '',
+          priority: a.severity === 'critical' ? 'Critical' : 'High',
+          target: a.due || act?.finish,
+          status: act ? statusLabel(act.status) : 'Open',
+          action: REQUIRED_ACTION[a.category] || 'Review and decide the next step',
+          open: () => (a.activityId ? actions.openActivity(a.activityId) : actions.navigate('issues/log')),
+        });
+      });
+    openIssues.forEach((i) => {
+      if (out.some((o) => o.id === `att-iss-${i.id}`)) return;
+      out.push({
+        id: `iss-${i.id}`,
+        title: i.title,
+        type: i.type === 'Decision' ? 'Outstanding decision' : `Open ${i.type.toLowerCase()}`,
+        related: i.linkedActivityId || '—',
+        responsible: i.owner,
+        priority: i.severity === 'Critical' ? 'Critical' : i.severity === 'High' ? 'High' : i.severity === 'Medium' ? 'Medium' : 'Low',
+        target: i.dueDate,
+        status: i.status,
+        action: i.correctiveAction || (i.type === 'Decision' ? 'Record the management decision' : 'Agree and record the corrective action'),
+        open: () => actions.navigate('issues/log'),
+      });
+    });
+    pendingApprovals.forEach((p) =>
+      out.push({
+        id: `apr-${p.id}`,
+        title: p.title,
+        type: 'Pending approval',
+        related: p.kind,
+        responsible: 'Project Manager',
+        priority: 'Medium',
+        target: undefined,
+        status: 'For Review',
+        action: 'Review and approve, or return to draft',
+        open: () => actions.navigate(p.route),
+      })
+    );
+    const rank: Record<string, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+    return out.sort((a, b) => rank[a.priority] - rank[b.priority] || String(a.target || '9999').localeCompare(String(b.target || '9999')));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attention, openIssues, pendingApprovals.length, register]);
+
+  const quick = [
+    { label: 'Add Activity', icon: Plus, route: 'tracker/register/new', show: canEdit },
+    { label: 'Update Progress', icon: TrendingUp, route: 'tracker/register/status=Ongoing', show: canEdit },
+    { label: 'Report an Issue', icon: ShieldAlert, route: 'issues/log/new', show: canEdit },
+    { label: 'Add Milestone', icon: Flag, route: 'tracker/register/new-milestone', show: canEdit },
+    { label: 'Upload Progress Photos', icon: Camera, route: 'publishing/gallery/new', show: canEdit },
+    { label: 'Generate Weekly Report', icon: FileText, route: 'reports/weekly', show: true },
+  ].filter((q) => q.show && canOpenModule(user.role, q.route.split('/')[0]));
+
+  const varColor = m.variancePct < -3 ? '#DC3545' : m.variancePct < 0 ? '#D97706' : '#1F9D68';
 
   return (
     <div className="cv-grid" style={{ gap: 16 }}>
-      {/* Project health */}
+      {dataSync.state !== 'live' && (
+        <Banner kind="warn">
+          <b>{SYNC_LABEL[dataSync.state]?.label}.</b> {SYNC_LABEL[dataSync.state]?.detail}{' '}
+          <button type="button" className="cv-linkbtn" onClick={() => actions.navigate('sync')}>
+            Database Synchronization
+          </button>
+        </Banner>
+      )}
+
+      {/* ZONE A — PROJECT STATUS */}
       <Card
-        title="Project health"
-        note={`As of ${fmtDate(today)} · computed from ${register.filter((r) => r.kind === 'scope').length} weighted scopes of work`}
+        title="Project Status"
+        note={`As of ${fmtDate(today)} · calculated from ${register.filter((r) => r.kind === 'scope').length} weighted scopes of work`}
         actions={
           <>
-            <span className="cv-chip" title={isLive ? 'Connected to the shared Firestore project database' : 'Realtime presence server not connected'}>
-              <span className="cv-dot" style={{ background: isLive ? '#22A06B' : '#F5A623' }} /> {isLive ? 'Live collaboration' : 'Shared database (presence offline)'}
-            </span>
+            <SyncChip state={dataSync.state} />
             <HealthBadge level={m.health} big />
           </>
         }
@@ -76,153 +151,139 @@ export const CommandCenter: React.FC = () => {
         <div className="cv-kpis cc-hk">
           <Kpi
             icon={TrendingUp}
-            label="Actual physical accomplishment"
+            label="Actual Progress"
             value={pct(m.actualPct)}
             accent
-            sub={
-              trend !== null ? (
-                <span>
-                  <span className={`cv-trend ${trend >= 0 ? 'up' : 'down'}`}>
-                    {trend >= 0 ? '↑' : '↓'} {trend >= 0 ? '+' : ''}
-                    {trend} pts
-                  </span>{' '}
-                  since {fmtDate(weekAgo!.date, false)}
-                </span>
-              ) : (
-                'Working-day weighted scope progress'
-              )
-            }
+            sub={trend !== null ? `${trend >= 0 ? '+' : ''}${trend.toFixed(1)} percentage points since ${fmtDate(weekAgo!.date, false)}` : 'Weighted by working days'}
           />
-          <Kpi icon={Target} label="Planned accomplishment" value={pct(m.plannedPct)} sub="Baseline plan as of today" />
+          <Kpi icon={Target} label="Planned Progress" value={pct(m.plannedPct)} sub="Baseline plan as of today" />
           <Kpi
             icon={Activity}
-            label="Schedule variance"
-            value={fmtVar(m.variancePct)}
-            color={m.variancePct < -3 ? '#E5484D' : m.variancePct < 0 ? '#F5A623' : '#22A06B'}
-            sub={m.spi !== null ? `SPI ${m.spi.toFixed(2)} (actual ÷ planned)` : 'SPI available once planned > 0'}
+            label="Progress Variance"
+            value={`${m.variancePct >= 0 ? '+' : ''}${m.variancePct.toFixed(1)}`}
+            color={varColor}
+            sub={`percentage points${m.spi !== null ? ` · SPI ${m.spi.toFixed(2)}` : ''}`}
           />
-          <Kpi icon={CalendarCheck} label="Target completion" value={fmtDate(m.targetCompletion)} sub="Turnover ceremony milestone" />
+          <Kpi icon={Gauge} label="Project Status" value={m.health} color={HEALTH_HEX[m.health]} sub={m.healthReasons[0]} />
+          <Kpi icon={CalendarCheck} label="Original Target Completion" value={fmtDate(m.targetCompletion)} sub="Turnover ceremony milestone" />
           <Kpi
             icon={CalendarClock}
-            label="Projected completion"
-            value={fmtDate(m.projectedCompletion)}
-            color={m.completionVarianceDays > 0 ? '#E5484D' : undefined}
+            label="Forecast Completion"
+            value={fmtDate(forecast)}
+            color={m.completionVarianceDays > 0 ? '#DC3545' : undefined}
             sub={
-              m.completionVarianceDays > 0
-                ? `${m.completionVarianceDays} day(s) late · from current schedule`
-                : m.unrescheduledOverdue
-                ? `Current schedule · ${m.unrescheduledOverdue} overdue item(s) not yet re-scheduled`
-                : 'From current schedule'
+              <>
+                {m.completionVarianceDays > 0 ? `${m.completionVarianceDays} day(s) after target · ` : 'Current schedule · '}
+                {m.paceCompletion ? `at current pace ${fmtDate(m.paceCompletion)} (indicative)` : 'pace on or above plan'}
+              </>
             }
           />
-          <Kpi
-            icon={Gauge}
-            label="Indicative at current pace"
-            value={m.paceCompletion ? fmtDate(m.paceCompletion) : '—'}
-            sub={m.paceCompletion ? 'Projection only: remaining time ÷ SPI' : 'Not computed (on/above plan or no plan yet)'}
-          />
         </div>
-        <div className="cc-chips">
-          {m.healthReasons.map((r) => (
-            <span key={r} className="cc-chip">
-              <i style={{ background: HEALTH_HEX[m.health] }} />
-              {r}
-            </span>
+      </Card>
+
+      {/* QUICK ACTIONS */}
+      {quick.length > 0 && (
+        <div className="cc-quick" role="group" aria-label="Quick actions">
+          {quick.map((q) => (
+            <button key={q.label} type="button" className="cc-quick-b" onClick={() => actions.navigate(q.route)}>
+              <q.icon size={16} aria-hidden /> {q.label}
+            </button>
           ))}
-          <span className="cc-chip muted">Schedule elapsed {m.elapsedPct}% · Milestones {m.milestonesComplete}/{m.milestonesTotal} complete · Episodes {m.episodesCompleted}/{m.episodesTotal} completed</span>
         </div>
-        {(!sharedStorage.reports || !sharedStorage.snapshots) && (
-          <div className="cv-dim" style={{ marginTop: 8 }}>
-            Note: report / trend history storage is currently on this device only — see Settings & Data for details.
+      )}
+
+      {/* ZONE B — ACTIVITY SUMMARY */}
+      <div className="cc-zoneb">
+        <Card title="Activity Status" note={`All ${m.counts.total} register items`}>
+          <div className="cc-mini">
+            {[
+              { label: 'Completed', v: m.counts.completed, f: 'Completed', tone: 'ok' },
+              { label: 'In Progress', v: m.counts.ongoing, f: 'Ongoing', tone: '' },
+              { label: 'Delayed', v: m.counts.delayed, f: 'Delayed', tone: m.counts.delayed ? 'bad' : '' },
+              { label: 'Upcoming (14 days)', v: ops.upcoming.length, f: 'Upcoming', tone: '' },
+            ].map((k) => (
+              <button key={k.label} type="button" className={`cc-mini-b ${k.tone}`} onClick={() => actions.navigate(`tracker/register/status=${k.f}`)}>
+                <b>{k.v}</b>
+                <span>{k.label}</span>
+              </button>
+            ))}
           </div>
+        </Card>
+        <Card title="Items Requiring Attention" note="Issues and approvals">
+          <div className="cc-mini three">
+            {[
+              { label: 'Open Issues', v: openIssues.length, r: 'issues/log', tone: '' },
+              { label: 'Critical Issues', v: criticalIssues.length, r: 'issues/log', tone: criticalIssues.length ? 'bad' : '' },
+              { label: 'Pending Approvals', v: pendingApprovals.length, r: isManager ? 'publishing' : 'reports/weekly', tone: pendingApprovals.length ? 'warn' : '' },
+            ].map((k) => (
+              <button key={k.label} type="button" className={`cc-mini-b ${k.tone}`} onClick={() => actions.navigate(k.r)}>
+                <b>{k.v}</b>
+                <span>{k.label}</span>
+              </button>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* ZONE C — PENDING MANAGEMENT ACTIONS */}
+      <Card
+        title={`Pending Management Actions · ${mgmt.length}`}
+        note="Critical delays, overdue activities, open issues, pending approvals, schedule conflicts and outstanding decisions"
+        actions={
+          <button type="button" className="cv-btn sm" onClick={() => actions.navigate('issues/attention')}>
+            View All Management Actions
+          </button>
+        }
+      >
+        {mgmt.length ? (
+          <div className="cv-table-wrap">
+            <table className="cv-table cc-mgmt">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Related Activity</th>
+                  <th>Responsible</th>
+                  <th>Priority</th>
+                  <th>Target Resolution</th>
+                  <th>Status</th>
+                  <th>Required Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mgmt.slice(0, 8).map((a) => (
+                  <tr key={a.id} className="clickable" onClick={a.open}>
+                    <td>
+                      <b>{a.title}</b>
+                      <div className="cv-dim" style={{ fontSize: 12 }}>
+                        {a.type}
+                      </div>
+                    </td>
+                    <td className="cv-dim">{a.related}</td>
+                    <td>{a.responsible || <span className="cv-late">Unassigned</span>}</td>
+                    <td>
+                      <Pill label={a.priority} color={PRIORITY_HEX[a.priority]} />
+                    </td>
+                    <td className="nowrap">{a.target ? fmtDate(a.target) : '—'}</td>
+                    <td>{a.status}</td>
+                    <td>{a.action}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <Empty>No pending management actions. Everything recorded is on schedule.</Empty>
         )}
       </Card>
 
-      {/* Current operations */}
-      <div className="cc-stats">
-        {[
-          { label: 'Completed', v: m.counts.completed, c: 'green', f: 'Completed', i: CircleCheck },
-          { label: 'Ongoing', v: m.counts.ongoing, c: 'purple', f: 'Ongoing', i: Hourglass },
-          { label: 'Delayed', v: m.counts.delayed, c: 'red', f: 'Delayed', i: CircleAlert },
-          { label: 'Upcoming (next 14 days)', v: ops.upcoming.length, c: 'blue', f: 'Upcoming', i: CalendarDays },
-          { label: 'Open issues & risks', v: openIssues.length, c: 'navy', f: '', r: 'issues/log', i: ShieldAlert },
-          { label: 'Critical pending actions', v: attention.filter((a) => a.severity === 'critical').length, c: 'orange', f: '', r: 'issues/attention', i: Siren },
-        ].map((k) => (
-          <button
-            type="button"
-            key={k.label}
-            className={`cc-stat ${k.c}`}
-            onClick={() => actions.navigate(k.f ? `tracker/register/status=${k.f}` : k.r!)}
-            title="Open the filtered list"
-          >
-            <k.i className="cc-stat-ico" size={34} strokeWidth={1.8} aria-hidden />
-            <span className="cc-stat-b">
-              <span className="cc-stat-l">{k.label}</span>
-              <span className="cc-stat-v">{k.v}</span>
-            </span>
-          </button>
-        ))}
-      </div>
-
       <div className="cv-grid cv-g2">
-        {/* Management attention */}
+        {/* ZONE D — UPCOMING MILESTONES */}
         <Card
-          title="Management attention"
-          note="Critical delays, overdue work, unresolved issues, decisions and conflicts"
-          actions={
-            <button type="button" className="cv-btn sm" onClick={() => actions.navigate('issues/attention')}>
-              Full list ({attention.length})
-            </button>
-          }
-        >
-          {topAttention.length ? (
-            <div className="cc-att-list">
-              {topAttention.map((a) => {
-                const act = a.activityId ? register.find((x) => x.id === a.activityId) : undefined;
-                const deps = act ? act.dependsOn.map((id) => register.find((x) => x.id === id)).filter(Boolean) : [];
-                const tone = a.category === 'Unassigned' ? 'warn' : a.severity === 'critical' ? 'crit' : 'high';
-                return (
-                  <button
-                    type="button"
-                    key={a.id}
-                    className={`cc-att ${tone}`}
-                    onClick={() => (a.activityId ? actions.openActivity(a.activityId) : actions.navigate('issues/log'))}
-                  >
-                    <span className="cc-att-top">
-                      <span className={`cc-att-tag ${tone}`}>{a.category}</span>
-                      <b className="cc-att-t">{a.title}</b>
-                    </span>
-                    <span className="cc-att-line">
-                      <CalendarDays size={14} aria-hidden />
-                      <span>{a.detail}</span>
-                      {act && <span className="cc-att-sep">Workstream: {act.workstream}</span>}
-                    </span>
-                    <span className="cc-att-line">
-                      <UserIcon size={14} aria-hidden />
-                      <span>Owner: {a.owner || <b className="cv-late">Unassigned</b>}</span>
-                      {deps.length > 0 && <span className="cc-att-sep">Dependency: {deps.map((d) => `${d!.name} (${d!.status})`).join('; ')}</span>}
-                    </span>
-                    <ChevronRight className="cc-att-go" size={16} aria-hidden />
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <Empty>No critical or warning items. Everything recorded is on schedule.</Empty>
-          )}
-          {decisions.length > 0 && (
-            <div style={{ marginTop: 10 }} className="cv-dim">
-              {decisions.length} decision(s) awaiting management approval.
-            </div>
-          )}
-        </Card>
-
-        {/* Upcoming milestones */}
-        <Card
-          title="Upcoming critical milestones"
+          title="Upcoming Milestones"
+          note="Next five milestones and concrete pours"
           actions={
             <button type="button" className="cv-btn sm" onClick={() => actions.navigate('milestones')}>
-              Milestone monitoring
+              Milestone Monitoring
             </button>
           }
         >
@@ -232,22 +293,20 @@ export const CommandCenter: React.FC = () => {
                 <thead>
                   <tr>
                     <th>Milestone</th>
-                    <th>Target</th>
+                    <th>Target Date</th>
                     <th>Status</th>
                     <th>Responsible</th>
-                    <th>Dependencies</th>
                   </tr>
                 </thead>
                 <tbody>
                   {nextMilestones.map((r) => (
                     <tr key={r.id} className="clickable" onClick={() => actions.openActivity(r.id)}>
                       <td>
-                        <div className="cv-strong">{r.name}</div>
-                        {r.badge && <span className="cv-chip">{r.badge}</span>}
+                        <b>{r.name}</b>
                       </td>
                       <td className="nowrap">
-                        {fmtRange(r.start, r.finish)}
-                        <div className={r.finish && r.finish < today ? 'cv-late' : 'cv-dim'}>
+                        {fmtDate(r.finish)}
+                        <div className={r.finish && r.finish < today ? 'cv-late' : 'cv-dim'} style={{ fontSize: 12 }}>
                           {r.finish ? (r.finish < today ? `${diffDays(r.finish, today)} day(s) overdue` : `in ${diffDays(today, r.finish)} day(s)`) : ''}
                         </div>
                       </td>
@@ -255,15 +314,6 @@ export const CommandCenter: React.FC = () => {
                         <StatusPill status={r.status} />
                       </td>
                       <td>{r.owner || <span className="cv-late">Unassigned</span>}</td>
-                      <td className="cv-dim">
-                        {r.dependsOn.length
-                          ? r.dependsOn
-                              .map((id) => register.find((x) => x.id === id))
-                              .filter(Boolean)
-                              .map((d) => `${d!.name} (${d!.status})`)
-                              .join('; ')
-                          : '—'}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -273,109 +323,21 @@ export const CommandCenter: React.FC = () => {
             <Empty>All milestones are complete.</Empty>
           )}
         </Card>
-      </div>
-
-      {/* Production & construction alignment */}
-      <Card
-        title="Production & construction alignment — next 21 days"
-        note="Shoot windows compared with the construction schedule. Calendars are never changed automatically."
-        actions={
-          <button type="button" className="cv-btn sm" onClick={() => actions.navigate('production/alignment')}>
-            Schedule alignment
-          </button>
-        }
-      >
-        <div className="cv-row" style={{ marginBottom: 10, gap: 6 }}>
-          {Object.entries(summary).map(([k, v]) => (
-            <Pill key={k} label={`${k}: ${v}`} color={ALIGNMENT_COLORS[k as keyof typeof ALIGNMENT_COLORS]} />
-          ))}
-        </div>
-        <div className="cv-grid cv-g2">
-          <div>
-            <div className="cv-kpi-l" style={{ marginBottom: 6 }}>
-              Upcoming shoots
-            </div>
-            {upcomingShoots.length ? (
-              <div className="cv-list">
-                {upcomingShoots.map((a) => (
-                  <button type="button" key={a.episode.id} className="cv-li clickable" style={{ textAlign: 'left', color: 'inherit' }} onClick={() => actions.openActivity(a.episode.id)}>
-                    <span className="cv-sev" style={{ background: ALIGNMENT_COLORS[a.classification] }} />
-                    <div className="cv-li-main">
-                      <div className="cv-li-t">{a.episode.name}</div>
-                      <div className="cv-li-s">
-                        {fmtRange(a.episode.start, a.episode.finish)} · {a.episode.location || 'Location TBC'} · {a.episode.characters.length} character(s)
-                      </div>
-                      {a.alerts[0] && <div className="cv-li-s">{a.alerts[0].message}</div>}
-                    </div>
-                    <Pill label={a.classification} color={ALIGNMENT_COLORS[a.classification]} />
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <Empty>No shoots scheduled in the next 21 days.</Empty>
-            )}
-          </div>
-          <div>
-            <div className="cv-kpi-l" style={{ marginBottom: 6 }}>
-              Construction activities in the same window
-            </div>
-            {upcomingConstruction.length ? (
-              <div className="cv-list">
-                {upcomingConstruction.map((r) => (
-                  <button type="button" key={r.id} className="cv-li clickable" style={{ textAlign: 'left', color: 'inherit' }} onClick={() => actions.openActivity(r.id)}>
-                    <span className="cv-sev" style={{ background: kindColor(r.kind, r.stream) }} />
-                    <div className="cv-li-main">
-                      <div className="cv-li-t">{r.name}</div>
-                      <div className="cv-li-s">
-                        {r.workstream} · {fmtRange(r.start, r.finish)} · {r.commitment}
-                      </div>
-                    </div>
-                    <StatusPill status={r.status} />
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <Empty>No construction activities in this window.</Empty>
-            )}
-          </div>
-        </div>
-      </Card>
-
-      <div className="cv-grid cv-g2">
-        <Card
-          title="Workstream progress"
-          note="Bar = actual · marker = planned today"
-          actions={
-            <button type="button" className="cv-btn sm" onClick={() => actions.navigate('analytics/performance')}>
-              Analytics
-            </button>
-          }
-        >
-          {m.workstreams.map((w) => (
-            <div key={w.key} className="cv-hbar">
-              <span className="cv-strong">{w.label}</span>
-              <ProgressBar actual={w.actual} planned={w.planned} />
-              <span className="cv-dim" style={{ textAlign: 'right' }}>
-                {w.actual.toFixed(0)}% / {w.planned.toFixed(0)}%
-              </span>
-            </div>
-          ))}
-        </Card>
 
         <Card
-          title="This week & next"
+          title="Current and Upcoming Activities"
           note={`${fmtDate(today)} – ${fmtDate(thisWeekEnd)}`}
           actions={
-            <button type="button" className="cv-btn sm" onClick={() => actions.navigate('analytics/forecast')}>
-              Forecast
+            <button type="button" className="cv-btn sm" onClick={() => actions.navigate('schedule/forecast')}>
+              Schedule Monitoring
             </button>
           }
         >
-          {[...ops.ongoing, ...ops.delayed, ...ops.upcoming].filter((r) => r.start && r.start <= thisWeekEnd).length ? (
+          {[...ops.delayed, ...ops.ongoing, ...ops.upcoming].filter((r) => r.start && r.start <= thisWeekEnd).length ? (
             <div className="cv-list">
               {[...ops.delayed, ...ops.ongoing, ...ops.upcoming]
                 .filter((r) => r.start && r.start <= thisWeekEnd)
-                .slice(0, 8)
+                .slice(0, 7)
                 .map((r) => (
                   <button type="button" key={r.id} className="cv-li clickable" style={{ textAlign: 'left', color: 'inherit' }} onClick={() => actions.openActivity(r.id)}>
                     <span className="cv-sev" style={{ background: kindColor(r.kind, r.stream) }} />
@@ -392,16 +354,59 @@ export const CommandCenter: React.FC = () => {
           ) : (
             <Empty>Nothing scheduled this week.</Empty>
           )}
-          {ops.completedRecent.length > 0 && (
-            <div className="cv-dim" style={{ marginTop: 10 }}>
-              Recently completed: {ops.completedRecent.map((r) => r.name).join(' · ')}
-            </div>
-          )}
         </Card>
       </div>
+
+      <Card
+        title="Workstream Progress"
+        note="Bar = actual · marker = planned today"
+        actions={
+          <button type="button" className="cv-btn sm" onClick={() => actions.navigate('analytics')}>
+            Project Performance
+          </button>
+        }
+      >
+        <div className="cc-ws">
+          {m.workstreams.map((w) => (
+            <div key={w.key} className="cv-hbar">
+              <span className="cv-strong">{w.label}</span>
+              <ProgressBar actual={w.actual} planned={w.planned} />
+              <span className="cv-dim" style={{ textAlign: 'right' }}>
+                {w.actual.toFixed(0)}% / {w.planned.toFixed(0)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      </Card>
       <OperationsPulse />
     </div>
   );
+};
+
+interface MgmtAction {
+  id: string;
+  title: string;
+  type: string;
+  related: string;
+  responsible: string;
+  priority: 'Critical' | 'High' | 'Medium' | 'Low';
+  target?: string;
+  status: string;
+  action: string;
+  open: () => void;
+}
+
+const REQUIRED_ACTION: Record<string, string> = {
+  'Critical delay': 'Agree a recovery plan and revised date',
+  Overdue: 'Agree a recovery date and update the schedule',
+  Unassigned: 'Assign a responsible person',
+  'Delayed milestone': 'Confirm the recovery plan for the milestone',
+  'Repeatedly postponed': 'Review the root cause before re-scheduling',
+  'Critical issue': 'Resolve the issue and record the corrective action',
+  'Decision required': 'Record the management decision',
+  'Upcoming deadline': 'Confirm manpower and materials',
+  'Schedule conflict': 'Resolve the schedule conflict',
+  'Dependency risk': 'Confirm the predecessor finishes on time',
 };
 
 /** Priorities, blockers and recent updates across all modules. */

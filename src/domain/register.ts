@@ -28,6 +28,7 @@ import {
   ScopeItem,
   Character,
 } from '../types/index.ts';
+import { classifyCategory } from './categories.ts';
 import { parseDateWindow } from '../utils/calculations.ts';
 import { isValidIso, toIsoDate, todayIso, workingDaysBetween, diffDays, parseIsoDate } from './dates.ts';
 
@@ -50,6 +51,10 @@ export interface RegisterActivity {
   owner: string;
   supporting: string;
   department: string;
+  /** Construction category (client-facing grouping). Override in the activity editor, otherwise derived from the name/phase. */
+  category: string;
+  /** True when the category was set explicitly by the team (not derived). */
+  categorySet: boolean;
   /** Baseline (original) planned dates — preserved when the schedule is revised. */
   plannedStart?: string;
   plannedFinish?: string;
@@ -239,6 +244,8 @@ export function buildRegister(input: RegisterInput, today: string = todayIso()):
     const weight = totalWeight > 0 ? (rawW / totalWeight) * 100 : 0;
     const planned = plannedPercentAt(plannedStart, plannedFinish, today);
     list.push({
+      category: '',
+      categorySet: false,
       id: scopeActivityId(s.id),
       key,
       legacyKeys: [legacy],
@@ -316,6 +323,8 @@ export function buildRegister(input: RegisterInput, today: string = todayIso()):
       forcedOngoing: inMotion,
     });
     list.push({
+      category: '',
+      categorySet: false,
       id: pourActivityId(p.id),
       key,
       legacyKeys: [],
@@ -389,6 +398,8 @@ export function buildRegister(input: RegisterInput, today: string = todayIso()):
       forcedOngoing: m.status === 'In progress',
     });
     list.push({
+      category: '',
+      categorySet: false,
       id: milestoneActivityId(m.id),
       key,
       legacyKeys: [legacy],
@@ -461,6 +472,8 @@ export function buildRegister(input: RegisterInput, today: string = todayIso()):
     });
     const label = e.episodeLabel ? e.episodeLabel : `Ep ${e.number}`;
     list.push({
+      category: '',
+      categorySet: false,
       id: episodeActivityId(e.id),
       key,
       legacyKeys: [],
@@ -531,6 +544,8 @@ export function buildRegister(input: RegisterInput, today: string = todayIso()):
         : 'Upcoming';
     const stream: Stream = a.category === 'Production' ? 'Production' : a.category === 'Milestone' ? 'Milestone' : 'Construction';
     list.push({
+      category: '',
+      categorySet: false,
       id: manualActivityId(a.id),
       key,
       legacyKeys: [],
@@ -581,8 +596,22 @@ export function buildRegister(input: RegisterInput, today: string = todayIso()):
   });
 
   list.sort((a, b) => (a.start || '9999').localeCompare(b.start || '9999') || a.name.localeCompare(b.name));
+  // Construction category: explicit override, otherwise derived from the activity name / phase
+  list.forEach((r) => {
+    const set = categoryOverride(input.overrides, r);
+    r.categorySet = !!set;
+    r.category = set || classifyCategory(r);
+  });
   return list;
 }
+
+function categoryOverride(overrides: Record<string, ActivityOverride>, r: RegisterActivity): string | undefined {
+  const own = overrides[r.key]?.category;
+  if (own) return own;
+  for (const lk of r.legacyKeys) if (overrides[lk]?.category) return overrides[lk]!.category;
+  return undefined;
+}
+
 
 function maxTimestamp(...vals: Array<string | undefined>): string | undefined {
   const v = vals.filter((x): x is string => !!x).sort();

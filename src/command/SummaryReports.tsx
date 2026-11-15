@@ -132,7 +132,7 @@ export const SummaryReports: React.FC = () => {
         )}
         <span className="cv-spacer" />
         <button type="button" className="cv-btn sm" onClick={() => actions.printElement(() => doc, title)}>
-          🖨 Print / PDF
+          Export PDF
         </button>
         <button type="button" className="cv-btn sm" onClick={() => downloadFile(`Convengers_${kind}_${today}.csv`, toCsv(body.headers, body.rows), 'text/csv;charset=utf-8')}>
           ⬇ CSV

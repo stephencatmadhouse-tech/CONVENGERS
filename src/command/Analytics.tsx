@@ -124,9 +124,9 @@ export const Analytics: React.FC = () => {
         </Banner>
       )}
       <div className="cv-kpis">
-        <Kpi label="Overall physical accomplishment" value={pct(m.actualPct)} accent />
+        <Kpi label="Actual progress" value={pct(m.actualPct)} accent />
         <Kpi label="Planned to date" value={pct(m.plannedPct)} />
-        <Kpi label="Schedule variance" value={`${m.variancePct >= 0 ? '+' : ''}${m.variancePct.toFixed(1)} pts`} color={m.variancePct < 0 ? '#E5484D' : '#22A06B'} />
+        <Kpi label="Progress variance" value={`${m.variancePct >= 0 ? '+' : ''}${m.variancePct.toFixed(1)} percentage points`} color={m.variancePct < 0 ? '#E5484D' : '#22A06B'} />
         <Kpi label="SPI" value={m.spi === null ? '—' : m.spi.toFixed(2)} sub="1.00 = on plan" />
         <Kpi label="Completed / delayed" value={`${m.counts.completed} / ${m.counts.delayed}`} sub={`${m.counts.total} activities in register`} />
       </div>
@@ -367,7 +367,7 @@ export const Forecast: React.FC = () => {
         <Kpi label="Concrete pours" value={pours.length} />
         <Kpi label="Inspections / testing" value={inspections.length} />
         <Kpi label="Shoots" value={shoots.length} sub={`${chars.length} character(s) required`} />
-        <Kpi label="Projected completion" value={fmtDate(m.projectedCompletion)} sub={`Target ${fmtDate(m.targetCompletion)}`} />
+        <Kpi label="Forecast completion" value={fmtDate(m.projectedCompletion)} sub={`Target ${fmtDate(m.targetCompletion)}`} />
       </div>
       <div className="cv-grid cv-g2">
         {section('Activities at risk of delay', shown.filter((i) => i.outlook === 'At risk'), 'No activities flagged at risk in this window.')}
