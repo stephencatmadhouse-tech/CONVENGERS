@@ -110,6 +110,9 @@ export default function App() {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isAuditOpen, setIsAuditOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+  // In-app confirmation for permanent deletions (browser pop-ups can be blocked inside embedded previews)
+  const [pendingDelete, setPendingDelete] = useState<{ title: string; message: string; resolve: (ok: boolean) => void } | null>(null);
+  const confirmDelete = (title: string, message: string) => new Promise<boolean>((resolve) => setPendingDelete({ title, message, resolve }));
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [isAdminPresentationMode, setIsAdminPresentationMode] = useState(false);
   const [isPrintingReport, setIsPrintingReport] = useState(false);
@@ -184,43 +187,10 @@ export default function App() {
       setRemoteFocusMap(focusMap);
     });
 
-    const unsubCellEdit = realtime.onCellEdit((editEvent) => {
-      // Instant reflection (<30ms) of teammate typing and edits
-      setData((prev) => {
-        if (!prev) return prev;
-        if (editEvent.entityType === 'milestone') {
-          return {
-            ...prev,
-            milestones: prev.milestones.map((m) =>
-              m.id === editEvent.entityId ? { ...m, [editEvent.field]: editEvent.value } : m
-            ),
-          };
-        }
-        if (editEvent.entityType === 'scope') {
-          return {
-            ...prev,
-            scopes: prev.scopes.map((s) =>
-              s.id === editEvent.entityId ? { ...s, [editEvent.field]: editEvent.value } : s
-            ),
-          };
-        }
-        if (editEvent.entityType === 'pour') {
-          return {
-            ...prev,
-            pours: prev.pours.map((p) =>
-              p.id === editEvent.entityId ? { ...p, [editEvent.field]: editEvent.value } : p
-            ),
-          };
-        }
-        return prev;
-      });
-    });
-
     return () => {
       unsubConn();
       unsubPresence();
       unsubFocus();
-      unsubCellEdit();
     };
   }, []);
 
@@ -714,6 +684,7 @@ export default function App() {
       showToast('Only Administrators can delete scope items.');
       return;
     }
+    if (!(await confirmDelete('Delete this scope of work?', 'The scope is removed from the Master Project Tracker, the construction calendar and progress calculations. This cannot be undone.'))) return;
     try {
       await firestoreData.deleteScope(id);
       await firestoreData.logAudit(user, 'DELETE_SCOPE', 'Scope', id);
@@ -787,6 +758,7 @@ export default function App() {
       showToast('Only Administrators can delete activities.');
       return;
     }
+    if (!(await confirmDelete('Delete this activity?', 'The activity is removed from the Master Project Tracker and the calendars. This cannot be undone.'))) return;
     try {
       await firestoreData.deleteActivity(id);
       await firestoreData.logAudit(user, 'DELETE_ACTIVITY', 'Activity', id);
@@ -870,6 +842,7 @@ export default function App() {
       showToast('Only Administrators can delete concrete pour milestones.');
       return;
     }
+    if (!(await confirmDelete('Delete this concrete pour milestone?', 'The pour is removed from the concrete pouring schedule and the calendars. This cannot be undone.'))) return;
     try {
       await firestoreData.deletePour(id);
       await firestoreData.logAudit(user, 'DELETE_POUR', 'ConcretePour', id);
@@ -946,6 +919,7 @@ export default function App() {
       showToast('Only Administrators can delete episodes.');
       return;
     }
+    if (!(await confirmDelete('Delete this episode?', 'The episode and its shoot schedule are removed from the production calendar. This cannot be undone.'))) return;
     try {
       await firestoreData.deleteEpisode(id);
       await firestoreData.logAudit(user, 'DELETE_EPISODE', 'Episode', id);
@@ -999,6 +973,7 @@ export default function App() {
       showToast('Only Administrators can delete characters.');
       return;
     }
+    if (!(await confirmDelete('Delete this character?', 'The character is removed from the production calendar and from every episode it is assigned to. This cannot be undone.'))) return;
     try {
       await firestoreData.deleteCharacter(id);
       setData((prev) => {
@@ -1851,6 +1826,23 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title={pendingDelete.title}
+          message={pendingDelete.message}
+          confirmLabel="Delete"
+          danger
+          onCancel={() => {
+            pendingDelete.resolve(false);
+            setPendingDelete(null);
+          }}
+          onConfirm={() => {
+            pendingDelete.resolve(true);
+            setPendingDelete(null);
+          }}
+        />
       )}
 
       {pendingImport && (

@@ -459,6 +459,7 @@ const PublicationEditor: React.FC<{ pub: Publication; onClose: () => void }> = (
   const { user, actions, canEdit, isAdmin } = useCommand();
   const journeyStages = [...useClientConfig().journey.stages].sort((a, b) => a.order - b.order);
   const [f, setF] = useState<Publication>(pub);
+  const [confirmDel, setConfirmDel] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -499,7 +500,8 @@ const PublicationEditor: React.FC<{ pub: Publication; onClose: () => void }> = (
   };
 
   return (
-    <Modal
+    <>
+      <Modal
       title={isNew ? `New ${KIND_LABEL[f.kind].toLowerCase()}` : f.title}
       sub={`${f.id} · ${KIND_LABEL[f.kind]} · ${PUBLISH_LABEL[f.status]}`}
       onClose={onClose}
@@ -511,11 +513,7 @@ const PublicationEditor: React.FC<{ pub: Publication; onClose: () => void }> = (
               type="button"
               className="cv-btn danger"
               style={{ marginRight: 'auto' }}
-              onClick={async () => {
-                await publicationStore.remove(f.id);
-                await firestoreData.logAudit(user, 'DELETE_PUBLICATION', 'Publication', f.id, f.title);
-                onClose();
-              }}
+              onClick={() => setConfirmDel(true)}
             >
               Delete
             </button>
@@ -644,7 +642,23 @@ const PublicationEditor: React.FC<{ pub: Publication; onClose: () => void }> = (
           </div>
         </fieldset>
       )}
-    </Modal>
+      </Modal>
+      {confirmDel && (
+        <ConfirmDialog
+          title="Delete this draft?"
+          message="The draft is deleted from Client Portal Management. Nothing published on the client portal changes. This cannot be undone."
+          confirmLabel="Delete"
+          danger
+          onCancel={() => setConfirmDel(false)}
+          onConfirm={async () => {
+            setConfirmDel(false);
+            await publicationStore.remove(f.id);
+            await firestoreData.logAudit(user, 'DELETE_PUBLICATION', 'Publication', f.id, f.title);
+            onClose();
+          }}
+        />
+      )}
+    </>
   );
 };
 

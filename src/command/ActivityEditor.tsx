@@ -168,7 +168,7 @@ export const ActivityEditor: React.FC<{ activity: RegisterActivity; onClose: () 
           </button>
           {canEdit && (
             <button type="button" className="cv-btn primary" onClick={save} disabled={saving || check.errors.length > 0}>
-              {saving ? 'Saving…' : 'Save changes'}
+              {saving ? 'Saving…' : 'Save Changes'}
             </button>
           )}
         </>

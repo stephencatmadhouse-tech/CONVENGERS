@@ -16,7 +16,7 @@ import { driveStatus, reconcileDrive, finishPendingRecords, saveDriveCredentials
 import { plural } from '../utils/plural.ts';
 import { fmtDate } from '../domain/dates.ts';
 import { useCommand } from './context.tsx';
-import { Banner, Card, Field, SyncChip, SYNC_LABEL } from './ui.tsx';
+import { Banner, Card, ConfirmDialog, Field, SyncChip, SYNC_LABEL } from './ui.tsx';
 import { INTERNAL_ROLES, EXTERNAL_ROLES, ROLE_LABEL, allowedModules, landingModule, isManagerRole, canEditOperations } from '../auth/roles.ts';
 import { SECTIONS } from './Shell.tsx';
 import { useStore } from '../firebase/useStore.ts';
@@ -541,8 +541,8 @@ const DriveConnectForm: React.FC<{ connected: boolean; onDone: () => void }> = (
     }
     setBusy(false);
   };
+  const [askDisconnect, setAskDisconnect] = useState(false);
   const disconnect = async () => {
-    if (!window.confirm('Disconnect Google Drive? Uploads stop until it is connected again. Files already in Drive are not affected.')) return;
     setBusy(true);
     try {
       await saveDriveCredentials({ remove: true });
@@ -598,12 +598,25 @@ const DriveConnectForm: React.FC<{ connected: boolean; onDone: () => void }> = (
             {busy ? 'Checking…' : connected ? 'Save and Test New Values' : 'Connect and Test'}
           </button>
           {connected && (
-            <button type="button" className="cv-btn ghost sm" onClick={disconnect} disabled={busy}>
+            <button type="button" className="cv-btn ghost sm" onClick={() => setAskDisconnect(true)} disabled={busy}>
               Disconnect
             </button>
           )}
         </div>
       </details>
+      {askDisconnect && (
+        <ConfirmDialog
+          title="Disconnect Google Drive?"
+          message="Uploads stop until Google Drive is connected again. Files already in Drive are not affected."
+          confirmLabel="Disconnect"
+          danger
+          onCancel={() => setAskDisconnect(false)}
+          onConfirm={() => {
+            setAskDisconnect(false);
+            void disconnect();
+          }}
+        />
+      )}
       {msg && (
         <div style={{ marginTop: 10 }}>
           <Banner kind={msg.kind}>{msg.text}</Banner>

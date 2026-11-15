@@ -4,6 +4,14 @@
  */
 
 import { Collaborator, RemoteFocus, CellEditEvent, FullDashboardData, User } from '../types/index.ts';
+import { auth } from '../firebase/config.ts';
+
+/*
+ * Live presence ("who is online" and which cell a teammate is editing) over the
+ * server's /ws channel. Presence only: project data is synchronised by
+ * Firestore's own real-time listeners, never through this channel. The server
+ * accepts a client only after verifying its Firebase ID token.
+ */
 
 const COLLAB_COLORS = [
   '#4BE08A', // Emerald green
@@ -40,7 +48,6 @@ export class RealtimeClient {
   public clientId: string;
   public userColor: string;
   private ws: WebSocket | null = null;
-  private sse: EventSource | null = null;
   private currentUser: User | null = null;
   private customName: string | null = null;
   private activeFocusId: string | null = null;
@@ -83,7 +90,6 @@ export class RealtimeClient {
   public init(user: User | null) {
     this.currentUser = user;
     this.connectWebSocket();
-    this.connectSSEFallback();
     this.startHeartbeat();
   }
 
@@ -131,23 +137,6 @@ export class RealtimeClient {
     }
   }
 
-  private connectSSEFallback() {
-    if (typeof window === 'undefined') return;
-    try {
-      this.sse = new EventSource('/api/events');
-      this.sse.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          this.handleIncomingMessage(msg);
-        } catch {
-          // ignore
-        }
-      };
-    } catch {
-      // ignore
-    }
-  }
-
   private scheduleReconnect() {
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.reconnectTimer = setTimeout(() => {
@@ -160,48 +149,30 @@ export class RealtimeClient {
     this.heartbeatTimer = setInterval(() => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         this.ws.send(JSON.stringify({ type: 'HEARTBEAT', clientId: this.clientId }));
-      } else {
-        // Fallback HTTP heartbeat
-        fetch('/api/realtime/heartbeat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            clientId: this.clientId,
-            userId: this.currentUser?.id || 'usr_guest',
-            userName: this.getDisplayName(),
-            userRole: this.currentUser?.role || 'viewer',
-            userColor: this.userColor,
-            focusedCellId: this.activeFocusId,
-            device: window.innerWidth < 768 ? 'mobile' : 'desktop',
-          }),
-        }).catch(() => {});
       }
     }, 15000);
   }
 
-  private sendJoin() {
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-    const token = typeof window !== 'undefined' ? localStorage.getItem('convengers_auth_token') : null;
-    const payload = {
-      type: 'JOIN',
-      clientId: this.clientId,
-      userId: this.currentUser?.id || 'usr_guest',
-      userName: this.getDisplayName(),
-      userRole: this.currentUser?.role || 'viewer',
-      userColor: this.userColor,
-      device: isMobile ? 'mobile' : 'desktop',
-      token: token || undefined,
-    };
-
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(payload));
+  /** Join presence with the signed-in user's Firebase ID token (the server verifies it). */
+  private async sendJoin() {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !auth.currentUser) return;
+    let idToken: string;
+    try {
+      idToken = await auth.currentUser.getIdToken();
+    } catch {
+      return;
     }
-    // Also send via HTTP for instant presence even before WS completes
-    fetch('/api/realtime/heartbeat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }).catch(() => {});
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    this.ws?.send(
+      JSON.stringify({
+        type: 'JOIN',
+        clientId: this.clientId,
+        userName: this.getDisplayName(),
+        userColor: this.userColor,
+        device: isMobile ? 'mobile' : 'desktop',
+        idToken,
+      }),
+    );
   }
 
   private handleIncomingMessage(msg: any) {
@@ -237,12 +208,6 @@ export class RealtimeClient {
         this.remoteFocusMap = next;
         this.remoteFocusListeners.forEach((fn) => fn(this.remoteFocusMap));
       }
-    } else if (msg.type === 'CELL_EDIT_APPLIED') {
-      if (msg.clientId !== this.clientId) {
-        this.cellEditListeners.forEach((fn) => fn(msg));
-      }
-    } else if (msg.type === 'DASHBOARD_UPDATED' && msg.data) {
-      this.dashboardListeners.forEach((fn) => fn(msg.data));
     }
   }
 
@@ -253,11 +218,6 @@ export class RealtimeClient {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(payload));
     }
-    fetch('/api/realtime/focus', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }).catch(() => {});
   }
 
   public blurCell(cellId: string) {
@@ -268,41 +228,15 @@ export class RealtimeClient {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(payload));
     }
-    fetch('/api/realtime/blur', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }).catch(() => {});
   }
 
-  public editCell(entityType: string, entityId: string, field: string, value: any) {
-    if (this.currentUser?.role === 'viewer') {
-      console.warn('Realtime edit ignored: Current user is in read-only Viewer mode.');
-      return;
-    }
-
-    const payload = {
-      type: 'CELL_EDIT',
-      clientId: this.clientId,
-      entityType,
-      entityId,
-      field,
-      value,
-    };
-
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(payload));
-    } else {
-      // Direct REST fallback
-      fetch('/api/realtime/cell-edit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('convengers_auth_token') || ''}`,
-        },
-        body: JSON.stringify(payload),
-      }).catch(() => {});
-    }
+  /**
+   * Kept for callers: edits are no longer broadcast through this channel.
+   * Every edit is saved to Firestore, and Firestore's real-time listeners
+   * deliver it to every signed-in user (with security rules applied).
+   */
+  public editCell(_entityType: string, _entityId: string, _field: string, _value: unknown) {
+    // intentionally empty
   }
 
   // --- EVENT SUBSCRIPTIONS ---
@@ -340,7 +274,6 @@ export class RealtimeClient {
 
   public destroy() {
     if (this.ws) this.ws.close();
-    if (this.sse) this.sse.close();
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
     this.presenceListeners.clear();

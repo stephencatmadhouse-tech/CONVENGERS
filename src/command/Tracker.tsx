@@ -377,7 +377,7 @@ const AddActivityModal: React.FC<{ onClose: () => void; milestone?: boolean }> =
             Cancel
           </button>
           <button type="button" className="cv-btn primary" disabled={!!errors.length || saving || dupes.length > 0} onClick={save}>
-            {saving ? 'Saving…' : 'Create activity'}
+            {saving ? 'Saving…' : 'Create Activity'}
           </button>
         </>
       }

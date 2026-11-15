@@ -8,7 +8,7 @@
 
 import React from 'react';
 
-const HEADER_BANNER = '/assets/aistudio/ChatGPT_Image_Oct_2__2026__07_17_46_PM_57c7d066.png';
+const HEADER_BANNER = '/assets/aistudio/header-banner.webp';
 
 export const BrandHeader: React.FC<{ subtitle?: string; right?: React.ReactNode }> = ({ subtitle, right }) => (
   <header className="cb-brand" role="banner">

@@ -482,6 +482,7 @@ const ManpowerEditor: React.FC<{ item: ManpowerPlan; canDelete: boolean; onClose
 }) => {
   const { register, canEdit, user } = useCommand();
   const [f, setF] = useState(item);
+  const [confirmDel, setConfirmDel] = useState(false);
   const isNew = !item.createdAt;
   const set = <K extends keyof ManpowerPlan>(k: K, v: ManpowerPlan[K]) => setF((x) => ({ ...x, [k]: v }));
   const errors: string[] = [];
@@ -489,7 +490,8 @@ const ManpowerEditor: React.FC<{ item: ManpowerPlan; canDelete: boolean; onClose
   if (!isValidIso(f.start)) errors.push('Start date is required.');
   if (f.end && f.end < f.start) errors.push('End date cannot be before start date.');
   return (
-    <Modal
+    <>
+      <Modal
       title={isNew ? 'Add manpower plan' : f.trade}
       sub={f.id}
       onClose={onClose}
@@ -501,10 +503,7 @@ const ManpowerEditor: React.FC<{ item: ManpowerPlan; canDelete: boolean; onClose
               type="button"
               className="cv-btn danger"
               style={{ marginRight: 'auto' }}
-              onClick={async () => {
-                await onDelete(f.id);
-                onClose();
-              }}
+              onClick={() => setConfirmDel(true)}
             >
               Delete
             </button>
@@ -568,6 +567,21 @@ const ManpowerEditor: React.FC<{ item: ManpowerPlan; canDelete: boolean; onClose
           <textarea className="cv-textarea" value={f.notes || ''} onChange={(e) => set('notes', e.target.value)} />
         </Field>
       </fieldset>
-    </Modal>
+      </Modal>
+      {confirmDel && (
+        <ConfirmDialog
+          title="Delete this manpower plan?"
+          message="The plan is removed from the manpower schedule and the construction calendar. This cannot be undone."
+          confirmLabel="Delete"
+          danger
+          onCancel={() => setConfirmDel(false)}
+          onConfirm={async () => {
+            setConfirmDel(false);
+            await onDelete(f.id);
+            onClose();
+          }}
+        />
+      )}
+    </>
   );
 };

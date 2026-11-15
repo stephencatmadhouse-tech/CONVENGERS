@@ -22,8 +22,7 @@
  * the URL or calling the database directly.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-import App from './App.tsx';
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { authService } from './firebase/authService.ts';
 import { audienceOf, canOpenModule, landingModule, ROLE_LABEL } from './auth/roles.ts';
 import { User } from './types/index.ts';
@@ -31,6 +30,9 @@ import { AuthModal } from './components/Modals.tsx';
 import { PortalApp } from './portal/PortalApp.tsx';
 import { LOGO_SVG } from './constants/assets.ts';
 import './portal/portal.css';
+
+// The internal Command Center loads only for signed-in internal users; client visitors never download it.
+const App = lazy(() => import('./App.tsx'));
 
 function useHash() {
   const [hash, setHash] = useState(() => (typeof window !== 'undefined' ? window.location.hash : ''));
@@ -121,7 +123,14 @@ export default function Root() {
   };
 
   const internalView = !isPortalHash(hash);
-  if (internalView && audience === 'internal') return <App />;
+  const loading = (label: string) => (
+    <div className="pt-center">
+      <img src={LOGO_SVG} alt="Convengers" className="pt-landing-logo" />
+      <div className="pt-spinner" aria-label="Loading" />
+      <div className="pt-muted">{label}</div>
+    </div>
+  );
+  if (internalView && audience === 'internal') return <Suspense fallback={loading('Opening the Master Project Tracker…')}>{<App />}</Suspense>;
   if (internalView && audience === 'pending' && ready) return <Pending user={user} />;
   if (internalView && !ready) {
     return (
