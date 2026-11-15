@@ -3,12 +3,12 @@
 :root {
   --s: 1;
   color-scheme: light;
-  accent-color: #7041c8;
+  accent-color: #7B4DFF;
 }
 
 html[data-eff='dark'] {
   color-scheme: dark;
-  accent-color: #7b4dff;
+  accent-color: #F5C518;
 }
 
 * {
@@ -404,9 +404,14 @@ body {
 }
 
 .shbtn.pri {
-  background: var(--sx-bg-12);
-  color: var(--sx-text-1);
-  border-color: var(--sx-border-4);
+  background: #0A1140;
+  color: #FFFFFF;
+  border-color: #0A1140;
+}
+html[data-eff='dark'] .shbtn.pri {
+  background: #F5C518;
+  color: #060A24;
+  border-color: #F5C518;
 }
 
 .shexp {
@@ -432,7 +437,7 @@ body {
   bottom: 28px;
   transform: translateX(-50%);
   background: #4BE08A;
-  color: var(--sx-text-1);
+  color: #0A1140;
   font: 700 14px 'Barlow', sans-serif;
   padding: 9px 16px;
   border-radius: 20px;
@@ -535,19 +540,32 @@ body {
 }
 
 .pmb.on {
-  background: var(--sx-bg-12);
-  color: var(--sx-text-1);
-  border-color: var(--sx-border-4);
+  background: #7B4DFF;
+  color: #FFFFFF;
+  border-color: #7B4DFF;
 }
 
 .pmb.pri {
-  background: var(--sx-bg-12);
-  color: var(--sx-text-1);
-  border-color: var(--sx-border-4);
+  background: #0A1140;
+  color: #FFFFFF;
+  border-color: #0A1140;
+}
+html[data-eff='dark'] .pmb.on {
+  background: #7B4DFF;
+  color: #FFFFFF;
+  border-color: #7B4DFF;
+}
+html[data-eff='dark'] .pmb.pri {
+  background: #F5C518;
+  color: #060A24;
+  border-color: #F5C518;
 }
 
 .pmb.dng {
   border-color: #E0213B;
+  color: #E0213B;
+}
+html[data-eff='dark'] .pmb.dng {
   color: #FF9AA8;
 }
 
@@ -568,6 +586,9 @@ body {
 
 .pmi[type=date] {
   padding: 5px 6px;
+  color-scheme: light;
+}
+html[data-eff='dark'] .pmi[type=date] {
   color-scheme: dark;
 }
 
@@ -671,6 +692,9 @@ body {
 }
 
 .pmrow.od {
+  background: rgba(224, 33, 59, 0.08);
+}
+html[data-eff='dark'] .pmrow.od {
   background: rgba(224, 33, 59, 0.16);
 }
 
@@ -816,6 +840,9 @@ body {
 }
 
 .pmit.od {
+  background: rgba(224, 33, 59, 0.12);
+}
+html[data-eff='dark'] .pmit.od {
   background: rgba(224, 33, 59, 0.25);
 }
 
@@ -891,6 +918,9 @@ body {
 .pmchars input {
   width: 16px;
   height: 16px;
+  accent-color: #7B4DFF;
+}
+html[data-eff='dark'] .pmchars input {
   accent-color: #F5C518;
 }
 
@@ -999,7 +1029,7 @@ body.pmrep-active .pmrep-container {
   flex-direction: column;
   gap: 12px;
   padding-bottom: 14px;
-  border-bottom: 3px solid #1e1b4b;
+  border-bottom: 3px solid #0A1140;
   margin-bottom: 16px;
 }
 
@@ -1014,7 +1044,7 @@ body.pmrep-active .pmrep-container {
   font-weight: 800;
   font-size: 12px;
   letter-spacing: 1.8px;
-  color: #5b21b6;
+  color: #7B4DFF;
   text-transform: uppercase;
 }
 
@@ -1024,7 +1054,7 @@ body.pmrep-active .pmrep-container {
   font-weight: 800;
   font-size: 26px;
   line-height: 1.1;
-  color: #0f172a;
+  color: #0A1140;
   text-transform: uppercase;
 }
 
@@ -1033,25 +1063,25 @@ body.pmrep-active .pmrep-container {
   flex-wrap: wrap;
   gap: 8px;
   font-size: 12px;
-  color: #475569;
+  color: #68738A;
 }
 
 .pmrep-stoppage {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #fff1f2;
-  border: 1px solid #fda4af;
+  background: #FFF1F2;
+  border: 1px solid #FECDD3;
   border-radius: 6px;
   padding: 6px 10px;
   font-size: 12px;
   font-weight: 600;
-  color: #881337;
+  color: #9F1239;
 }
 
 .pmrep-stoppage-tag {
-  background: #be123c;
-  color: #ffffff;
+  background: #E0213B;
+  color: #FFFFFF;
   font-family: 'Barlow Condensed', sans-serif;
   font-weight: 800;
   font-size: 11px;
@@ -1068,11 +1098,11 @@ body.pmrep-active .pmrep-container {
 }
 
 .pmrep-kpi {
-  border: 1px solid #cbd5e1;
-  border-top: 3px solid #5b21b6;
+  border: 1px solid #E5E7EB;
+  border-top: 3px solid #7B4DFF;
   border-radius: 6px;
   padding: 8px 10px;
-  background: #f8fafc;
+  background: #F7F7F2;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -1084,20 +1114,20 @@ body.pmrep-active .pmrep-container {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  color: #475569;
+  color: #68738A;
 }
 
 .pmrep-kpi-val {
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 20px;
   font-weight: 800;
-  color: #0f172a;
+  color: #0A1140;
   font-variant-numeric: tabular-nums;
 }
 
 .pmrep-kpi small {
   font-size: 10px;
-  color: #64748b;
+  color: #68738A;
 }
 
 .pmrep-section {
@@ -1110,10 +1140,10 @@ body.pmrep-active .pmrep-container {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  color: #1e1b4b;
+  color: #0A1140;
   margin: 0 0 8px;
   padding-bottom: 4px;
-  border-bottom: 2px solid #cbd5e1;
+  border-bottom: 2px solid #E5E7EB;
   break-after: avoid;
 }
 
@@ -1125,13 +1155,13 @@ body.pmrep-active .pmrep-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
+  background: #F7F7F2;
+  border: 1px solid #E5E7EB;
   border-bottom: 0;
   padding: 5px 8px;
   font-size: 12px;
   font-weight: 700;
-  color: #1e1b4b;
+  color: #0A1140;
   break-after: avoid;
 }
 

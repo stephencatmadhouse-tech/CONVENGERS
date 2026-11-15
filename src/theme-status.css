@@ -1,27 +1,28 @@
-/* Convengers status palette — light (default) and dark (original) */
+/* Convengers official status color system — Completed #4BE08A, In Progress #1F6FE0,
+   Delayed #E0213B, Attention/Warning #FF9A1F, plus light & dark theme variants */
 :root {
-  --st-upcoming-bg: #F1F1F3; --st-upcoming-fg: #555555; --st-upcoming-bd: #D9D9DE;
-  --st-in-progress-bg: #7026C8; --st-in-progress-fg: #FFFFFF; --st-in-progress-bd: #7026C8;
-  --st-ongoing-bg: #7026C8; --st-ongoing-fg: #FFFFFF; --st-ongoing-bd: #7026C8;
-  --st-complete-bg: #22A06B; --st-complete-fg: #FFFFFF; --st-complete-bd: #22A06B;
-  --st-completed-bg: #22A06B; --st-completed-fg: #FFFFFF; --st-completed-bd: #22A06B;
-  --st-delayed-bg: #E5484D; --st-delayed-fg: #FFFFFF; --st-delayed-bd: #E5484D;
-  --st-date-passed-confirm-bg: #F5A623; --st-date-passed-confirm-fg: #303030; --st-date-passed-confirm-bd: #E0951A;
-  --st-on-hold-bg: #C9C9D6; --st-on-hold-fg: #303030; --st-on-hold-bd: #B5B5C5;
-  --st-not-started-bg: #F1F1F3; --st-not-started-fg: #555555; --st-not-started-bd: #D9D9DE;
-  --st-on-track-bg: #7026C8; --st-on-track-fg: #FFFFFF; --st-on-track-bd: #7026C8;
-  --st-planned-bg: #F1F1F3; --st-planned-fg: #555555; --st-planned-bd: #D9D9DE;
-  --st-for-confirmation-bg: #F5A623; --st-for-confirmation-fg: #303030; --st-for-confirmation-bd: #E0951A;
-  --st-scheduled-bg: #7026C8; --st-scheduled-fg: #FFFFFF; --st-scheduled-bd: #7026C8;
-  --st-rescheduled-bg: #FFFFFF; --st-rescheduled-fg: #8B35E8; --st-rescheduled-bd: #8B35E8;
-  --st-not-yet-started-bg: #F1F1F3; --st-not-yet-started-fg: #555555; --st-not-yet-started-bd: #D9D9DE;
-  --st-preparation-ongoing-bg: #7026C8; --st-preparation-ongoing-fg: #FFFFFF; --st-preparation-ongoing-bd: #7026C8;
-  --st-ready-for-pouring-bg: #F5A623; --st-ready-for-pouring-fg: #303030; --st-ready-for-pouring-bd: #E0951A;
-  --st-scheduled-for-pouring-bg: #7026C8; --st-scheduled-for-pouring-fg: #FFFFFF; --st-scheduled-for-pouring-bd: #7026C8;
-  --st-pouring-ongoing-bg: #7026C8; --st-pouring-ongoing-fg: #FFFFFF; --st-pouring-ongoing-bd: #7026C8;
-  --st-pouring-completed-bg: #22A06B; --st-pouring-completed-fg: #FFFFFF; --st-pouring-completed-bd: #22A06B;
-  --st-curing-ongoing-bg: #7026C8; --st-curing-ongoing-fg: #FFFFFF; --st-curing-ongoing-bd: #7026C8;
-  --st-completed-approved-bg: #22A06B; --st-completed-approved-fg: #FFFFFF; --st-completed-approved-bd: #22A06B;
+  --st-upcoming-bg: #F7F7F2; --st-upcoming-fg: #68738A; --st-upcoming-bd: #E5E7EB;
+  --st-in-progress-bg: #1F6FE0; --st-in-progress-fg: #FFFFFF; --st-in-progress-bd: #1F6FE0;
+  --st-ongoing-bg: #1F6FE0; --st-ongoing-fg: #FFFFFF; --st-ongoing-bd: #1F6FE0;
+  --st-complete-bg: #4BE08A; --st-complete-fg: #0A1140; --st-complete-bd: #4BE08A;
+  --st-completed-bg: #4BE08A; --st-completed-fg: #0A1140; --st-completed-bd: #4BE08A;
+  --st-delayed-bg: #E0213B; --st-delayed-fg: #FFFFFF; --st-delayed-bd: #E0213B;
+  --st-date-passed-confirm-bg: #FF9A1F; --st-date-passed-confirm-fg: #0A1140; --st-date-passed-confirm-bd: #FF9A1F;
+  --st-on-hold-bg: #E5E7EB; --st-on-hold-fg: #172033; --st-on-hold-bd: #D1D5DB;
+  --st-not-started-bg: #F7F7F2; --st-not-started-fg: #68738A; --st-not-started-bd: #E5E7EB;
+  --st-on-track-bg: #1F6FE0; --st-on-track-fg: #FFFFFF; --st-on-track-bd: #1F6FE0;
+  --st-planned-bg: #F7F7F2; --st-planned-fg: #68738A; --st-planned-bd: #E5E7EB;
+  --st-for-confirmation-bg: #FF9A1F; --st-for-confirmation-fg: #0A1140; --st-for-confirmation-bd: #FF9A1F;
+  --st-scheduled-bg: #1F6FE0; --st-scheduled-fg: #FFFFFF; --st-scheduled-bd: #1F6FE0;
+  --st-rescheduled-bg: #FFFFFF; --st-rescheduled-fg: #7B4DFF; --st-rescheduled-bd: #7B4DFF;
+  --st-not-yet-started-bg: #F7F7F2; --st-not-yet-started-fg: #68738A; --st-not-yet-started-bd: #E5E7EB;
+  --st-preparation-ongoing-bg: #1F6FE0; --st-preparation-ongoing-fg: #FFFFFF; --st-preparation-ongoing-bd: #1F6FE0;
+  --st-ready-for-pouring-bg: #FF9A1F; --st-ready-for-pouring-fg: #0A1140; --st-ready-for-pouring-bd: #FF9A1F;
+  --st-scheduled-for-pouring-bg: #1F6FE0; --st-scheduled-for-pouring-fg: #FFFFFF; --st-scheduled-for-pouring-bd: #1F6FE0;
+  --st-pouring-ongoing-bg: #FF9A1F; --st-pouring-ongoing-fg: #0A1140; --st-pouring-ongoing-bd: #FF9A1F;
+  --st-pouring-completed-bg: #4BE08A; --st-pouring-completed-fg: #0A1140; --st-pouring-completed-bd: #4BE08A;
+  --st-curing-ongoing-bg: #1F6FE0; --st-curing-ongoing-fg: #FFFFFF; --st-curing-ongoing-bd: #1F6FE0;
+  --st-completed-approved-bg: #4BE08A; --st-completed-approved-fg: #0A1140; --st-completed-approved-bd: #4BE08A;
 }
 html[data-eff='dark'] {
   --st-upcoming-bg: rgba(255,255,255,.12); --st-upcoming-fg: #DCE3F7; --st-upcoming-bd: rgba(255,255,255,.3);
@@ -50,12 +51,12 @@ html[data-eff='dark'] {
 
 /* Timeline overlays (shoot windows, work stoppage, holidays) */
 :root {
-  --ov-shoot-bg: rgba(217, 72, 138, 0.07);
-  --ov-shoot-bd: 1px solid rgba(217, 72, 138, 0.28);
-  --ov-stop-bg: rgba(217, 45, 63, 0.1);
-  --ov-stop-strong: rgba(217, 45, 63, 0.3);
-  --ov-stop-hatch: repeating-linear-gradient(45deg, rgba(217, 45, 63, 0.14), rgba(217, 45, 63, 0.14) 4px, rgba(217, 45, 63, 0.04) 4px, rgba(217, 45, 63, 0.04) 8px);
-  --ov-holiday-hatch: repeating-linear-gradient(45deg, rgba(217, 45, 63, 0.08), rgba(217, 45, 63, 0.08) 4px, transparent 4px, transparent 8px);
+  --ov-shoot-bg: rgba(123, 77, 255, 0.08);
+  --ov-shoot-bd: 1px solid rgba(123, 77, 255, 0.28);
+  --ov-stop-bg: rgba(224, 33, 59, 0.09);
+  --ov-stop-strong: rgba(224, 33, 59, 0.26);
+  --ov-stop-hatch: repeating-linear-gradient(45deg, rgba(224, 33, 59, 0.14), rgba(224, 33, 59, 0.14) 4px, rgba(224, 33, 59, 0.04) 4px, rgba(224, 33, 59, 0.04) 8px);
+  --ov-holiday-hatch: repeating-linear-gradient(45deg, rgba(224, 33, 59, 0.08), rgba(224, 33, 59, 0.08) 4px, transparent 4px, transparent 8px);
 }
 html[data-eff='dark'] {
   --ov-shoot-bg: rgba(255,93,143,0.18);
@@ -68,14 +69,14 @@ html[data-eff='dark'] {
 
 /* Master timeline bars */
 :root {
-  --tl-c-done: #22A06B;
-  --tl-c-prog: #7026C8;
-  --tl-c-up: #F1F1F3;
-  --tl-p-done: #C02AE0;
-  --tl-p-sched: #A34FEA;
-  --tl-p-up: #F7F7F8;
-  --tl-up-fg: #303030;
-  --tl-up-fg2: #777777;
+  --tl-c-done: #4BE08A;
+  --tl-c-prog: #1F6FE0;
+  --tl-c-up: #E5E7EB;
+  --tl-p-done: #4BE08A;
+  --tl-p-sched: #7B4DFF;
+  --tl-p-up: #F7F7F2;
+  --tl-up-fg: #172033;
+  --tl-up-fg2: #68738A;
 }
 html[data-eff='dark'] {
   --tl-c-done: linear-gradient(90deg, #237A4A, #4BE08A);
@@ -90,9 +91,9 @@ html[data-eff='dark'] {
 
 /* Theme ink for Tailwind text classes in slides & modals */
 :root {
-  --sx-ink: #303030;
-  --sx-ink-90: rgba(48, 48, 48, 0.9);
-  --sx-hover: rgba(48,48,48,0.028);
+  --sx-ink: #172033;
+  --sx-ink-90: rgba(23, 32, 51, 0.9);
+  --sx-hover: rgba(10, 17, 64, 0.035);
 }
 html[data-eff='dark'] {
   --sx-ink: #ffffff;
@@ -100,32 +101,34 @@ html[data-eff='dark'] {
   --sx-hover: rgba(255, 255, 255, 0.1);
 }
 
-/* Toolbar — light identity (dark theme keeps the original toolbar) */
+/* Toolbar — light identity (Secondary: white w/ navy border; Active: purple #7B4DFF) */
 html:not([data-eff='dark']) .toolbar {
-  background: #ffffff;
-  border-bottom: 1px solid #EAEAEA;
-  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.06);
+  background: #FFFFFF;
+  border-bottom: 1px solid #E5E7EB;
+  box-shadow: 0 1px 3px rgba(10, 17, 64, 0.05);
 }
 html:not([data-eff='dark']) .toolbar button {
-  background: #ffffff;
-  border-color: #7026C8;
-  color: #7026C8;
+  background: #FFFFFF;
+  border-color: #0A1140;
+  color: #0A1140;
   font-weight: 600;
 }
 html:not([data-eff='dark']) .toolbar button:hover {
-  background: #ffffff;
-  border-color: #5E1FAE;
-  color: #5E1FAE;
-  box-shadow: 0 0 0 3px rgba(112, 38, 200, 0.12);
+  background: #F7F7F2;
+  border-color: #121C5A;
+  color: #0A1140;
+  box-shadow: none;
 }
 html:not([data-eff='dark']) .toolbar button.on {
-  background: #7026C8;
-  border-color: #7026C8;
-  color: #ffffff;
+  background: #7B4DFF;
+  border-color: #7B4DFF;
+  color: #FFFFFF;
 }
 html:not([data-eff='dark']) .toolbar button.on:hover {
-  background: #5E1FAE;
+  background: #6B3CEB;
+  border-color: #6B3CEB;
 }
 html:not([data-eff='dark']) ::selection {
-  background: #C7C7D0;
+  background: rgba(123, 77, 255, 0.18);
+  color: #0A1140;
 }

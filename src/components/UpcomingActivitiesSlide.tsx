@@ -17,7 +17,7 @@ import {
 } from '../types/index.ts';
 import { STATUS_COLORS, TYPE_COLORS } from '../constants/assets.ts';
 import { BrandLogo } from './BrandLogo.tsx';
-import { resolveMeta } from '../domain/register.ts';
+import { DEFAULT_CONSTRUCTION_OWNER, resolveMeta } from '../domain/register.ts';
 import { themed } from '../utils/themeColors.ts';
 import {
   parseDateWindow,
@@ -129,7 +129,7 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
         start,
         end,
         status,
-        owner: ov.owner || '',
+        owner: ov.owner?.trim() || DEFAULT_CONSTRUCTION_OWNER,
         remarks: ov.remarks || '',
         overdue: isOverdue,
         kind: 'scope',
@@ -242,7 +242,7 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
         start,
         end: end || start,
         status,
-        owner: ov.owner || '',
+        owner: ov.owner?.trim() || DEFAULT_CONSTRUCTION_OWNER,
         remarks: p.remarks || ov.remarks || '',
         overdue: isOverdue,
         kind: 'pour',
@@ -266,7 +266,7 @@ export const UpcomingActivitiesSlide: React.FC<UpcomingActivitiesSlideProps> = (
         start,
         end: end || start,
         status: a.status,
-        owner: a.owner || '',
+        owner: a.owner?.trim() || (a.category !== 'Production' && a.category !== 'Milestone' ? DEFAULT_CONSTRUCTION_OWNER : ''),
         remarks: a.notes || '',
         overdue: isOverdue,
         kind: 'manual',

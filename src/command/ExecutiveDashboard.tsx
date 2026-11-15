@@ -44,7 +44,7 @@ const STATUSES = ['Completed', 'Ongoing', 'Delayed', 'Upcoming', 'On Hold'] as c
 
 export const TierBadge: React.FC<{ tier: Tier | null }> = ({ tier }) =>
   tier ? (
-    <span className="ex-tier" style={{ background: TIER_HEX[tier] }}>
+    <span className="ex-tier" style={{ background: TIER_HEX[tier], color: tier === 'Excellent' || tier === 'Needs Attention' ? '#0A1140' : '#FFFFFF' }}>
       {tier}
     </span>
   ) : (
@@ -104,16 +104,23 @@ const ActivityListModal: React.FC<{ spec: ListSpec; onClose: () => void }> = ({ 
   );
 };
 
-const KpiCard: React.FC<{ icon: LucideIcon; label: string; value: React.ReactNode; sub: string; color: string; dark?: boolean; onClick?: () => void }> = ({
+const KpiCard: React.FC<{ icon: LucideIcon; label: string; value: React.ReactNode; sub: string; color: string; fg?: string; dark?: boolean; onClick?: () => void }> = ({
   icon,
   label,
   value,
   sub,
   color,
+  fg,
   dark,
   onClick,
 }) => (
-  <button type="button" className={`ex-kpi ${dark ? 'dark' : ''}`} style={{ ['--k' as any]: color }} onClick={onClick} disabled={!onClick}>
+  <button
+    type="button"
+    className={`ex-kpi ${dark ? 'dark' : ''}`}
+    style={{ ['--k' as any]: color, ['--k-fg' as any]: fg || color }}
+    onClick={onClick}
+    disabled={!onClick}
+  >
     <span className="ex-kpi-ico">{React.createElement(icon, { size: 20, strokeWidth: 2.1, 'aria-hidden': true })}</span>
     <span className="ex-kpi-l">{label}</span>
     <span className="ex-kpi-v">{value}</span>
@@ -137,28 +144,29 @@ export const ExecutiveDashboard: React.FC = () => {
           label="Active Workstreams"
           value={k.activeStreams.length}
           sub={`of ${k.totalStreams} in Convengers Bahay Build`}
-          color="#7026C8"
+          color="#0A1140"
           onClick={() => setList({ title: 'Open activities', sub: `Active workstreams: ${k.activeStreams.join(', ') || '—'}`, list: k.lists.active })}
         />
-        <KpiCard icon={ActivityIcon} label="In Progress" value={k.lists.inprogress.length} sub="activities & milestones ongoing" color="#8B35E8" onClick={() => setList({ title: 'In progress', list: k.lists.inprogress })} />
+        <KpiCard icon={ActivityIcon} label="In Progress" value={k.lists.inprogress.length} sub="activities & milestones ongoing" color="#1F6FE0" onClick={() => setList({ title: 'In progress', list: k.lists.inprogress })} />
         <KpiCard
           icon={CheckCircle2}
           label="Completed This Month"
           value={k.lists.completedMonth.length}
           sub={monthLabel(monthRange(today).key)}
-          color="#22A06B"
+          color="#4BE08A"
+          fg="#117A42"
           onClick={() => setList({ title: 'Completed this month', list: k.lists.completedMonth })}
         />
-        <KpiCard icon={AlarmClock} label="Overdue" value={k.lists.overdue.length} sub="past target, not completed" color="#E5484D" onClick={() => setList({ title: 'Overdue', list: k.lists.overdue })} />
-        <KpiCard icon={CalendarClock} label="Due in 7 Days" value={k.lists.due7.length} sub={`to ${fmtDate(addDays(today, 7), false)}`} color="#F5A623" dark onClick={() => setList({ title: 'Due in the next 7 days', list: k.lists.due7 })} />
-        <KpiCard icon={CalendarRange} label="Due in 30 Days" value={k.lists.due30.length} sub={`to ${fmtDate(addDays(today, 30), false)}`} color="#A34FEA" onClick={() => setList({ title: 'Due in the next 30 days', list: k.lists.due30 })} />
-        <KpiCard icon={PauseCircle} label="Blocked / On Hold" value={k.lists.blocked.length} sub="flagged on hold" color="#C02AE0" onClick={() => setList({ title: 'Blocked / on hold', list: k.lists.blocked })} />
+        <KpiCard icon={AlarmClock} label="Overdue" value={k.lists.overdue.length} sub="past target, not completed" color="#E0213B" onClick={() => setList({ title: 'Overdue', list: k.lists.overdue })} />
+        <KpiCard icon={CalendarClock} label="Due in 7 Days" value={k.lists.due7.length} sub={`to ${fmtDate(addDays(today, 7), false)}`} color="#F5C518" fg="#0A1140" dark onClick={() => setList({ title: 'Due in the next 7 days', list: k.lists.due7 })} />
+        <KpiCard icon={CalendarRange} label="Due in 30 Days" value={k.lists.due30.length} sub={`to ${fmtDate(addDays(today, 30), false)}`} color="#7B4DFF" onClick={() => setList({ title: 'Due in the next 30 days', list: k.lists.due30 })} />
+        <KpiCard icon={PauseCircle} label="Blocked / On Hold" value={k.lists.blocked.length} sub="flagged on hold" color="#FF9A1F" fg="#B45309" onClick={() => setList({ title: 'Blocked / on hold', list: k.lists.blocked })} />
         <KpiCard
           icon={Target}
           label="On-Time Completion"
           value={k.onTime.pct === null ? '—' : `${k.onTime.pct}%`}
           sub={k.onTime.measured ? `${k.onTime.onTime} of ${k.onTime.measured} finished on or before baseline (recorded dates)` : 'add actual finish dates to measure'}
-          color="#303030"
+          color="#121C5A"
           onClick={() => setList({ title: 'Completed activities', sub: 'On time = actual finish on or before the baseline target', list: register.filter((r) => r.status === 'Completed') })}
         />
       </div>
@@ -301,8 +309,8 @@ const Overview: React.FC<{ onList: (s: ListSpec) => void; calItems: CalItem[]; o
               </button>
             ))}
             {upcoming.length > 8 && (
-              <button type="button" className="cv-dim" onClick={() => actions.navigate('calendar/agenda')}>
-                + {upcoming.length - 8} more in the forecast
+              <button type="button" className="cv-dim" onClick={() => actions.navigate('calendar/upcomings')}>
+                + {upcoming.length - 8} more in Upcomings
               </button>
             )}
           </div>
@@ -330,7 +338,7 @@ const MiniCalendar: React.FC<{ items: CalItem[]; onDay: (d: string) => void }> =
         return (
           <button key={d} type="button" className={`ex-mcal-d ${out ? 'out' : ''} ${d === today ? 'today' : ''} ${n.length ? 'has' : ''}`} onClick={() => onDay(d)} title={`${fmtDate(d)} · ${n.length} item${n.length === 1 ? '' : 's'}`}>
             {Number(d.slice(8))}
-            {n.length > 0 && <i style={{ background: n.some((x) => x.overdue) ? '#E5484D' : CAL_COLOR[n[0].type] }} />}
+            {n.length > 0 && <i style={{ background: n.some((x) => x.overdue) ? '#E0213B' : CAL_COLOR[n[0].type] }} />}
           </button>
         );
       })}
@@ -405,7 +413,7 @@ const MilestoneAnalysis: React.FC = () => {
           <ChartBox
             label="Days to upcoming milestone targets"
             height={Math.max(220, next.length * 26)}
-            spec={{ type: 'bar', horizontal: true, labels: next.map((x) => x.r.name.slice(0, 42)), datasets: [{ label: 'Days to target', data: next.map((x) => x.daysToGo || 0), color: next.map((x) => ((x.daysToGo || 0) <= 7 ? '#F5A623' : '#7026C8')) }], legend: false }}
+            spec={{ type: 'bar', horizontal: true, labels: next.map((x) => x.r.name.slice(0, 42)), datasets: [{ label: 'Days to target', data: next.map((x) => x.daysToGo || 0), color: next.map((x) => ((x.daysToGo || 0) <= 7 ? '#FF9A1F' : '#0A1140')) }], legend: false }}
           />
         )}
       </Card>
@@ -522,7 +530,7 @@ const Team: React.FC<{ onList: (s: ListSpec) => void }> = ({ onList }) => {
               <button key={d} type="button" className="ex-lb-r" onClick={() => onList({ title: d, list: register.filter((r) => r.department === d) })}>
                 <span className="ex-lb-name">{d}</span>
                 <span className="ex-lb-bar">
-                  <i style={{ width: `${(n / depts[0][1]) * 100}%`, background: '#7026C8' }} />
+                  <i style={{ width: `${(n / depts[0][1]) * 100}%`, background: '#0A1140' }} />
                 </span>
                 <b>{n}</b>
               </button>

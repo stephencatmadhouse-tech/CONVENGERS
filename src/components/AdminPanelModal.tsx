@@ -86,10 +86,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     pending: { bg: 'var(--sxa-bg-6)', text: 'var(--sx-text-10)', border: 'var(--sxa-border-2)' },
     engineer: { bg: 'var(--sxa-bg-5)', text: 'var(--sx-text-11)', border: 'var(--sxa-border-4)' },
     production: { bg: 'var(--sxa-bg-5)', text: 'var(--sx-text-11)', border: 'var(--sxa-border-4)' },
-    owner: { bg: '#FFFFFF', text: '#C02AE0', border: '#C02AE0' },
-    executive: { bg: '#FFFFFF', text: '#C02AE0', border: '#C02AE0' },
-    client: { bg: '#FFFFFF', text: '#C02AE0', border: '#C02AE0' },
-    stakeholder: { bg: '#FFFFFF', text: '#C02AE0', border: '#C02AE0' },
+    owner: { bg: '#FFFFFF', text: '#7B4DFF', border: '#7B4DFF' },
+    executive: { bg: '#FFFFFF', text: '#7B4DFF', border: '#7B4DFF' },
+    client: { bg: '#FFFFFF', text: '#7B4DFF', border: '#7B4DFF' },
+    stakeholder: { bg: '#FFFFFF', text: '#7B4DFF', border: '#7B4DFF' },
   };
 
   const pendingCount = users.filter((u) => u.role === 'pending' || u.status === 'pending').length;
@@ -149,9 +149,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                     key={u.id}
                     className={`p-3.5 rounded-lg border transition-all ${
                       isPending
-                        ? 'bg-[#181105] border-[var(--sxa-border-2)]/80 shadow-[0_0_12px_rgba(255,154,31,0.2)]'
+                        ? 'bg-[#FF9A1F]/10 border-[#FF9A1F]'
                         : isRevoked
-                        ? 'bg-[#150a0f] border-red-900/60 opacity-60'
+                        ? 'bg-[#E0213B]/10 border-[#E0213B]/40 opacity-70'
                         : 'bg-[var(--sx-bg-5)] border-[var(--sx-border-6)]/50 hover:border-[var(--sx-border-6)]'
                     }`}
                   >
@@ -226,7 +226,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                   newStatus: 'active',
                                 })
                               }
-                              className="px-2.5 py-1 rounded bg-[var(--sx-bg-12)]/20 hover:bg-[var(--sx-bg-12)]/40 border border-[var(--sx-border-4)] text-[#F5C518] text-xs font-bold transition-all"
+                              className="px-2.5 py-1 rounded bg-[#F5C518] hover:bg-[#e5b712] border border-[#0A1140] text-[#0A1140] text-xs font-bold transition-all"
                             >
                               Approve as Manager
                             </button>
@@ -317,7 +317,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         {/* Confirmation Modal Overlay */}
         {confirmDialog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
-            <div className="p-5 bg-[var(--sx-bg-14)] border-2 border-[var(--sx-border-4)] rounded-xl shadow-[0_0_24px_rgba(245,197,24,0.3)] max-w-md w-full">
+            <div className="p-5 bg-[var(--sx-bg-14)] border-2 border-[var(--sx-border-4)] rounded-xl shadow-xl max-w-md w-full">
               <h3 className="text-base font-bold text-[var(--sx-ink)] mb-2 flex items-center gap-2">
                 <span>⚠️</span> Confirm Role &amp; Access Change
               </h3>

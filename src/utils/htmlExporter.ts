@@ -79,7 +79,7 @@ export function exportDashboardAsHtml(fileName?: string): void {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Convengers Assemble — Bahay Build Timeline (Exported ${todayStr})</title>
+  <title>Project Management Master Tracker — Bahay Build 2.0 (Exported ${todayStr})</title>
   <meta name="description" content="Convengers Bahay Build: Interactive full-stack project dashboard for timeline, scopes of work, concrete pouring milestones, and production calendar." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -128,7 +128,7 @@ export function exportDashboardAsHtml(fileName?: string): void {
     .export-brand span.domain {
       font-family: monospace;
       font-size: 11px;
-      color: #BAC4E2;
+      color: #E2E8F0;
       background: #060A24;
       border: 1px solid #7B4DFF;
       padding: 2px 6px;
@@ -146,7 +146,7 @@ export function exportDashboardAsHtml(fileName?: string): void {
       border-radius: 6px;
       border: 1px solid rgba(123, 77, 255, 0.5);
       background: #121C5A;
-      color: #BAC4E2;
+      color: #E2E8F0;
       cursor: pointer;
       transition: all 0.15s ease;
     }
@@ -203,8 +203,8 @@ export function exportDashboardAsHtml(fileName?: string): void {
 <body>
   <div class="export-topbar">
     <div class="export-brand">
-      <span>CONVENGERS ASSEMBLE</span>
-      <span class="domain">www.ConvengersAssemble.com</span>
+      <span>PROJECT MANAGEMENT MASTER TRACKER</span>
+      <span class="domain">Bahay Build 2.0</span>
     </div>
     <div class="export-nav">
       <span style="font-size: 11px; font-weight: 700; color: #F5C518; text-transform: uppercase; margin-right: 4px;">Jump to:</span>

@@ -19,13 +19,13 @@ import { Banner, Card, Empty, Field, Kpi, Modal, Pill, downloadFile, ConfirmDial
 
 const P_STATUSES: ProcurementStatus[] = ['Required', 'For Canvass', 'Ordered', 'Partially Delivered', 'Delivered', 'Delayed', 'Cancelled'];
 const P_COLOR: Record<string, string> = {
-  Required: '#9A9AA3',
-  'For Canvass': '#F5A623',
-  Ordered: '#7026C8',
-  'Partially Delivered': '#8B35E8',
-  Delivered: '#22A06B',
-  Delayed: '#E5484D',
-  Cancelled: '#9A9AA3',
+  Required: '#68738A',
+  'For Canvass': '#FF9A1F',
+  Ordered: '#0A1140',
+  'Partially Delivered': '#1F6FE0',
+  Delivered: '#4BE08A',
+  Delayed: '#E0213B',
+  Cancelled: '#68738A',
 };
 
 /** A delivery is late when it is past its expected (or required) date and not delivered / cancelled. */
@@ -113,9 +113,9 @@ export const Procurement: React.FC = () => {
       {!store.shared && store.loaded && <Banner kind="warn">Shared procurement storage is not available yet (deploy the updated Firestore rules). New records are kept on this device only.</Banner>}
       <div className="cv-kpis">
         <Kpi label="Pending orders" value={pending} sub="Required · canvass · ordered · partial" />
-        <Kpi label="Received materials" value={delivered} color="#22A06B" />
-        <Kpi label="Delayed deliveries" value={late} color={late ? '#E5484D' : undefined} sub="Past expected / required date" />
-        <Kpi label="Due in 14 days" value={due14} color="#F5A623" />
+        <Kpi label="Received materials" value={delivered} color="#117A42" />
+        <Kpi label="Delayed deliveries" value={late} color={late ? '#E0213B' : undefined} sub="Past expected / required date" />
+        <Kpi label="Due in 14 days" value={due14} color="#B45309" />
         <Kpi label="Tracked items" value={active.length} />
       </div>
       <div className="cv-filters">
@@ -188,7 +188,7 @@ export const Procurement: React.FC = () => {
                     <td className={`nowrap ${lateNow ? 'cv-late' : ''}`}>{fmtDate(p.expectedDelivery)}</td>
                     <td className="nowrap">{fmtDate(p.actualDelivery)}</td>
                     <td>
-                      <Pill label={lateNow && p.status !== 'Delayed' ? `${p.status} · late` : p.status} color={lateNow ? '#E5484D' : P_COLOR[p.status]} />
+                      <Pill label={lateNow && p.status !== 'Delayed' ? `${p.status} · late` : p.status} color={lateNow ? '#E0213B' : P_COLOR[p.status]} />
                     </td>
                   </tr>
                 );
@@ -381,7 +381,7 @@ export const Manpower: React.FC = () => {
       <div className="cv-kpis">
         <Kpi label="Crews on site today" value={onSiteToday.length} sub={onSiteToday.length ? `${onSiteToday.reduce((s, m) => s + (m.headcount || 0), 0)} workers recorded` : 'No manpower recorded for today'} />
         <Kpi label="Manpower plans" value={store.items.filter((m) => !m.archived).length} />
-        <Kpi label="Deliveries due (14 days)" value={deliveriesSoon.length} color="#F5A623" />
+        <Kpi label="Deliveries due (14 days)" value={deliveriesSoon.length} color="#B45309" />
       </div>
       <Card
         title="Manpower schedule"
@@ -445,7 +445,7 @@ export const Manpower: React.FC = () => {
                     {p.supplier || 'Supplier not yet provided'} · expected {fmtDate(p.expectedDelivery || p.requiredDate)}
                   </div>
                 </div>
-                <Pill label={isDeliveryLate(p, today) ? 'Late' : p.status} color={isDeliveryLate(p, today) ? '#E5484D' : P_COLOR[p.status]} />
+                <Pill label={isDeliveryLate(p, today) ? 'Late' : p.status} color={isDeliveryLate(p, today) ? '#E0213B' : P_COLOR[p.status]} />
               </div>
             ))}
           </div>

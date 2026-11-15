@@ -282,7 +282,7 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
           detail: `Handover / turnover in ${plural(d, 'day')} (${fmtDate(e.date)}) · calendar entry`,
           date: e.date,
           action: 'Confirm turnover readiness and attendees',
-          route: `calendar/agenda/${e.date}`,
+          route: `calendar/upcomings/${e.date}`,
           owner: e.owner,
         });
       }
@@ -296,7 +296,7 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
         detail: `${e.type} on ${fmtDate(e.date)} not marked done (${plural(diffDays(e.date, today), 'day')})`,
         date: e.date,
         action: 'Record the result and mark the entry done',
-        route: `calendar/agenda/${e.date}`,
+        route: `calendar/upcomings/${e.date}`,
         owner: e.owner,
       });
     }

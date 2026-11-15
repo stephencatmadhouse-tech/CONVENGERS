@@ -17,14 +17,14 @@ import { addDays, diffDays, isValidIso, weekRange } from './dates.ts';
 export type CalType = 'Milestone' | 'Construction' | 'Concrete pour' | 'Production' | 'Inspection' | 'Delivery' | 'Handover / turnover' | 'Manual';
 
 export const CAL_TYPES: { id: CalType; color: string }[] = [
-  { id: 'Milestone', color: '#7026C8' },
-  { id: 'Construction', color: '#8B35E8' },
-  { id: 'Concrete pour', color: '#4F46E5' },
-  { id: 'Production', color: '#C02AE0' },
-  { id: 'Inspection', color: '#F5A623' },
-  { id: 'Delivery', color: '#0E9F9A' },
-  { id: 'Handover / turnover', color: '#22A06B' },
-  { id: 'Manual', color: '#777777' },
+  { id: 'Milestone', color: '#F5C518' },
+  { id: 'Construction', color: '#0A1140' },
+  { id: 'Concrete pour', color: '#1F6FE0' },
+  { id: 'Production', color: '#7B4DFF' },
+  { id: 'Inspection', color: '#FF9A1F' },
+  { id: 'Delivery', color: '#121C5A' },
+  { id: 'Handover / turnover', color: '#4BE08A' },
+  { id: 'Manual', color: '#68738A' },
 ];
 export const CAL_COLOR: Record<CalType, string> = Object.fromEntries(CAL_TYPES.map((t) => [t.id, t.color])) as Record<CalType, string>;
 

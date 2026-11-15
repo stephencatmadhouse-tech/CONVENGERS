@@ -9,7 +9,7 @@
 
 import { SecureLink } from '../drive/SecureMedia.tsx';
 import React, { useMemo, useState } from 'react';
-import { RegisterActivity } from '../domain/register.ts';
+import { DEFAULT_CONSTRUCTION_OWNER, RegisterActivity } from '../domain/register.ts';
 import { validateActivityEdit, findDuplicates } from '../domain/validation.ts';
 import { fmtDate, fmtRange } from '../domain/dates.ts';
 import { CONSTRUCTION_CATEGORIES } from '../domain/categories.ts';
@@ -295,7 +295,13 @@ export const ActivityEditor: React.FC<{ activity: RegisterActivity; onClose: () 
       <fieldset className="cv-fieldset" disabled={!canEdit}>
         <legend>Accountability</legend>
         <Field label={r.kind === 'episode' ? 'Director / owner' : 'Responsible person (task owner)'}>
-          <input className="cv-input" value={form.owner} disabled={r.kind === 'episode' && !isManager} onChange={(e) => set('owner', e.target.value)} placeholder="e.g. Engr. Richard" />
+          <input
+            className="cv-input"
+            value={form.owner}
+            disabled={r.kind === 'episode' && !isManager}
+            onChange={(e) => set('owner', e.target.value)}
+            placeholder={r.stream === 'Construction' ? DEFAULT_CONSTRUCTION_OWNER : 'e.g. Direk Jefferd'}
+          />
         </Field>
         <Field label="Supporting personnel">
           <input className="cv-input" value={form.supporting} onChange={(e) => set('supporting', e.target.value)} />
@@ -414,7 +420,7 @@ export const ActivityEditor: React.FC<{ activity: RegisterActivity; onClose: () 
       <div className="cv-row">
         <Pill label={`Priority: ${r.priority}`} color={PRIORITY_HEX[r.priority]} />
         <Pill label={`Commitment: ${r.commitment}`} />
-        {r.slipDays !== 0 && <Pill label={`Slip vs baseline: ${r.slipDays > 0 ? '+' : ''}${r.slipDays} d`} color={r.slipDays > 0 ? '#E5484D' : '#22A06B'} />}
+        {r.slipDays !== 0 && <Pill label={`Slip vs baseline: ${r.slipDays > 0 ? '+' : ''}${r.slipDays} d`} color={r.slipDays > 0 ? '#E0213B' : '#4BE08A'} />}
       </div>
     </Modal>
   );

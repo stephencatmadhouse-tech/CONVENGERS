@@ -150,7 +150,7 @@ export const Documents: React.FC = () => {
                     </div>
                   </td>
                   <td>
-                    <Pill label={d.category} color="#7026C8" />
+                    <Pill label={d.category} color="#0A1140" />
                   </td>
                   <td className="nowrap">{fmtDate(d.date)}</td>
                   <td className="cv-dim">{register.find((r) => r.id === d.linkedActivityId)?.name || '—'}</td>

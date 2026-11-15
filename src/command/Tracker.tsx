@@ -7,7 +7,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useCommand } from './context.tsx';
-import { RegisterActivity } from '../domain/register.ts';
+import { DEFAULT_CONSTRUCTION_OWNER, RegisterActivity } from '../domain/register.ts';
 import { fmtDate, fmtRange, isValidIso } from '../domain/dates.ts';
 import { toCsv } from '../domain/reports.ts';
 import { findDuplicates } from '../domain/validation.ts';
@@ -400,7 +400,12 @@ const AddActivityModal: React.FC<{ onClose: () => void; milestone?: boolean }> =
           </select>
         </Field>
         <Field label="Responsible person">
-          <input className="cv-input" value={f.owner} onChange={(e) => setF({ ...f, owner: e.target.value })} />
+          <input
+            className="cv-input"
+            value={f.owner}
+            onChange={(e) => setF({ ...f, owner: e.target.value })}
+            placeholder={f.category === 'Production' ? 'e.g. Direk Jefferd' : f.category === 'Milestone' ? 'Optional responsible person' : DEFAULT_CONSTRUCTION_OWNER}
+          />
         </Field>
         <Field label="Planned start">
           <input type="date" className="cv-input" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} />

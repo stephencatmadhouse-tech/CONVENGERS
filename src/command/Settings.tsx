@@ -36,7 +36,7 @@ export const Settings: React.FC = () => {
                   have read-only access. Writes are enforced by Firestore security rules by role (Admin / Manager / Staff).
                 </div>
               </div>
-              <Pill label="Shared" color="#22A06B" />
+              <Pill label="Shared" color="#4BE08A" />
             </div>
             {(['reports', 'issues', 'snapshots'] as const).map((k) => (
               <div className="cv-li" key={k}>
@@ -48,7 +48,7 @@ export const Settings: React.FC = () => {
                       : 'Shared collection not reachable (the updated firestore.rules have not been deployed, or the device is offline). New records are kept in this browser only and are flagged “this device only”.'}
                   </div>
                 </div>
-                <Pill label={sharedStorage[k] ? 'Shared' : 'This device only'} color={sharedStorage[k] ? '#22A06B' : '#F5A623'} />
+                <Pill label={sharedStorage[k] ? 'Shared' : 'This device only'} color={sharedStorage[k] ? '#4BE08A' : '#FF9A1F'} />
               </div>
             ))}
             <div className="cv-li">
@@ -56,7 +56,7 @@ export const Settings: React.FC = () => {
                 <div className="cv-li-t">Live presence & typing indicators</div>
                 <div className="cv-li-s">WebSocket presence server (server.ts). Only available when the app is served by the Node server, not on static hosting.</div>
               </div>
-              <Pill label={isLive ? 'Connected' : 'Not connected'} color={isLive ? '#22A06B' : '#9A9AA3'} />
+              <Pill label={isLive ? 'Connected' : 'Not connected'} color={isLive ? '#4BE08A' : '#68738A'} />
             </div>
           </div>
           {localCount > 0 && (
@@ -199,7 +199,7 @@ export const Settings: React.FC = () => {
                 {findings.map((f, i) => (
                   <tr key={i} className={f.refId ? 'clickable' : ''} onClick={() => f.refId && actions.openActivity(f.refId)}>
                     <td>
-                      <Pill label={f.severity} color={f.severity === 'error' ? '#E5484D' : f.severity === 'warning' ? '#F5A623' : '#A34FEA'} />
+                      <Pill label={f.severity} color={f.severity === 'error' ? '#E0213B' : f.severity === 'warning' ? '#FF9A1F' : '#1F6FE0'} />
                     </td>
                     <td className="nowrap">{f.area}</td>
                     <td>{f.message}</td>

@@ -352,14 +352,14 @@ export const ShareModal: React.FC<{
     }
   };
 
-  const shareText = `Convengers Assemble — Scope of Work Timeline & Production Calendar\n\n👁️ FOR CLIENTS / VIEWERS (Read-Only Presentation):\n${presentationCustomUrl}\n\n🛡️ FOR MADHOUSE TEAM (Editor Access):\n${teamCustomUrl}`;
+  const shareText = `Project Management Master Tracker — Bahay Build 2.0\n\n👁️ FOR CLIENTS / VIEWERS (Read-Only Presentation):\n${presentationCustomUrl}\n\n🛡️ FOR MADHOUSE TEAM (Editor Access):\n${teamCustomUrl}`;
 
   return (
     <div className="shm">
       <div className="shbox" style={{ maxWidth: '600px' }}>
         <div className="shhead">
           <div>
-            <h2 className="text-lg font-bold text-[var(--sx-ink)] tracking-wide">Convengers Assemble — Share Portal</h2>
+            <h2 className="text-lg font-bold text-[var(--sx-ink)] tracking-wide">Project Management Master Tracker — Share Portal</h2>
             <div className="text-xs text-[var(--sx-text-3)] font-mono">www.ConvengersAssemble.com</div>
           </div>
           <button type="button" className="shx" onClick={onClose}>
