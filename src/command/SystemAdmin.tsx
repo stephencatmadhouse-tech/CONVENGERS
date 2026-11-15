@@ -558,7 +558,10 @@ const DriveConnectForm: React.FC<{ connected: boolean; onDone: () => void }> = (
       <input
         className="cv-input"
         type={secret ? 'password' : 'text'}
-        autoComplete="off"
+        name={`bb-drive-${k}`}
+        autoComplete={secret ? 'new-password' : 'off'}
+        data-lpignore="true"
+        data-1p-ignore="true"
         spellCheck={false}
         value={v[k]}
         placeholder={placeholder}
@@ -567,6 +570,7 @@ const DriveConnectForm: React.FC<{ connected: boolean; onDone: () => void }> = (
     </Field>
   );
   const complete = Object.values(v).every((x) => x.trim());
+  const looksLikeEmail = /@/.test(v.clientId);
   const [open, setOpen] = useState(!connected);
   return (
     <>
@@ -583,8 +587,14 @@ const DriveConnectForm: React.FC<{ connected: boolean; onDone: () => void }> = (
           {field('refreshToken', 'Refresh token', true)}
           {field('rootFolderId', 'Drive folder ID (or folder link)', false, 'Code after /folders/ in the folder address')}
         </div>
+        {looksLikeEmail && (
+          <Banner kind="warn">
+            This is not a sign-in form. The Client ID is a code from Google Cloud ending in .apps.googleusercontent.com, not your email address. Do not enter your Google
+            password here.
+          </Banner>
+        )}
         <div className="cv-row" style={{ marginTop: 10 }}>
-          <button type="button" className="cv-btn primary sm" onClick={save} disabled={busy || !complete}>
+          <button type="button" className="cv-btn primary sm" onClick={save} disabled={busy || !complete || looksLikeEmail}>
             {busy ? 'Checking…' : connected ? 'Save and Test New Values' : 'Connect and Test'}
           </button>
           {connected && (
