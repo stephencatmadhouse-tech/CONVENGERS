@@ -282,6 +282,16 @@ service cloud.firestore {
       allow delete: if isManager();
     }
 
+    // --- DAILY SITE REPORTS (mobile site reporting) ---
+    // Each person writes only their own reports; one document per person, date and activity.
+    match /siteReports/{id} {
+      allow read: if isInternal();
+      allow create, update: if isStaff() && isValidId(id) && incoming().id == id
+        && incoming().submittedById == request.auth.uid
+        && incoming().progressAfter is number && incoming().progressAfter >= 0 && incoming().progressAfter <= 100;
+      allow delete: if isAdmin();
+    }
+
     // --- CLIENT EXPERIENCE CONFIGURATION: construction journey stages, project profile ---
     // Internal only. Clients see this information only through the published `portal` snapshot.
     match /clientConfig/{id} {

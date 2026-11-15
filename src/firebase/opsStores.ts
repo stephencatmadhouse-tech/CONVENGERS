@@ -18,6 +18,7 @@ import {
   ProjectDocument,
   Publication,
   CalendarEvent,
+  SiteReport,
 } from '../types/index.ts';
 import { PUBLIC_PORTAL_KINDS, type PortalRecord } from '../domain/portal.ts';
 import type { ClientConfigDoc } from '../domain/journey.ts';
@@ -38,4 +39,7 @@ export const portalStore = new CollectionStore<PortalRecord>('portal', byDateDes
 /** Public client-facing dashboard: published records of the public kinds only (readable without sign-in). */
 export const publicPortalStore = new CollectionStore<PortalRecord>('portal', byDateDesc('publishedAt'), [where('kind', 'in', PUBLIC_PORTAL_KINDS)]);
 
-export const INTERNAL_STORES = [procurementStore, manpowerStore, documentStore, publicationStore, eventStore];
+/** Daily site reports submitted from the field (server rules: internal read; staff-level create / update of their own reports). */
+export const siteReportStore = new CollectionStore<SiteReport>('siteReports', (a, b) => (b.date + b.submittedAt).localeCompare(a.date + a.submittedAt));
+
+export const INTERNAL_STORES = [procurementStore, manpowerStore, documentStore, publicationStore, eventStore, siteReportStore];

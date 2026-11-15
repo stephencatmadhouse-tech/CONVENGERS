@@ -66,6 +66,8 @@ import { portalStore, procurementStore, manpowerStore, documentStore, publicatio
 import { Shell, SlideKey, useHashRoute } from './command/Shell.tsx';
 import { ActivityEditor } from './command/ActivityEditor.tsx';
 import { NotificationsProvider, NotificationBell } from './command/Notifications.tsx';
+import { MobileShell } from './command/MobileShell.tsx';
+import { useIsPhone } from './pwa/pwa.ts';
 import { SyncChip } from './command/ui.tsx';
 import type { DataSyncState } from './firebase/firestoreData.ts';
 import { ConfirmDialog } from './command/ui.tsx';
@@ -94,6 +96,7 @@ export default function App() {
   const [remoteFocusMap, setRemoteFocusMap] = useState<Record<string, RemoteFocus>>({});
   const [loading, setLoading] = useState(false);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
+  const isPhone = useIsPhone();
   const [dataSync, setDataSync] = useState<DataSyncState>(() => firestoreData.getSyncState());
   useEffect(() => firestoreData.subscribeSync(setDataSync), []);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -1675,6 +1678,8 @@ export default function App() {
     <div className={isEditingText ? 'editing' : ''}>
       <CommandProvider value={commandState}>
       <NotificationsProvider>
+      {!isPhone && (
+        <>
       <BrandHeader />
       {/* Sticky Toolbar */}
       <Toolbar
@@ -1725,8 +1730,10 @@ export default function App() {
           });
         }}
       />
+        </>
+      )}
 
-        <Shell renderSlide={renderSlide} renderDeck={renderDeck} />
+        {isPhone ? <MobileShell renderSlide={renderSlide} renderDeck={renderDeck} /> : <Shell renderSlide={renderSlide} renderDeck={renderDeck} />}
         {openActivity && <ActivityEditor key={openActivity.id} activity={openActivity} onClose={() => setOpenActivityId(null)} />}
         {printNode && createPortal(<div id="cv-print-root">{printNode}</div>, document.body)}
       </NotificationsProvider>

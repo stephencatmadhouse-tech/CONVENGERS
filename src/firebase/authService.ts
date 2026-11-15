@@ -21,7 +21,9 @@ import {
   getDocs,
   onSnapshot,
 } from 'firebase/firestore';
-import { auth, db, handleFirestoreError, OperationType } from './config.ts';
+import { auth, db, handleFirestoreError, OperationType, clearDeviceCacheIfSafe } from './config.ts';
+
+const INTERNAL_ROLE_SET = new Set<string>(['admin', 'director', 'manager', 'construction_manager', 'engineer', 'production', 'quality', 'staff', 'viewer']);
 import { User, UserRole, UserStatus } from '../types/index.ts';
 
 const ADMIN_EMAIL = 'stephencat.madhouse@gmail.com';
@@ -275,11 +277,20 @@ export class FirebaseAuthService {
   }
 
   public async signOut(): Promise<void> {
+    const wasInternal = INTERNAL_ROLE_SET.has(this.currentUser.role) && this.currentUser.id !== 'viewer_guest';
     try {
       await signOut(auth);
     } finally {
       this.currentUser = getViewerUser();
       this.notify(this.currentUser);
+    }
+    // Shared phones / computers: do not leave internal project data cached on the device
+    if (wasInternal) {
+      const res = await clearDeviceCacheIfSafe();
+      if (res === 'cleared' && typeof window !== 'undefined') {
+        window.location.replace('#/portal/overview');
+        window.location.reload();
+      }
     }
   }
 

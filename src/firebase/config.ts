@@ -5,12 +5,62 @@
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  waitForPendingWrites,
+  terminate,
+  clearIndexedDbPersistence,
+  doc,
+  getDocFromServer,
+  type Firestore,
+} from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+/**
+ * Firestore with a persistent on-device cache (IndexedDB): data opened once
+ * stays available offline and writes made offline are kept after the app is
+ * closed and sent when the connection returns. The UI still distinguishes
+ * server-confirmed data from device data (see firestoreData sync status).
+ * Falls back to the in-memory cache where IndexedDB is unavailable.
+ */
+function makeDb(): Firestore {
+  try {
+    return initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }, firebaseConfig.firestoreDatabaseId);
+  } catch {
+    return getFirestore(app, firebaseConfig.firestoreDatabaseId);
+  }
+}
+export const db = makeDb();
+
+/**
+ * On sign-out from a shared device: remove the cached project data, but only
+ * after every pending change has reached the server (nothing unsynced is lost).
+ * Returns 'cleared' (the page must reload afterwards) or 'kept'.
+ */
+export async function clearDeviceCacheIfSafe(timeoutMs = 4000): Promise<'cleared' | 'kept'> {
+  try {
+    const flushed = await Promise.race([
+      waitForPendingWrites(db).then(() => true),
+      new Promise<boolean>((r) => setTimeout(() => r(false), timeoutMs)),
+    ]);
+    if (!flushed) return 'kept';
+    await terminate(db);
+    await clearIndexedDbPersistence(db);
+    try {
+      localStorage.removeItem('convengers_cached_dashboard');
+    } catch {
+      // storage unavailable
+    }
+    return 'cleared';
+  } catch {
+    return 'kept';
+  }
+}
 
 export enum OperationType {
   CREATE = 'create',

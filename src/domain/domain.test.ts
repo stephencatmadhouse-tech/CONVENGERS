@@ -439,3 +439,29 @@ test('roles 2.0: Project Director manages, Construction Manager and Quality edit
   assert.ok(canOpenModule('quality', 'issues') && !canOpenModule('quality', 'journey'));
   assert.ok(canReadPortalDocuments(mkUser('director')));
 });
+
+// ---------------- Mobile site reporting ----------------
+import { siteReportId, validateSiteReport, progressEditable } from './siteReport.ts';
+
+test('site report: one deterministic ID per person, date and activity (no duplicates on retry)', () => {
+  const a = siteReportId('2026-11-15', 'SC-sc_gf_s_3', 'uid123');
+  assert.equal(a, siteReportId('2026-11-15', 'SC-sc_gf_s_3', 'uid123'));
+  assert.notEqual(a, siteReportId('2026-11-16', 'SC-sc_gf_s_3', 'uid123'));
+  assert.notEqual(a, siteReportId('2026-11-15', 'SC-sc_gf_s_3', 'otherUid'));
+  assert.match(a, /^[a-zA-Z0-9_-]+$/);
+  assert.ok(a.length <= 128);
+});
+
+test('site report validation: required activity, valid %, no future dates, explanation when progress goes down', () => {
+  const r = buildRegister(input, TODAY);
+  const sc = r.find((x) => x.kind === 'scope' && x.progress > 0 && x.progress < 100)!;
+  const base = { date: TODAY, activityId: sc.id, progress: sc.progress, remarks: '', manpower: [], deliveries: [] };
+  assert.ok(validateSiteReport({ ...base, activityId: '' }, undefined, TODAY).some((e) => /activity/i.test(e)));
+  assert.ok(validateSiteReport({ ...base, progress: 120 }, sc, TODAY).some((e) => /between 0% and 100%/.test(e)));
+  assert.ok(validateSiteReport({ ...base, date: '2099-01-01' }, sc, TODAY).some((e) => /future/.test(e)));
+  assert.ok(validateSiteReport({ ...base, progress: 0 }, sc, TODAY).some((e) => /explain/.test(e)));
+  assert.deepEqual(validateSiteReport({ ...base, progress: Math.min(100, sc.progress + 5) }, sc, TODAY), []);
+  assert.ok(validateSiteReport({ ...base, manpower: [{ trade: '', headcount: 3 }], remarks: 'x' }, sc, TODAY).some((e) => /trade/.test(e)));
+  assert.ok(progressEditable(sc));
+  assert.ok(!progressEditable(r.find((x) => x.kind === 'pour')!));
+});

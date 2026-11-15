@@ -23,7 +23,6 @@ import { isDeliveryLate } from './Operations.tsx';
 export const CommandCenter: React.FC = () => {
   const { register, metrics, attention, today, actions, issues, reports, snapshots, canEdit, isManager, dataSync, user } = useCommand();
   const m = metrics;
-  const pubs = useStore(publicationStore);
   // Week-on-week change, shown only when a recorded snapshot 7–10 days old exists (never estimated)
   const weekAgo = useMemo(() => {
     const from = addDays(today, -10);
@@ -54,66 +53,7 @@ export const CommandCenter: React.FC = () => {
     [register]
   );
 
-  const openIssues = issues.filter((i) => i.status !== 'Resolved' && i.status !== 'Closed');
-  const criticalIssues = openIssues.filter((i) => i.severity === 'Critical');
-  const pendingApprovals = [
-    ...reports.filter((r) => r.status === 'review').map((r) => ({ id: r.id, title: r.title || 'Report for review', kind: 'Report', since: r.updatedAt, by: r.updatedBy, route: `reports/${r.type === 'monthly' ? 'monthly' : 'weekly'}` })),
-    ...pubs.items.filter((p) => p.status === 'review').map((p) => ({ id: p.id, title: p.title, kind: 'Client publication', since: p.updatedAt, by: p.updatedBy, route: 'publishing' })),
-  ];
-
-  // ZONE C — consolidated management actions
-  const mgmt: MgmtAction[] = useMemo(() => {
-    const out: MgmtAction[] = [];
-    attention
-      .filter((a) => a.severity !== 'info')
-      .forEach((a) => {
-        const act = a.activityId ? register.find((x) => x.id === a.activityId) : undefined;
-        out.push({
-          id: a.id,
-          title: a.title,
-          type: a.category,
-          related: act ? `${act.id} · ${act.workstream}` : '—',
-          responsible: a.owner || '',
-          priority: a.severity === 'critical' ? 'Critical' : 'High',
-          target: a.due || act?.finish,
-          status: act ? statusLabel(act.status) : 'Open',
-          action: REQUIRED_ACTION[a.category] || 'Review and decide the next step',
-          open: () => (a.activityId ? actions.openActivity(a.activityId) : actions.navigate('issues/log')),
-        });
-      });
-    openIssues.forEach((i) => {
-      if (out.some((o) => o.id === `att-iss-${i.id}`)) return;
-      out.push({
-        id: `iss-${i.id}`,
-        title: i.title,
-        type: i.type === 'Decision' ? 'Outstanding decision' : `Open ${i.type.toLowerCase()}`,
-        related: i.linkedActivityId || '—',
-        responsible: i.owner,
-        priority: i.severity === 'Critical' ? 'Critical' : i.severity === 'High' ? 'High' : i.severity === 'Medium' ? 'Medium' : 'Low',
-        target: i.dueDate,
-        status: i.status,
-        action: i.correctiveAction || (i.type === 'Decision' ? 'Record the management decision' : 'Agree and record the corrective action'),
-        open: () => actions.navigate('issues/log'),
-      });
-    });
-    pendingApprovals.forEach((p) =>
-      out.push({
-        id: `apr-${p.id}`,
-        title: p.title,
-        type: 'Pending approval',
-        related: p.kind,
-        responsible: 'Project Manager',
-        priority: 'Medium',
-        target: undefined,
-        status: 'For Review',
-        action: 'Review and approve, or return to draft',
-        open: () => actions.navigate(p.route),
-      })
-    );
-    const rank: Record<string, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 };
-    return out.sort((a, b) => rank[a.priority] - rank[b.priority] || String(a.target || '9999').localeCompare(String(b.target || '9999')));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [attention, openIssues, pendingApprovals.length, register]);
+  const { mgmt, openIssues, criticalIssues, pendingApprovals } = useManagementActions();
 
   const quick = [
     { label: 'Add Activity', icon: Plus, route: 'tracker/register/new', show: canEdit },
@@ -382,6 +322,75 @@ export const CommandCenter: React.FC = () => {
     </div>
   );
 };
+
+
+/** Pending management actions (shared by the desktop Command Center and the phone dashboard). */
+export function useManagementActions() {
+  const { register, attention, issues, reports, actions } = useCommand();
+  const pubs = useStore(publicationStore);
+  const openIssues = issues.filter((i) => i.status !== 'Resolved' && i.status !== 'Closed');
+  const criticalIssues = openIssues.filter((i) => i.severity === 'Critical');
+  const pendingApprovals = [
+    ...reports.filter((r) => r.status === 'review').map((r) => ({ id: r.id, title: r.title || 'Report for review', kind: 'Report', since: r.updatedAt, by: r.updatedBy, route: `reports/${r.type === 'monthly' ? 'monthly' : 'weekly'}` })),
+    ...pubs.items.filter((p) => p.status === 'review').map((p) => ({ id: p.id, title: p.title, kind: 'Client publication', since: p.updatedAt, by: p.updatedBy, route: 'publishing' })),
+  ];
+
+  // ZONE C — consolidated management actions
+  const mgmt: MgmtAction[] = useMemo(() => {
+    const out: MgmtAction[] = [];
+    attention
+      .filter((a) => a.severity !== 'info')
+      .forEach((a) => {
+        const act = a.activityId ? register.find((x) => x.id === a.activityId) : undefined;
+        out.push({
+          id: a.id,
+          title: a.title,
+          type: a.category,
+          related: act ? `${act.id} · ${act.workstream}` : '—',
+          responsible: a.owner || '',
+          priority: a.severity === 'critical' ? 'Critical' : 'High',
+          target: a.due || act?.finish,
+          status: act ? statusLabel(act.status) : 'Open',
+          action: REQUIRED_ACTION[a.category] || 'Review and decide the next step',
+          open: () => (a.activityId ? actions.openActivity(a.activityId) : actions.navigate('issues/log')),
+        });
+      });
+    openIssues.forEach((i) => {
+      if (out.some((o) => o.id === `att-iss-${i.id}`)) return;
+      out.push({
+        id: `iss-${i.id}`,
+        title: i.title,
+        type: i.type === 'Decision' ? 'Outstanding decision' : `Open ${i.type.toLowerCase()}`,
+        related: i.linkedActivityId || '—',
+        responsible: i.owner,
+        priority: i.severity === 'Critical' ? 'Critical' : i.severity === 'High' ? 'High' : i.severity === 'Medium' ? 'Medium' : 'Low',
+        target: i.dueDate,
+        status: i.status,
+        action: i.correctiveAction || (i.type === 'Decision' ? 'Record the management decision' : 'Agree and record the corrective action'),
+        open: () => actions.navigate('issues/log'),
+      });
+    });
+    pendingApprovals.forEach((p) =>
+      out.push({
+        id: `apr-${p.id}`,
+        title: p.title,
+        type: 'Pending approval',
+        related: p.kind,
+        responsible: 'Project Manager',
+        priority: 'Medium',
+        target: undefined,
+        status: 'For Review',
+        action: 'Review and approve, or return to draft',
+        open: () => actions.navigate(p.route),
+      })
+    );
+    const rank: Record<string, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+    return out.sort((a, b) => rank[a.priority] - rank[b.priority] || String(a.target || '9999').localeCompare(String(b.target || '9999')));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attention, openIssues, pendingApprovals.length, register]);
+
+  return { mgmt, openIssues, criticalIssues, pendingApprovals };
+}
 
 interface MgmtAction {
   id: string;

@@ -17,6 +17,8 @@ import { BrandHeader } from '../components/BrandHeader.tsx';
 import { Pill, Bar, Empty, PhotoGrid } from './portalUi.tsx';
 import { ClientOverview, ClientProgress, ClientTimeline, ClientUpdates, ClientDocuments, NoSnapshot } from './ClientViews.tsx';
 import { JourneyViewer } from './Journey.tsx';
+import { MobilePortal } from './MobilePortal.tsx';
+import { useIsPhone } from '../pwa/pwa.ts';
 import { User } from '../types/index.ts';
 import { portalStore, publicPortalStore } from '../firebase/opsStores.ts';
 import { useStore } from '../firebase/useStore.ts';
@@ -122,6 +124,30 @@ export const PortalApp: React.FC<{ user: User; authReady: boolean; onLogin: () =
 
   const snap = byKind.snapshot?.content as PortalSnapshot | undefined;
   const ctx = { snap, snapRec: byKind.snapshot, ...byKind, go, param, full, onLogin };
+  const isPhone = useIsPhone();
+  if (isPhone) {
+    const unavailable =
+      portal.error === 'unreachable' && !portal.items.length
+        ? 'The project database cannot be reached right now. Check your internet connection and try again.'
+        : portal.error === 'permission-denied' && !internal && !portal.items.length
+          ? 'Published project information is not available at the moment. Please check back later.'
+          : null;
+    return (
+      <MobilePortal
+        user={user}
+        authReady={authReady}
+        onLogin={onLogin}
+        tab={tab}
+        navTab={navTab === 'timeline' || navTab === 'gallery' ? '' : navTab}
+        reportView={reportView}
+        ctx={ctx}
+        renderReport={() => <ReportsView {...ctx} type={reportView || 'weekly'} />}
+        renderGallery={() => <Gallery {...ctx} />}
+        loading={!portal.loaded}
+        unavailable={unavailable}
+      />
+    );
+  }
 
   // Small, secondary header controls (upper-right)
   const headerRight = !authReady ? null : audience === 'guest' ? (

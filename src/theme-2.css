@@ -684,3 +684,243 @@ html:not([data-eff='dark']) .ex-seg button.on {
   font-size: 12px;
   color: var(--ds-dim);
 }
+
+/* ---------- Daily Site Report ---------- */
+.sr-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+.sr-full {
+  grid-column: 1 / -1;
+}
+@media (max-width: 760px) {
+  .sr-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.sr-form .cv-field {
+  display: grid;
+  gap: 6px;
+}
+.sr-act {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--ds-surface-2);
+  border: 1px solid var(--ds-line);
+}
+.sr-act b {
+  color: var(--ds-navy);
+}
+.sr-act span {
+  font-size: 12.5px;
+  color: var(--ds-dim);
+}
+.sr-range {
+  width: 100%;
+  height: 32px;
+  accent-color: var(--ds-accent);
+}
+.sr-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.sr-chip {
+  min-height: 40px;
+  min-width: 54px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid #d6d8e5;
+  background: #fff;
+  color: var(--ds-navy);
+  font: 600 13.5px var(--ds-font);
+  cursor: pointer;
+}
+.sr-chip.on {
+  background: var(--ds-navy);
+  border-color: var(--ds-navy);
+  color: #fff;
+}
+.sr-num {
+  width: 90px !important;
+}
+.sr-qty {
+  width: 120px !important;
+}
+.sr-block {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px dashed #d6d8e5;
+  border-radius: 12px;
+}
+.sr-block-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--ds-navy);
+}
+.sr-block-h .cv-btn {
+  margin-left: auto;
+}
+.sr-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.sr-row .cv-input:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.sr-photo-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sr-photo-btns label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.sr-thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+.sr-thumb {
+  position: relative;
+}
+.sr-thumb img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.sr-thumb button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  display: grid;
+  place-items: center;
+}
+.sr-submit {
+  width: 100%;
+  min-height: 52px !important;
+  margin-top: 12px;
+  font-size: 16px !important;
+}
+.sr-outcome {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.sr-outcome.confirmed {
+  background: #e6f6ee;
+  color: #13734b;
+}
+.sr-outcome.device {
+  background: #fff7e6;
+  color: #7a4a00;
+}
+.sr-outcome.error {
+  background: #fde7e8;
+  color: #9b1c23;
+}
+.sr-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.sr-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--ds-line-soft);
+  flex-wrap: wrap;
+}
+.sr-list li > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.sr-list b {
+  color: var(--ds-navy);
+}
+.sr-list span,
+.sr-list em {
+  font-size: 12.5px;
+  color: var(--ds-dim);
+  font-style: normal;
+}
+.sr-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font: 600 12px var(--ds-font);
+  white-space: nowrap;
+  border: 0;
+}
+.sr-state.ok {
+  background: #e6f6ee;
+  color: #13734b;
+}
+.sr-state.device {
+  background: #fff7e6;
+  color: #7a4a00;
+  cursor: pointer;
+  min-height: 36px;
+}
+
+/* ---------- Forms and dialogs on phones: full-height sheets ---------- */
+@media (max-width: 760px) {
+  .cv-modal-bg {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .cv-modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 94vh !important;
+    max-height: 94dvh !important;
+    border-radius: 18px 18px 0 0 !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .cv-modal .cv-input,
+  .cv-modal .cv-select,
+  .cv-modal .cv-textarea {
+    min-height: 44px;
+    font-size: 16px !important;
+  }
+  .cv-modal-f {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    flex-wrap: wrap;
+  }
+  .cv-modal-f .cv-btn {
+    min-height: 44px;
+    flex: 1;
+  }
+}

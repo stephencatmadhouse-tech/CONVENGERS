@@ -526,3 +526,25 @@ export interface UserNotificationState {
   updatedAt?: string;
   localOnly?: boolean;
 }
+
+// ===================== Daily site reports (mobile site reporting) =====================
+export interface SiteReport {
+  /** Deterministic: one report per person, date and activity (re-submitting the same day updates it, never duplicates). */
+  id: string;
+  date: string; // YYYY-MM-DD (Asia/Manila)
+  project: string;
+  activityId: string;
+  activityName: string;
+  progressBefore: number;
+  progressAfter: number;
+  /** True when the accomplishment % was applied to the activity in the Master Project Tracker. */
+  progressApplied: boolean;
+  remarks: string;
+  manpower: { trade: string; headcount: number }[];
+  deliveries: { material: string; quantity: string; supplier?: string }[];
+  photoDocIds: string[];
+  submittedBy: string;
+  submittedById: string;
+  submittedAt: string;
+  localOnly?: boolean;
+}

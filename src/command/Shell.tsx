@@ -32,6 +32,7 @@ import {
   Box,
   ShieldCheck,
   RefreshCw,
+  ClipboardPen,
   Gauge,
   Bell,
   CalendarDays,
@@ -59,15 +60,16 @@ import { NotificationsPage, useNotifications } from './Notifications.tsx';
 import { CalendarPage } from './CalendarPage.tsx';
 import { JourneyManagement } from './JourneyManagement.tsx';
 import { RolesPermissions, SyncPanel } from './SystemAdmin.tsx';
+import { SiteReport } from './SiteReport.tsx';
 
 export type SlideKey = 'overview' | 'upcoming' | 'gf' | '2f' | '3f' | 'pours' | 'production' | 'episodes' | 'master' | 'methodology' | 'watch' | 'notes';
 
-interface Tab {
+export interface Tab {
   id: string;
   label: string;
   slide?: SlideKey;
 }
-interface Section {
+export interface Section {
   id: string;
   num: string;
   group?: string;
@@ -243,6 +245,13 @@ const RAW_SECTIONS: Section[] = [
     ],
   },
   {
+    id: 'site',
+    num: '00',
+    label: 'Daily Site Report',
+    title: 'Daily Site Report',
+    sub: 'Report progress from the site: accomplishment, remarks, manpower, material deliveries and photographs.',
+  },
+  {
     id: 'journey',
     num: '00',
     label: '3D Construction Journey',
@@ -302,6 +311,7 @@ const ORDER: [string, string][] = [
   ['milestones', 'Project Management'],
   ['construction', 'Construction Operations'],
   ['production', 'Construction Operations'],
+  ['site', 'Construction Operations'],
   ['procurement', 'Construction Operations'],
   ['schedule', 'Monitoring & Control'],
   ['issues', 'Monitoring & Control'],
@@ -347,6 +357,7 @@ const ICONS: Record<string, LucideIcon> = {
   journey: Box,
   roles: ShieldCheck,
   sync: RefreshCw,
+  site: ClipboardPen,
 };
 
 export function parseRoute(hash: string): { section: string; tab?: string; param?: string } {
@@ -370,52 +381,15 @@ export function useHashRoute() {
   return route;
 }
 
-export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; renderDeck: () => React.ReactNode }> = ({ renderSlide, renderDeck }) => {
-  const { route, actions, attention, user, metrics, isAdmin, dataSync } = useCommand();
-  const [navOpen, setNavOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('convengers_nav_collapsed') || '{}');
-    } catch {
-      return {};
-    }
-  });
-  const toggleGroup = (g: string) =>
-    setCollapsed((c) => {
-      const n = { ...c, [g]: !c[g] };
-      try {
-        localStorage.setItem('convengers_nav_collapsed', JSON.stringify(n));
-      } catch {
-        // per-device convenience only
-      }
-      return n;
-    });
-  // Modules available to this role (navigation level; data is protected server-side)
-  const visible = SECTIONS.filter((s) => canOpenModule(user.role, s.id));
-  const allowed = canOpenModule(user.role, route.section);
-  const home = landingModule(user.role);
-  const section = (allowed ? SECTIONS.find((s) => s.id === route.section) : undefined) || SECTIONS.find((s) => s.id === home) || visible[0] || SECTIONS[0];
 
-  useEffect(() => {
-    if (!allowed) {
-      window.location.replace(`#/${home}`);
-      return;
-    }
-    // Unknown or removed module in the address (e.g. an old bookmark) → show its real address
-    const raw = window.location.hash.replace(/^#\/?/, '').split('/')[0];
-    if (raw && raw !== route.section) window.location.replace(`#/${route.section}`);
-  }, [allowed, home, route]);
-  const tab = section.tabs ? section.tabs.find((t) => t.id === route.tab) || section.tabs[0] : undefined;
-
-  useEffect(() => {
-    setNavOpen(false);
-    window.scrollTo({ top: 0 });
-  }, [route.section, route.tab]);
-
-  const critical = attention.filter((a) => a.severity === 'critical').length;
-  const { unread } = useNotifications();
-
-  const body = (() => {
+/** Renders a module (shared by the desktop shell and the phone shell). */
+export function renderSectionBody(
+  section: Section,
+  tab: Tab | undefined,
+  route: { section: string; tab?: string; param?: string },
+  renderSlide: (k: SlideKey) => React.ReactNode,
+  renderDeck: () => React.ReactNode
+): React.ReactNode {
     if (tab?.slide) return <div className="cv-slidehost">{renderSlide(tab.slide)}</div>;
     switch (section.id) {
       case 'command':
@@ -456,6 +430,8 @@ export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; re
         return <RolesPermissions />;
       case 'sync':
         return <SyncPanel />;
+      case 'site':
+        return <SiteReport />;
       case 'issues':
         return tab?.id === 'log' ? <IssueLog /> : tab?.id === 'owners' ? <Accountability /> : <AttentionList />;
       case 'archive':
@@ -465,7 +441,61 @@ export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; re
       default:
         return <CommandCenter />;
     }
-  })();
+}
+
+export function resolveSection(route: { section: string; tab?: string }): { section: Section; tab?: Tab } {
+  const section = SECTIONS.find((s) => s.id === route.section) || SECTIONS[0];
+  const tab = section.tabs ? section.tabs.find((t) => t.id === route.tab) || section.tabs[0] : undefined;
+  return { section, tab };
+}
+
+export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; renderDeck: () => React.ReactNode }> = ({ renderSlide, renderDeck }) => {
+  const { route, actions, attention, user, metrics, isAdmin, dataSync } = useCommand();
+  const [navOpen, setNavOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('convengers_nav_collapsed') || '{}');
+    } catch {
+      return {};
+    }
+  });
+  const toggleGroup = (g: string) =>
+    setCollapsed((c) => {
+      const n = { ...c, [g]: !c[g] };
+      try {
+        localStorage.setItem('convengers_nav_collapsed', JSON.stringify(n));
+      } catch {
+        // per-device convenience only
+      }
+      return n;
+    });
+  // Modules available to this role (navigation level; data is protected server-side)
+  const visible = SECTIONS.filter((s) => canOpenModule(user.role, s.id));
+  const allowed = canOpenModule(user.role, route.section);
+  const home = landingModule(user.role);
+  const section = (allowed ? SECTIONS.find((s) => s.id === route.section) : undefined) || SECTIONS.find((s) => s.id === home) || visible[0] || SECTIONS[0];
+
+  useEffect(() => {
+    if (!allowed) {
+      window.location.replace(`#/${home}`);
+      return;
+    }
+    // Unknown or removed module in the address (e.g. an old bookmark) → show its real address
+    const raw = window.location.hash.replace(/^#\/?/, '').split('/')[0];
+    // `portal` belongs to the client portal (Root switches interfaces) — never redirect it
+    if (raw && raw !== 'portal' && raw !== route.section) window.location.replace(`#/${route.section}`);
+  }, [allowed, home, route]);
+  const tab = section.tabs ? section.tabs.find((t) => t.id === route.tab) || section.tabs[0] : undefined;
+
+  useEffect(() => {
+    setNavOpen(false);
+    window.scrollTo({ top: 0 });
+  }, [route.section, route.tab]);
+
+  const critical = attention.filter((a) => a.severity === 'critical').length;
+  const { unread } = useNotifications();
+
+  const body = renderSectionBody(section, tab, route, renderSlide, renderDeck);
 
   return (
     <div className={`cv-shell ${navOpen ? 'nav-open' : ''}`}>
