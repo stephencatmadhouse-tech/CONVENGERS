@@ -2,40 +2,47 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * File uploads to Firebase Storage (bucket from firebase-applet-config.json).
- * Access is enforced by storage.rules on the server:
- *   documents/**  — internal roles only
- *   portal/**     — internal roles + external portal roles (approved photos)
- * If Storage is not enabled or the rules are not deployed, the upload fails
- * with a clear message and the user can attach a link instead.
+ * Project file uploads → GOOGLE DRIVE (via the server's Drive service).
+ * Google Drive holds the binaries; Firestore (`driveFiles`) holds the file
+ * metadata and the Drive file ID. Records created before the Drive
+ * integration keep their Firebase Storage URLs and still open.
+ *
+ *   'documents' → 05 - SITE DOCUMENTATION (photos) / 06 - SUPPORTING DOCUMENTS (other files)
+ *   'portal'    → 01 - CONSTRUCTION PHOTOGRAPHS (photos) / 06 - SUPPORTING DOCUMENTS (other files)
  */
 
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { getStorage, ref, deleteObject } from 'firebase/storage';
 import { app } from './config.ts';
+import { newFileId, uploadToDrive, driveFileUrl, validateFile, type UploadMeta } from '../drive/driveClient.ts';
+import { todayIso } from '../domain/dates.ts';
 
-const MAX_BYTES = 25 * 1024 * 1024;
-
-export async function uploadFile(folder: 'documents' | 'portal', file: File): Promise<{ url: string; storagePath: string; size: number; contentType: string }> {
-  if (file.size > MAX_BYTES) throw new Error('File is larger than 25 MB. Compress it or attach a link instead.');
-  const safe = file.name.replace(/[^\w.\-]+/g, '_').slice(-80);
-  const storagePath = `${folder}/${new Date().toISOString().slice(0, 10)}/${Date.now()}_${safe}`;
-  try {
-    const storage = getStorage(app);
-    const r = ref(storage, storagePath);
-    await uploadBytes(r, file, { contentType: file.type || 'application/octet-stream' });
-    const url = await getDownloadURL(r);
-    return { url, storagePath, size: file.size, contentType: file.type };
-  } catch (err: any) {
-    const code = err?.code || '';
-    if (code === 'storage/unauthorized') throw new Error('Upload not permitted: deploy storage.rules (see docs) or attach a link instead.');
-    if (code === 'storage/unknown' || code === 'storage/bucket-not-found' || code === 'storage/project-not-found')
-      throw new Error('Firebase Storage is not enabled for this project yet. Attach a link instead.');
-    throw new Error(`Upload failed (${code || err?.message || 'network'}). Attach a link instead.`);
-  }
+export async function uploadFile(
+  folder: 'documents' | 'portal',
+  file: File,
+  meta: Partial<UploadMeta> = {},
+  onProgress?: (p: number) => void
+): Promise<{ url: string; storagePath: string; size: number; contentType: string; fileId: string; recorded: boolean }> {
+  const err = validateFile(file);
+  if (err) throw new Error(err);
+  const isImage = (file.type || '').startsWith('image/');
+  const fileId = meta.fileId || newFileId();
+  const res = await uploadToDrive(
+    file,
+    {
+      fileId,
+      folderKey: meta.folderKey || (isImage ? (folder === 'portal' ? 'photos' : 'site') : 'supporting'),
+      reportingDate: meta.reportingDate || todayIso(),
+      ...meta,
+    },
+    onProgress
+  );
+  const id = res.file?.id || fileId;
+  return { url: driveFileUrl(id), storagePath: `drive:${id}`, size: res.file?.fileSize || file.size, contentType: res.file?.fileType || file.type, fileId: id, recorded: res.recorded };
 }
 
+/** Google Drive files are never deleted from the app (no accidental data loss); legacy Storage files can be. */
 export async function deleteStoredFile(storagePath?: string): Promise<void> {
-  if (!storagePath) return;
+  if (!storagePath || storagePath.startsWith('drive:')) return;
   try {
     await deleteObject(ref(getStorage(app), storagePath));
   } catch {

@@ -13,19 +13,14 @@ The service worker caches only the application shell (HTML, JS, CSS, icons). Pro
 | | Client Command Center | Internal Command Center |
 |---|---|---|
 | Top bar | Brand · **What's new** · menu | Module title · sync status · notifications · menu |
-| Bottom navigation | Home · Progress · 3D Journey · Updates · Documents | Home · Site Report · Schedule · Actions · More |
+| Bottom navigation | Home · Progress · 3D Journey · Updates · Documents | Home · Daily Report · Schedule · Actions · More |
 | Secondary menu | Project Timeline · Progress Gallery · Add to Home Screen · login / sign out | All permitted modules (grouped) · client portal preview · user management / audit logs (admin) · Add to Home Screen · sign out |
 | Home | Project + welcome · progress ring · status · target completion · 3D Journey · latest updates · coming next · announcements | Project Status · Actual / Planned / Variance / Forecast · 8 quick actions · expandable Delayed Activities, Pending Management Actions, Upcoming Milestones, Pending Approvals, Notifications |
 
 Tables inside modules turn into stacked cards on phones (no sideways scrolling); forms and dialogs open as full-height sheets with 44px touch targets and 16px inputs.
 
-## Daily Site Report (`#/site`)
-Activity, accomplishment % (slider + quick values), site remarks, manpower, material deliveries, photographs (camera capture on supported phones, or gallery). Submitting:
-1. uploads photos to the Document Repository (linked to the activity),
-2. applies the accomplishment % to the activity in the Master Project Tracker (same path as the activity editor),
-3. stores the report in `siteReports`.
-
-“**Submitted**” appears only when the shared database has confirmed every step. Otherwise the report is shown as “**Saved on this device — not yet submitted**” with **Retry**. One report per person, date and activity: re-submitting updates the same record (no duplicates). Server rules: internal read; staff-level roles write only their own reports; accomplishment must be 0–100.
+## Daily Construction Report (`#/site/new`, `#/site/history`)
+Replaced the earlier quick site report. See [GOOGLE_DRIVE.md](GOOGLE_DRIVE.md#daily-construction-report) for the full workflow. On phones: camera capture or gallery selection, per-photo upload progress and retry, a sticky Save Draft / Preview / Submit bar, and history as stacked cards. Earlier quick site reports (`siteReports`) are kept and shown read-only in Report History.
 
 ## Notifications
 * **Internal:** the existing role-based notifications (bell and dashboard section).

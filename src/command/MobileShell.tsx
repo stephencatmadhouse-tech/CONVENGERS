@@ -4,7 +4,7 @@
  *
  * MOBILE INTERNAL COMMAND CENTER — dedicated phone layout for site personnel
  * and managers: app bar (sync status, notifications), bottom navigation
- * (Home, Site Report, Schedule, Actions, More) and a compact dashboard with
+ * (Home, Daily Report, Schedule, Actions, More) and a compact dashboard with
  * expandable sections. Every module is the same component as on desktop and
  * uses the same database, calculations and role permissions.
  */
@@ -46,7 +46,7 @@ import { useInstallState, applyUpdate } from '../pwa/pwa.ts';
 
 const TABS = [
   { id: 'command', label: 'Home', icon: Home, route: 'command' },
-  { id: 'site', label: 'Site Report', icon: ClipboardPen, route: 'site' },
+  { id: 'site', label: 'Daily Report', icon: ClipboardPen, route: 'site/new' },
   { id: 'calendar', label: 'Schedule', icon: CalendarDays, route: 'calendar/agenda' },
   { id: 'issues', label: 'Actions', icon: ListChecks, route: 'issues/attention' },
 ];
@@ -227,9 +227,10 @@ export const MobileDashboard: React.FC = () => {
     .slice(0, 5);
   const forecast = forecastCompletion(m);
   const quick = [
-    { label: 'Update Construction Progress', icon: TrendingUp, route: 'site' },
-    { label: 'Submit Daily Construction Report', icon: ClipboardPen, route: 'site' },
-    { label: 'Upload Site Photos', icon: Camera, route: 'site' },
+    { label: 'Update Construction Progress', icon: TrendingUp, route: 'tracker' },
+    { label: 'Submit Daily Construction Report', icon: ClipboardPen, route: 'site/new' },
+    { label: 'Daily Report History', icon: ClipboardPen, route: 'site/history' },
+    { label: 'Upload Site Photos', icon: Camera, route: 'site/new' },
     { label: 'Report Site Issues', icon: ShieldAlert, route: 'issues/log/new' },
     { label: 'Add Construction Activity', icon: Plus, route: 'tracker/register/new' },
     { label: 'Update Activity Status', icon: CheckSquare, route: 'tracker/register/status=Ongoing' },

@@ -60,7 +60,7 @@ import { NotificationsPage, useNotifications } from './Notifications.tsx';
 import { CalendarPage } from './CalendarPage.tsx';
 import { JourneyManagement } from './JourneyManagement.tsx';
 import { RolesPermissions, SyncPanel } from './SystemAdmin.tsx';
-import { SiteReport } from './SiteReport.tsx';
+import { DailyReports } from './DailyReport.tsx';
 
 export type SlideKey = 'overview' | 'upcoming' | 'gf' | '2f' | '3f' | 'pours' | 'production' | 'episodes' | 'master' | 'methodology' | 'watch' | 'notes';
 
@@ -247,9 +247,13 @@ const RAW_SECTIONS: Section[] = [
   {
     id: 'site',
     num: '00',
-    label: 'Daily Site Report',
-    title: 'Daily Site Report',
-    sub: 'Report progress from the site: accomplishment, remarks, manpower, material deliveries and photographs.',
+    label: 'Daily Construction Report',
+    title: 'Daily Construction Report',
+    sub: 'Report the day on site: accomplishments, manpower, materials, equipment, site conditions and photographs stored in Google Drive. Reports are reviewed before approval.',
+    tabs: [
+      { id: 'new', label: 'New Report' },
+      { id: 'history', label: 'Report History' },
+    ],
   },
   {
     id: 'journey',
@@ -431,7 +435,7 @@ export function renderSectionBody(
       case 'sync':
         return <SyncPanel />;
       case 'site':
-        return <SiteReport />;
+        return <DailyReports key={tab?.id} tab={tab?.id} />;
       case 'issues':
         return tab?.id === 'log' ? <IssueLog /> : tab?.id === 'owners' ? <Accountability /> : <AttentionList />;
       case 'archive':

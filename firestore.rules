@@ -292,6 +292,50 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // --- GOOGLE DRIVE FILE METADATA (binaries live in Google Drive) ---
+    // Written by the server's Drive service (Admin SDK). In the app, managers may only
+    // change the client-portal publication of a file; nobody can create or delete records.
+    match /driveFiles/{id} {
+      allow read: if isInternal();
+      allow update: if isManager()
+        && incoming().diff(existing()).affectedKeys().hasOnly(['publicationStatus', 'publishedAt', 'publishedBy'])
+        && incoming().publicationStatus in ['internal', 'published'];
+      allow create, delete: if false;
+    }
+    // Drive folder names (administrators) and the folder-ID cache (server only)
+    match /driveConfig/{id} {
+      allow read: if isInternal();
+      allow write: if isAdmin() && id == 'settings';
+    }
+
+    // --- DAILY CONSTRUCTION REPORTS ---
+    // Preparers create and edit their own reports until review; only managers review,
+    // approve or return them. Submitting never approves a report.
+    function drValid() {
+      return incoming().status in ['draft', 'uploading', 'pending', 'submitted', 'under_review', 'approved', 'returned']
+        && incoming().projectId is string && incoming().date is string && incoming().preparedById is string;
+    }
+    match /dailyReports/{id} {
+      allow read: if isInternal();
+      allow create: if isStaff() && isValidId(id) && incoming().id == id && drValid()
+        && incoming().preparedById == request.auth.uid
+        && incoming().status in ['draft', 'uploading', 'pending', 'submitted'];
+      allow update: if drValid() && (
+        (isStaff() && existing().preparedById == request.auth.uid
+          && incoming().preparedById == existing().preparedById
+          && incoming().get('review', null) == existing().get('review', null)
+          && existing().status in ['draft', 'uploading', 'pending', 'submitted', 'returned']
+          && (incoming().status in ['draft', 'uploading', 'pending', 'submitted']
+            || (existing().status == 'returned' && incoming().status == 'returned')))
+        || (isManager() && (existing().status != 'approved' || isAdmin()))
+        // after approval a manager may only record that reported progress was applied to the tracker
+        || (isManager() && existing().status == 'approved' && incoming().status == 'approved'
+          && incoming().diff(existing()).affectedKeys().hasOnly(['activities', 'updatedAt', 'updatedBy'])
+          && incoming().activities.size() == existing().activities.size())
+      );
+      allow delete: if isAdmin() || (isStaff() && existing().preparedById == request.auth.uid && existing().status == 'draft');
+    }
+
     // --- CLIENT EXPERIENCE CONFIGURATION: construction journey stages, project profile ---
     // Internal only. Clients see this information only through the published `portal` snapshot.
     match /clientConfig/{id} {

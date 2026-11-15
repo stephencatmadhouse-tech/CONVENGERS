@@ -8,6 +8,7 @@
  * (documents/, internal only) or are attached as links.
  */
 
+import { SecureLink } from '../drive/SecureMedia.tsx';
 import React, { useState } from 'react';
 import { useCommand } from './context.tsx';
 import { DocumentCategory, ProjectDocument, Publication } from '../types/index.ts';
@@ -64,18 +65,10 @@ export const Documents: React.FC = () => {
   });
 
   const prepareForPortal = async (d: ProjectDocument) => {
-    let url = d.url;
-    // Files in the internal folder are copied to the portal folder so external roles can read them.
-    if (d.storagePath && d.url) {
-      try {
-        const blob = await (await fetch(d.url)).blob();
-        const up = await uploadFile('portal', new File([blob], d.fileName || 'document', { type: d.contentType || blob.type }));
-        url = up.url;
-      } catch (err) {
-        actions.toast(err instanceof Error ? err.message : 'Could not copy the file for the portal.');
-        return;
-      }
-    }
+    // Drive files are published by reference (the server shows them to clients only once published);
+    // legacy Storage files keep their existing link.
+    const url = d.url;
+    const fileId = d.storagePath?.startsWith('drive:') ? d.storagePath.slice(6) : undefined;
     const now = new Date().toISOString();
     const isPhoto = d.category === 'Site photo' || (d.contentType || '').startsWith('image/');
     const pub: Publication = {
@@ -85,8 +78,8 @@ export const Documents: React.FC = () => {
       status: 'draft',
       sourceId: d.id,
       payload: isPhoto
-        ? { url, caption: d.notes || '', date: d.date, category: 'Site progress' }
-        : { url, category: d.category, date: d.date, description: d.notes || '', fileName: d.fileName },
+        ? { url, fileId, caption: d.notes || '', date: d.date, category: 'Site progress' }
+        : { url, fileId, category: d.category, date: d.date, description: d.notes || '', fileName: d.fileName },
       history: [{ at: now, by: user.name, to: 'draft', note: `Prepared from document ${d.id}` }],
       createdAt: now,
       createdBy: user.name,
@@ -163,9 +156,9 @@ export const Documents: React.FC = () => {
                   <td className="cv-dim">{register.find((r) => r.id === d.linkedActivityId)?.name || '—'}</td>
                   <td>
                     {d.url ? (
-                      <a href={d.url} target="_blank" rel="noopener noreferrer" className="cv-btn sm">
+                      <SecureLink href={d.url} target="_blank" rel="noopener noreferrer" className="cv-btn sm">
                         Open {fmtSize(d.size)}
-                      </a>
+                      </SecureLink>
                     ) : (
                       <span className="cv-dim">No file</span>
                     )}

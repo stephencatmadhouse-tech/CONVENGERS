@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import { WebSocketServer, WebSocket } from 'ws';
 import { db } from './src/db/database.ts';
 import { User, UserRole, Collaborator } from './src/types/index.ts';
+import { handleDriveRequest } from './server/drive/handler.ts';
 
 const app = express();
 const server = http.createServer(app);
@@ -19,6 +20,11 @@ const isDev = process.env.NODE_ENV !== 'production';
 
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+
+// Google Drive file service (server-side credentials only; see server/drive/)
+app.all('/api/drive/*', (req, res) => {
+  void handleDriveRequest(req, res);
+});
 
 // Active Collaborator Registry (Google Sheets style presence)
 const activeCollaborators = new Map<string, Collaborator>();

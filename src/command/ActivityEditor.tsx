@@ -7,6 +7,7 @@
  * activity's control metadata, so every module updates together.
  */
 
+import { SecureLink } from '../drive/SecureMedia.tsx';
 import React, { useMemo, useState } from 'react';
 import { RegisterActivity } from '../domain/register.ts';
 import { validateActivityEdit, findDuplicates } from '../domain/validation.ts';
@@ -421,7 +422,7 @@ export const ActivityEditor: React.FC<{ activity: RegisterActivity; onClose: () 
 
 /** Documents linked to this activity (stored in the Document Repository). */
 const Attachments: React.FC<{ activityId: string }> = ({ activityId }) => {
-  const { canEdit, user, actions } = useCommand();
+  const { canEdit, user, actions, register } = useCommand();
   const docs = useStore(documentStore);
   const linked = docs.items.filter((d) => d.linkedActivityId === activityId && !d.archived);
   const [title, setTitle] = useState('');
@@ -435,7 +436,13 @@ const Attachments: React.FC<{ activityId: string }> = ({ activityId }) => {
     try {
       let rec: any = {};
       if (file) {
-        const up = await uploadFile('documents', file);
+        const act = register.find((x) => x.id === activityId);
+        const up = await uploadFile('documents', file, {
+          folderKey: file.type.startsWith('image/') ? 'photos' : 'supporting',
+          activityId,
+          category: act?.category,
+          description: title.trim() || undefined,
+        });
         rec = { url: up.url, storagePath: up.storagePath, fileName: file.name, size: up.size, contentType: up.contentType };
       } else rec = { url };
       const now = new Date().toISOString();
@@ -477,9 +484,9 @@ const Attachments: React.FC<{ activityId: string }> = ({ activityId }) => {
                 </div>
               </div>
               {d.url && (
-                <a className="cv-btn sm" href={d.url} target="_blank" rel="noopener noreferrer">
+                <SecureLink className="cv-btn sm" href={d.url} target="_blank" rel="noopener noreferrer">
                   Open
-                </a>
+                </SecureLink>
               )}
             </div>
           ))

@@ -465,3 +465,54 @@ test('site report validation: required activity, valid %, no future dates, expla
   assert.ok(progressEditable(sc));
   assert.ok(!progressEditable(r.find((x) => x.kind === 'pour')!));
 });
+
+// ---------------- Daily Construction Report ----------------
+import { blankDailyReport, newDailyReportId, validateDailyReport, canEditReport, canReview, reviewActions, manpowerTotal } from './dailyReport.ts';
+
+test('daily report: IDs are valid document IDs and references are readable', () => {
+  const a = newDailyReportId('2026-11-15');
+  const b = newDailyReportId('2026-11-15');
+  assert.match(a.id, /^DR-20261115-[A-Za-z0-9]{6}$/);
+  assert.match(a.reference, /^DCR-20261115-[A-Za-z0-9]{4}$/);
+  assert.notEqual(a.id, b.id);
+});
+
+test('daily report validation: content, activity, manpower, materials, equipment, dates and failed photos', () => {
+  const u = { id: 'u1', name: 'Site Engineer' };
+  const r = blankDailyReport(TODAY, u);
+  assert.ok(validateDailyReport(r, TODAY).some((e) => /at least one construction activity/.test(e)));
+  const act = { activityId: 'SC-1', category: 'Structural', name: 'Columns', workDescription: 'Formworks', accomplishment: '', progress: 40, workStatus: 'In progress' as const, remarks: '' };
+  const ok = { ...r, activities: [act] };
+  assert.deepEqual(validateDailyReport(ok, TODAY), []);
+  assert.ok(validateDailyReport({ ...ok, date: '2099-01-01' }, TODAY).some((e) => /future/.test(e)));
+  assert.ok(validateDailyReport({ ...ok, activities: [{ ...act, activityId: '' }] }, TODAY).some((e) => /choose the construction activity/.test(e)));
+  assert.ok(validateDailyReport({ ...ok, activities: [{ ...act, workDescription: '' }] }, TODAY).some((e) => /describe the work/.test(e)));
+  assert.ok(validateDailyReport({ ...ok, activities: [{ ...act, progress: 140 }] }, TODAY).some((e) => /between 0% and 100%/.test(e)));
+  assert.ok(validateDailyReport({ ...ok, manpower: { ...ok.manpower, skilled: -1 } }, TODAY).some((e) => /whole numbers/.test(e)));
+  assert.ok(validateDailyReport({ ...ok, manpower: { ...ok.manpower, general: 2.5 } }, TODAY).some((e) => /whole numbers/.test(e)));
+  assert.ok(validateDailyReport({ ...ok, materials: [{ description: '', quantity: '', unit: '', deliveryDate: '', supplier: '', remarks: '' }] }, TODAY).some((e) => /material description/.test(e)));
+  assert.ok(validateDailyReport({ ...ok, equipment: [{ description: '', quantity: '1', status: 'Operational', remarks: '' }] }, TODAY).some((e) => /equipment description/.test(e)));
+  const photo = { fileId: 'Fabc', fileName: 'a.jpg', photoType: 'Activity photo', description: '', uploadStatus: 'failed' as const };
+  assert.ok(validateDailyReport({ ...ok, photos: [photo] }, TODAY).some((e) => /failed to upload/.test(e)));
+  assert.deepEqual(validateDailyReport({ ...ok, photos: [{ ...photo, uploadStatus: 'uploaded' }] }, TODAY), []);
+  // an observation alone is a valid report
+  assert.deepEqual(validateDailyReport({ ...r, site: { ...r.site, observations: 'Rain stopped work at 2 PM' } }, TODAY), []);
+  assert.equal(manpowerTotal({ manpower: { skilled: 4, general: 6, subcontractor: 3, other: 1 } }), 14);
+});
+
+test('daily report workflow: submission never approves; only reviewers approve; preparer edits until review', () => {
+  const r = blankDailyReport(TODAY, { id: 'u1', name: 'Engineer' });
+  assert.ok(canEditReport(r, { id: 'u1', role: 'engineer' }));
+  assert.ok(!canEditReport(r, { id: 'u2', role: 'engineer' }));
+  assert.ok(!canEditReport(r, { id: 'u1', role: 'viewer' }));
+  assert.ok(canEditReport({ ...r, status: 'returned' }, { id: 'u1', role: 'engineer' }));
+  assert.ok(!canEditReport({ ...r, status: 'under_review' }, { id: 'u1', role: 'engineer' }));
+  assert.ok(!canEditReport({ ...r, status: 'approved' }, { id: 'u1', role: 'engineer' }));
+  assert.ok(canReview('manager') && canReview('director') && canReview('admin'));
+  assert.ok(!canReview('engineer') && !canReview('staff') && !canReview('client'));
+  assert.deepEqual(reviewActions('draft'), []);
+  assert.deepEqual(reviewActions('pending'), []);
+  assert.deepEqual(reviewActions('approved'), []);
+  assert.deepEqual(reviewActions('submitted').map((a) => a.to), ['under_review', 'approved', 'returned']);
+  assert.ok(reviewActions('under_review').find((a) => a.to === 'returned')!.needsRemarks);
+});

@@ -13,6 +13,8 @@ import { useCommand } from './context.tsx';
 import { Publication, PublicationKind, PublishStatus } from '../types/index.ts';
 import { publicationStore, portalStore, clientConfigStore } from '../firebase/opsStores.ts';
 import { useClientConfig } from '../firebase/useClientConfig.ts';
+import { setDrivePublication } from '../drive/driveClient.ts';
+import { SecureImg } from '../drive/SecureMedia.tsx';
 import { forecastCompletion } from '../domain/metrics.ts';
 import { SyncChip, SYNC_LABEL } from './ui.tsx';
 import type { ProjectProfile } from '../domain/journey.ts';
@@ -55,8 +57,14 @@ export const Publishing: React.FC<{ tab?: string }> = ({ tab = 'overview' }) => 
     }
     try {
       const next = transitionPublication(p, to, user.name);
+      // Google Drive files become viewable on the client portal only while published
+      const driveId: string | undefined = p.payload?.fileId;
+      if (to === 'published' && driveId) await setDrivePublication(driveId, true, user.name);
       if (to === 'published') await portalStore.put(portalRecordFor(next, user.name));
-      if (p.status === 'published' && to !== 'published') await portalStore.remove(p.id);
+      if (p.status === 'published' && to !== 'published') {
+        await portalStore.remove(p.id);
+        if (driveId) await setDrivePublication(driveId, false, user.name).catch(() => undefined);
+      }
       const res = await publicationStore.put(next);
       await firestoreData.logAudit(user, `PUBLICATION_${to.toUpperCase()}`, 'Publication', p.id, `${p.title}: ${p.status} → ${to}`);
       actions.toast(
@@ -451,8 +459,8 @@ const PublicationEditor: React.FC<{ pub: Publication; onClose: () => void }> = (
     try {
       let payload = f.payload;
       if (file) {
-        const up = await uploadFile('portal', file);
-        payload = { ...payload, url: up.url };
+        const up = await uploadFile('portal', file, { folderKey: 'photos', reportingDate: payload.date || undefined, category: payload.category, description: payload.caption || undefined });
+        payload = { ...payload, url: up.url, fileId: up.fileId };
       }
       if (f.kind === 'photo' && !payload.url) throw new Error('Choose a photo to upload or paste an image link.');
       const now = new Date().toISOString();
@@ -581,7 +589,7 @@ const PublicationEditor: React.FC<{ pub: Publication; onClose: () => void }> = (
               </Field>
               {f.payload.url && (
                 <div className="full">
-                  <img src={f.payload.url} alt="" style={{ maxWidth: '100%', maxHeight: 260, borderRadius: 10, border: '1px solid var(--cv-line)' }} />
+                  <SecureImg src={f.payload.url} alt="" style={{ maxWidth: '100%', maxHeight: 260, borderRadius: 10, border: '1px solid var(--cv-line)' }} />
                 </div>
               )}
             </>

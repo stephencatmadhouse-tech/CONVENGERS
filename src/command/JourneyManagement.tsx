@@ -109,11 +109,12 @@ export const JourneyManagement: React.FC = () => {
     if (!file) return;
     setBusy(true);
     try {
-      const up = await uploadFile('portal', file);
+      // Reference illustrations are client-facing artwork: managers upload them as published
+      const up = await uploadFile('portal', file, { kind: 'illustration', publish: true, folderKey: 'supporting', subfolder: 'Construction Journey Illustrations' });
       apply(up.url);
-      actions.toast('Illustration uploaded. Save Changes to keep it.');
-    } catch {
-      actions.toast('Upload failed — check Storage rules, or paste an image link instead.');
+      actions.toast('Illustration uploaded to Google Drive. Save Changes to keep it.');
+    } catch (e) {
+      actions.toast(e instanceof Error ? e.message : 'Upload failed — paste an image link instead.');
     } finally {
       setBusy(false);
     }

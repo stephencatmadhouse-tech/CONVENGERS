@@ -4,7 +4,7 @@
  */
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import {
   getFirestore,
   initializeFirestore,
@@ -15,6 +15,7 @@ import {
   clearIndexedDbPersistence,
   doc,
   getDocFromServer,
+  connectFirestoreEmulator,
   type Firestore,
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
@@ -36,6 +37,14 @@ function makeDb(): Firestore {
   }
 }
 export const db = makeDb();
+
+// Local testing only: `VITE_FIREBASE_EMULATOR_HOST=127.0.0.1 vite build` points the app at the
+// Firebase Auth (9099) and Firestore (8089) emulators. Never set in production builds.
+const EMU = import.meta.env.VITE_FIREBASE_EMULATOR_HOST as string | undefined;
+if (EMU) {
+  connectAuthEmulator(auth, `http://${EMU}:9099`, { disableWarnings: true });
+  connectFirestoreEmulator(db, EMU, 8089);
+}
 
 /**
  * On sign-out from a shared device: remove the cached project data, but only

@@ -19,6 +19,8 @@ import {
   Publication,
   CalendarEvent,
   SiteReport,
+  DriveFile,
+  DailyReport,
 } from '../types/index.ts';
 import { PUBLIC_PORTAL_KINDS, type PortalRecord } from '../domain/portal.ts';
 import type { ClientConfigDoc } from '../domain/journey.ts';
@@ -42,4 +44,9 @@ export const publicPortalStore = new CollectionStore<PortalRecord>('portal', byD
 /** Daily site reports submitted from the field (server rules: internal read; staff-level create / update of their own reports). */
 export const siteReportStore = new CollectionStore<SiteReport>('siteReports', (a, b) => (b.date + b.submittedAt).localeCompare(a.date + a.submittedAt));
 
-export const INTERNAL_STORES = [procurementStore, manpowerStore, documentStore, publicationStore, eventStore, siteReportStore];
+/** Google Drive file metadata (written by the server's Drive service; read-only in the app except publication). */
+export const driveFileStore = new CollectionStore<DriveFile>('driveFiles', (a, b) => String(b.uploadedAt || '').localeCompare(String(a.uploadedAt || '')));
+/** Daily Construction Reports (server rules: internal read; preparer edits until review; managers review). */
+export const dailyReportStore = new CollectionStore<DailyReport>('dailyReports', (a, b) => (b.date + (b.submittedAt || b.updatedAt)).localeCompare(a.date + (a.submittedAt || a.updatedAt)));
+
+export const INTERNAL_STORES = [procurementStore, manpowerStore, documentStore, publicationStore, eventStore, siteReportStore, dailyReportStore];

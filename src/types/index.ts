@@ -548,3 +548,85 @@ export interface SiteReport {
   submittedAt: string;
   localOnly?: boolean;
 }
+
+// ===================== Google Drive file metadata (binaries live in Google Drive) =====================
+export type DriveFolderKey = 'photos' | 'daily' | 'weekly' | 'monthly' | 'site' | 'supporting';
+export interface DriveFile {
+  id: string; // unique app file ID (also stored on the Drive file as appProperties.bbFileId)
+  driveFileId?: string;
+  projectId: string;
+  projectName?: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  kind: 'photo' | 'document' | 'illustration';
+  reportingDate: string;
+  category?: string | null;
+  photoType?: string | null;
+  activityId?: string | null;
+  reportId?: string | null;
+  description?: string;
+  folderKey: DriveFolderKey;
+  folderId?: string;
+  uploadedBy: string;
+  uploadedById: string;
+  uploadedAt: string;
+  updatedAt?: string;
+  uploadStatus: 'uploading' | 'uploaded' | 'failed';
+  publicationStatus: 'internal' | 'published';
+  publishedAt?: string;
+  publishedBy?: string;
+  error?: string;
+  localOnly?: boolean;
+}
+
+// ===================== Daily Construction Report =====================
+export type DailyReportStatus = 'draft' | 'uploading' | 'pending' | 'submitted' | 'under_review' | 'approved' | 'returned';
+export interface DailyReportActivity {
+  activityId: string;
+  category: string;
+  name: string;
+  workDescription: string;
+  accomplishment: string;
+  /** Reported accomplishment %. NOT applied to the Master Project Tracker until a manager approves and applies it. */
+  progress: number | null;
+  progressApplied?: boolean;
+  workStatus: 'Not started' | 'In progress' | 'Completed' | 'On hold' | 'Delayed';
+  remarks: string;
+}
+export interface DailyReportPhoto {
+  fileId: string;
+  driveFileId?: string;
+  fileName: string;
+  fileSize?: number;
+  photoType: string;
+  activityId?: string;
+  description: string;
+  uploadStatus: 'pending' | 'uploading' | 'uploaded' | 'failed';
+  error?: string;
+}
+export interface DailyReport {
+  id: string;
+  reference: string;
+  projectId: string;
+  projectName: string;
+  date: string;
+  weather: string;
+  siteLocation: string;
+  preparedBy: string;
+  preparedById: string;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy: string;
+  submittedAt?: string;
+  status: DailyReportStatus;
+  activities: DailyReportActivity[];
+  manpower: { skilled: number; general: number; subcontractor: number; other: number };
+  materials: { description: string; quantity: string; unit: string; deliveryDate: string; supplier: string; remarks: string }[];
+  equipment: { description: string; quantity: string; status: string; remarks: string }[];
+  site: { observations: string; issues: string; delays: string; safety: string; corrective: string; recommendations: string };
+  photos: DailyReportPhoto[];
+  review?: { reviewedBy?: string; reviewedById?: string; reviewedAt?: string; remarks?: string };
+  history: { at: string; by: string; to: DailyReportStatus; note?: string }[];
+  localOnly?: boolean;
+}
