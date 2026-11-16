@@ -1494,7 +1494,7 @@ const SchedulePanel: React.FC = () => {
           </Field>
           {isManager && !isAdmin && <p className="cv-dim">The list shows people who have submitted daily reports. An administrator sees every staff account.</p>}
         </Card>
-        <Card title={`This week · ${periodLabel({ type: 'weekly', periodStart: wk.start, periodEnd: wk.end })}`} note={`${cov.reportedDays.length} of ${plural(cov.workDays.length, 'working day')} reported so far`}>
+        <Card title={`This week · ${periodLabel({ type: 'weekly', periodStart: wk.start, periodEnd: wk.end })}`} note={cov.workDays.length ? `${cov.reportedDays.length} of ${plural(cov.workDays.length, 'working day')} reported so far` : 'No working day has passed yet this week (project non-working days are not counted)'}>
           <ul className="nr-days">
             {[...new Set([...cov.workDays, ...cov.reports.filter((x) => x.date <= today).map((x) => x.date)])].sort().map((d) => {
               const reps = cov.reports.filter((x) => x.date === d && (!cov.reporter || x.preparedById === cov.reporter.uid));
@@ -1556,7 +1556,11 @@ const SchedulePanel: React.FC = () => {
               <span>
                 <b>{NARRATIVE_TYPES[k].label}</b>
                 <em className="cv-dim">
-                  {k === 'daily' ? ' Prepared the next day for the previous day.' : k === 'weekly' ? ' Prepared on Monday for the previous week (Monday–Sunday).' : ' Prepared on the 1st for the previous month.'}
+                  {k === 'daily'
+                    ? ' A draft for each day with a submitted daily report, kept up to date.'
+                    : k === 'weekly'
+                      ? ' A draft for the current week (Monday–Sunday) once a daily report is submitted, kept up to date as daily reports arrive.'
+                      : ' A draft for the current month once a daily report is submitted, consolidated from the weekly reports and kept up to date.'}
                 </em>
               </span>
             </label>

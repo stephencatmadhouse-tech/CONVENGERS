@@ -542,3 +542,10 @@ html[data-eff='dark'] .nr-miss {
 .nr-days li.off {
   border-left-color: var(--cv-line);
 }
+.nr-days li {
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+.nr-days li > span:first-child {
+  white-space: nowrap;
+}
