@@ -211,3 +211,10 @@ test('chain: project non-working days (NCR special days Nov 16–18) are not cou
   assert.equal(facts.reports.length, 1, 'a report filed on a non-working day is still used');
   assert.match(composeSections(facts)[0].text, /No working day of this period has passed up to November 17, 2026, so Daily Construction Report coverage for Engr\. Richard is not yet measured\./);
 });
+
+test('chain: changing the required reporter changes the source marker (drafts are rebuilt)', () => {
+  const reps = [dcr({ id: 'a', reference: 'DCR-A', date: '2026-11-09', preparedById: 'u-richard' })];
+  const a = collectFacts({ type: 'weekly', start: '2026-11-09', end: '2026-11-15' }, { ...base(reps), reporter: null }).sourceStamp;
+  const b = collectFacts({ type: 'weekly', start: '2026-11-09', end: '2026-11-15' }, { ...base(reps), reporter: RICH }).sourceStamp;
+  assert.notEqual(a, b);
+});

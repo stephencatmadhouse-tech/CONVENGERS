@@ -400,6 +400,8 @@ export function collectFacts(req: NarrativeRequest, src: NarrativeSources): Narr
     }
   }
   const sourceStamp = recordStamp([
+    // the required reporter changes the coverage text
+    ...(compliance ? [{ id: `reporter:${src.reporter?.uid || ''}` }] : []),
     ...src.dailyReports.filter((d) => inP(d.date, start, end) && VERIFIED_DR.includes(d.status)).map((d) => ({ id: d.id, updatedAt: d.updatedAt, status: d.status })),
     ...weeks.filter((w) => w.report).map((w) => ({ id: w.report!.id, updatedAt: w.report!.updatedAt, status: w.report!.status })),
   ]);
