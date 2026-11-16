@@ -24,6 +24,7 @@ import { computeMetrics, round1 } from './metrics.ts';
 import { progressPoint, completedIn, fmtVar } from './reports.ts';
 import { addDays, diffDays, fmtDate, fmtRange, isValidIso, monthRange, weekRange } from './dates.ts';
 import { plural } from '../utils/plural.ts';
+import { summarizeDailyReports, recordStamp, VERIFIED_DR, type DailyReporter, type DailySummary } from './dailyCompliance.ts';
 
 // ---------------------------------------------------------------- types
 export type NarrativeType = 'daily' | 'weekly' | 'monthly' | 'milestone' | 'activity' | 'status' | 'summary';
@@ -93,6 +94,11 @@ export interface NarrativeFigures {
   manDays: number | null;
   issuesOpen: number;
   photos: number;
+  /** Working days in the period (to the as-of date) and how many have a verified daily report from the required reporter. */
+  workDays?: number;
+  daysReported?: number;
+  /** Monthly: weeks of the month with a Weekly Accomplishment Report. */
+  weeklyReports?: number;
 }
 
 export interface NarrativeRevision {
@@ -122,8 +128,12 @@ export interface NarrativeReport {
   attachments: NarrativeAttachment[];
   figures: NarrativeFigures;
   /** Project records the report was built from (links back to the source modules). */
-  sources: { dailyReports: string[]; activities: string[]; issues: string[]; previous?: string };
+  sources: { dailyReports: string[]; activities: string[]; issues: string[]; previous?: string; weekly?: string[] };
   scheduled?: boolean;
+  /** Change marker of the source daily (and, for monthly, weekly) reports when the text was last built. */
+  sourceStamp?: string;
+  /** Set when a person edits the text; automatic updates never overwrite edited drafts. */
+  manualEdits?: boolean;
   revisions: NarrativeRevision[];
   reviewedBy?: string;
   approvedBy?: string;
@@ -141,6 +151,8 @@ export interface NarrativeSchedule {
   daily: boolean;
   weekly: boolean;
   monthly: boolean;
+  /** Person required to submit the Daily Construction Report every working day. */
+  dailyReporter?: DailyReporter | null;
   updatedAt?: string;
   updatedBy?: string;
   localOnly?: boolean;
@@ -195,6 +207,8 @@ export interface NarrativeSources {
   documents: ProjectDocument[];
   narratives: NarrativeReport[];
   today: string;
+  /** Required daily reporter (from the schedule settings). */
+  reporter?: DailyReporter | null;
 }
 
 export interface NarrativeRequest {
@@ -235,6 +249,11 @@ export interface NarrativeFacts {
   photos: NarrativePhoto[];
   attachments: NarrativeAttachment[];
   previous?: NarrativeReport;
+  /** Daily report coverage of the working days (daily / weekly / monthly / milestone reports). */
+  compliance: DailySummary | null;
+  /** Monthly: the weeks of the month and their Weekly Accomplishment Reports. */
+  weeks: { start: string; end: string; report?: NarrativeReport; reports: DailyReport[] }[];
+  sourceStamp: string;
 }
 
 const VERIFIED: DailyReport['status'][] = ['submitted', 'under_review', 'approved'];
@@ -365,7 +384,30 @@ export function collectFacts(req: NarrativeRequest, src: NarrativeSources): Narr
     .filter((n) => n.type === type && n.periodEnd < start && (n.status === 'approved' || n.status === 'final') && (n.subjectId || '') === (subjectId || ''))
     .sort((a, b) => b.periodEnd.localeCompare(a.periodEnd))[0];
 
+  const compliance = !subject && ['daily', 'weekly', 'monthly', 'milestone'].includes(type) ? summarizeDailyReports(src.dailyReports, start, end, src.today, src.reporter) : null;
+
+  // Monthly ← weekly: every week (Monday–Sunday) that overlaps the month, with its weekly report
+  const weeks: NarrativeFacts['weeks'] = [];
+  if (type === 'monthly') {
+    for (let ws = weekRange(start).start; ws <= end; ws = addDays(ws, 7)) {
+      const we = addDays(ws, 6);
+      weeks.push({
+        start: ws,
+        end: we,
+        report: src.narratives.find((n) => n.type === 'weekly' && !n.subjectId && n.periodStart === ws),
+        reports: reports.filter((d) => d.date >= ws && d.date <= we),
+      });
+    }
+  }
+  const sourceStamp = recordStamp([
+    ...src.dailyReports.filter((d) => inP(d.date, start, end) && VERIFIED_DR.includes(d.status)).map((d) => ({ id: d.id, updatedAt: d.updatedAt, status: d.status })),
+    ...weeks.filter((w) => w.report).map((w) => ({ id: w.report!.id, updatedAt: w.report!.updatedAt, status: w.report!.status })),
+  ]);
+
   return {
+    compliance,
+    weeks,
+    sourceStamp,
     req,
     asOf,
     subject,
@@ -427,6 +469,8 @@ export function figures(f: NarrativeFacts): NarrativeFigures {
     manDays: f.manpowerDays.length ? man : null,
     issuesOpen: f.issuesOpen.length,
     photos: f.photos.length,
+    ...(f.compliance ? { workDays: f.compliance.workDays.length, daysReported: f.compliance.reportedDays.length } : {}),
+    ...(f.req.type === 'monthly' ? { weeklyReports: f.weeks.filter((w) => w.report).length } : {}),
   };
 }
 
@@ -458,13 +502,53 @@ export function composeSections(f: NarrativeFacts): NarrativeSection[] {
       ? `${plural(f.reports.length, 'Daily Construction Report')} ${f.reports.length === 1 ? 'was' : 'were'} submitted for the period (${approved ? `${approved} approved` : 'none approved yet'}).`
       : 'No Daily Construction Reports were submitted for this period.'
   );
+  const c = f.compliance;
+  if (c && !c.workDays.length && c.asOf >= c.start && req.type !== 'daily')
+    S.summary.push(`No working day of this period has passed up to ${fmtDate(c.asOf)}, so Daily Construction Report coverage${c.reporter ? ` for ${c.reporter.name}` : ''} is not yet measured.`);
+  if (c && c.workDays.length) {
+    const who = c.reporter ? ` from ${c.reporter.name}` : '';
+    S.summary.push(
+      `Daily Construction Reports${who} cover ${c.reportedDays.length} of ${plural(c.workDays.length, 'working day')} up to ${fmtDate(c.asOf)}${
+        c.missingDays.length ? `; no report was submitted for ${list(c.missingDays.map((d) => fmtDate(d)))}.` : '.'
+      }`
+    );
+  }
+  if (c && c.unverified.length)
+    S.summary.push(`${plural(c.unverified.length, 'further report')} (${c.unverified.map((u) => u.reference).join(', ')}) ${c.unverified.length === 1 ? 'is' : 'are'} not yet submitted and ${c.unverified.length === 1 ? 'is' : 'are'} not included.`);
+  if (req.type === 'monthly' && f.weeks.length) {
+    const have = f.weeks.filter((w) => w.report);
+    const appr = have.filter((w) => w.report!.status === 'approved' || w.report!.status === 'final').length;
+    S.summary.push(
+      have.length
+        ? `This report consolidates ${plural(have.length, 'Weekly Accomplishment Report')} covering ${have.length} of ${plural(f.weeks.length, 'week')} of the month (${appr ? `${appr} approved` : 'none approved yet'}).`
+        : `No Weekly Accomplishment Reports have been prepared for the ${plural(f.weeks.length, 'week')} of this month.`
+    );
+  }
   if (f.issuesOpen.length) S.summary.push(`${plural(f.issuesOpen.length, 'issue or risk', 'issues or risks')} remained open at the end of the period.`);
   if (f.previous)
     S.summary.push(
       `Compared with the previous ${t} (${f.previous.reference}, ${periodText(f.previous.type, f.previous.periodStart, f.previous.periodEnd)}), overall accomplishment moved from ${pct(f.previous.figures.actualPct)} to ${pct(m.actualPct)}.`
     );
 
-  // C. Construction activities (chronological, from the daily reports, then the tracker)
+  // C. Construction activities (chronological, from the daily reports, then the tracker).
+  //    Monthly: consolidated week by week from the weekly reports and that week's daily reports.
+  if (req.type === 'monthly') {
+    f.weeks.forEach((w) => {
+      const wr = w.report;
+      const head = `Week of ${fmtRange(w.start, w.end)}`;
+      const ref = wr ? ` (${wr.reference}, ${wr.status === 'final' ? 'final' : wr.status === 'approved' ? 'approved' : wr.status === 'review' ? 'for review' : 'draft'})` : '';
+      const acts = [...new Set(w.reports.flatMap((d) => d.activities.map((x) => x.name).filter(Boolean)))];
+      const bits: string[] = [];
+      bits.push(w.reports.length ? `${plural(w.reports.length, 'Daily Construction Report')} recorded work on ${acts.length ? list(acts) : 'no named activity'}` : 'no Daily Construction Report was submitted');
+      if (wr) bits.push(`${countWas(wr.figures.completed, 'activity', 'activities')} completed and overall accomplishment stood at ${pct(wr.figures.actualPct)} as of ${fmtDate(wr.figures.asOf)}`);
+      else bits.push('no Weekly Accomplishment Report has been prepared');
+      S.activities.push(`${head}${ref}: ${bits.join('; ')}.`);
+      if (wr && (wr.status === 'approved' || wr.status === 'final')) {
+        const k = wr.sections.find((x) => x.key === 'conclusion')?.text.trim();
+        if (k) S.activities.push(`Approved weekly conclusion (${wr.reference}): ${k}`);
+      }
+    });
+  } else
   f.reports.forEach((d) => {
     const acts = d.activities.filter((a) => a.name || a.workDescription || a.accomplishment);
     const parts = acts.map((a) => {

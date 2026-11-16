@@ -495,3 +495,50 @@ html[data-eff='dark'] .nr-sec-h h3 {
   line-height: 1.3;
   display: block;
 }
+.nr-chain {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.nr-days {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 13.5px;
+}
+.nr-days li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border-left: 3px solid #1f9d68;
+  background: var(--cv-panel-2, rgba(0, 0, 0, 0.03));
+}
+.nr-days li.miss {
+  border-left-color: #e0213b;
+}
+.nr-miss {
+  color: #c81e33;
+  font-weight: 600;
+}
+html[data-eff='dark'] .nr-miss {
+  color: #ff8a9a;
+}
+.nr-links {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+  font-size: 13.5px;
+}
+.nr-coverage span.nr-cov-miss {
+  border-color: #e0213b;
+}
+.nr-days li.off {
+  border-left-color: var(--cv-line);
+}

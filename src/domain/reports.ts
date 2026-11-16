@@ -9,6 +9,7 @@
  * changes never silently alter an approved historical report.
  */
 
+import type { DailySummary } from './dailyCompliance.ts';
 import { ProjectIssue, ProgressSnapshot, ProjectReport, Milestone } from '../types/index.ts';
 import { RegisterActivity, plannedPercentAt } from './register.ts';
 import { computeMetrics, ProjectMetrics, round1 } from './metrics.ts';
@@ -70,6 +71,8 @@ export interface WeeklyContent {
   issuesResolved: IssueRow[];
   correctiveActions: { title: string; action: string; owner: string }[];
   autoSummary: string;
+  /** Daily Construction Reports of the period (added by the Reports page; absent in reports approved before this link existed). */
+  daily?: DailySummary;
 }
 
 export interface MonthlyContent {
@@ -93,6 +96,7 @@ export interface MonthlyContent {
   nextMonth: (ReportRow & { outlook: OutlookClass; reasons: string[] })[];
   autoRecommendations: string[];
   autoSummary: string;
+  daily?: DailySummary;
 }
 
 export type ReportContent = WeeklyContent | MonthlyContent;
@@ -386,6 +390,17 @@ export function reportToCsv(content: ReportContent, title: string): string {
     lines.push(csvEscape(name));
     lines.push(toCsv(['Issue ID', 'Title', 'Type', 'Severity', 'Status', 'Owner', 'Due', 'Corrective action'], rows.map((i) => [i.id, i.title, i.type, i.severity, i.status, i.owner, i.dueDate, i.correctiveAction])));
   };
+  if (content.daily) {
+    lines.push('');
+    lines.push(csvEscape('Daily Construction Reports'));
+    lines.push(
+      toCsv(
+        ['Date', 'Reference', 'Prepared by', 'Status', 'Activities', 'Manpower', 'Photos', 'Issues / delays / safety'],
+        content.daily.reports.map((d) => [d.date, d.reference, d.preparedBy, d.status, d.activities, d.manpower === null ? 'Not recorded' : d.manpower, d.photos, d.concerns])
+      )
+    );
+    if (content.daily.missingDays.length) lines.push(toCsv(['Working days without a daily report'], content.daily.missingDays.map((d) => [d])));
+  }
   if (content.kind === 'weekly') {
     section('Completed activities', content.completed);
     section('Ongoing activities', content.ongoing);

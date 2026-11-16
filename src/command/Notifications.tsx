@@ -13,7 +13,8 @@ import './exec.css';
 import { useCommand } from './context.tsx';
 import { Card, Empty, Banner } from './ui.tsx';
 import { useStore } from '../firebase/useStore.ts';
-import { documentStore, publicationStore, eventStore } from '../firebase/opsStores.ts';
+import { documentStore, publicationStore, eventStore, dailyReportStore } from '../firebase/opsStores.ts';
+import { useNarrativeSchedule } from './narrativeApi.ts';
 import { useUserPrefs } from '../firebase/userPrefsStore.ts';
 import {
   AppNotification,
@@ -63,6 +64,8 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   const docs = useStore(documentStore);
   const pubs = useStore(publicationStore);
   const events = useStore(eventStore);
+  const daily = useStore(dailyReportStore);
+  const sched = useNarrativeSchedule();
   const up = useUserPrefs(user.id);
 
   const items = useMemo(
@@ -73,11 +76,13 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         publications: pubs.items,
         documents: docs.items,
         events: events.items,
-        viewer: { name: user.name, email: user.email, role: user.role },
+        dailyReports: daily.loaded ? daily.items : undefined,
+        dailyReporter: sched.dailyReporter || null,
+        viewer: { name: user.name, email: user.email, role: user.role, id: user.id },
         prefs: up.state.prefs,
         today,
       }),
-    [register, reports, pubs.items, docs.items, events.items, user.name, user.email, user.role, up.state.prefs, today]
+    [register, reports, pubs.items, docs.items, events.items, daily.loaded, daily.items, sched.dailyReporter, user.name, user.email, user.role, user.id, up.state.prefs, today]
   );
   const readSet = useMemo(() => new Set(up.state.readKeys), [up.state.readKeys]);
   const unread = items.filter((n) => !readSet.has(n.key)).length;

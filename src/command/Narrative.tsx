@@ -36,8 +36,11 @@ import {
   type NarrativePhoto,
 } from '../domain/narrative.ts';
 import { DR_PROJECT } from '../domain/dailyReport.ts';
-import { fmtDate, isValidIso, todayIso } from '../domain/dates.ts';
-import { aiReword, buildReport, narrativeAiStatus, periodLabel, useAutoPrepare, useNarrativeSchedule, useNarrativeSources, type AiResult } from './narrativeApi.ts';
+import { fmtDate, isValidIso, monthRange, todayIso, weekRange } from '../domain/dates.ts';
+import { aiReword, buildReport, currentStamp, narrativeAiStatus, periodLabel, refreshedReport, useAutoPrepare, useNarrativeSchedule, useNarrativeSources, type AiResult } from './narrativeApi.ts';
+import { summarizeDailyReports, type DailyReporter } from '../domain/dailyCompliance.ts';
+import { authService } from '../firebase/authService.ts';
+import { dailyReportStore } from '../firebase/opsStores.ts';
 import { driveFileUrl, driveObjectUrl, openDriveFile } from '../drive/driveClient.ts';
 import { SecureImg } from '../drive/SecureMedia.tsx';
 import { LOGO_SVG } from '../constants/assets.ts';
@@ -81,8 +84,13 @@ function withRevision(r: NarrativeReport, by: string, action: string, note?: str
 }
 
 // =====================================================================
-export const NarrativeReports: React.FC<{ tab?: string; param?: string }> = ({ tab, param }) => {
+/** Daily → weekly → monthly automation, mounted once for the whole internal app. */
+export const NarrativeAutomation: React.FC = () => {
   useAutoPrepare();
+  return null;
+};
+
+export const NarrativeReports: React.FC<{ tab?: string; param?: string }> = ({ tab, param }) => {
   if (param) return <ReportEditor key={param} id={param} back="narrative/archive" />;
   if (tab === 'archive') return <ArchivePanel />;
   if (tab === 'schedule') return <SchedulePanel />;
@@ -209,6 +217,19 @@ const GeneratePanel: React.FC = () => {
             <span>
               <b>{fg.dailyReports}</b> {fg.dailyReports === 1 ? 'daily report' : 'daily reports'}
             </span>
+            {fg.workDays !== undefined && fg.workDays > 0 && (
+              <span className={fg.daysReported! < fg.workDays ? 'nr-cov-miss' : ''}>
+                <b>
+                  {fg.daysReported}/{fg.workDays}
+                </b>{' '}
+                working days reported
+              </span>
+            )}
+            {fg.weeklyReports !== undefined && (
+              <span>
+                <b>{fg.weeklyReports}</b> weekly {fg.weeklyReports === 1 ? 'report' : 'reports'}
+              </span>
+            )}
             <span>
               <b>{fg.completed}</b> completed
             </span>
@@ -289,13 +310,20 @@ const ReportEditor: React.FC<{ id: string; back: string }> = ({ id, back }) => {
   useEffect(() => {
     void narrativeAiStatus().then(setAi);
   }, []);
+  const base = React.useRef('');
+  const pack = (a: unknown, b: unknown, c: unknown) => JSON.stringify([a, b, c]);
   useEffect(() => {
-    if (r && sections === null) {
+    if (!r) return;
+    // first load, or the record changed (automatic update / another user) while nothing was edited here
+    if (sections === null || pack(sections, photos, attachments) === base.current) {
+      if (sections !== null && base.current === pack(r.sections, r.photos, r.attachments)) return;
+      base.current = pack(r.sections, r.photos, r.attachments);
       setSections(r.sections);
       setPhotos(r.photos);
       setAttachments(r.attachments);
     }
-  }, [r, sections]);
+  }, [r, sections, photos, attachments]);
+  const liveStamp = useMemo(() => (r ? currentStamp(r, sources) : ''), [r, sources]);
 
   if (!store.loaded) return <Empty>Loading…</Empty>;
   if (!r || !sections || !photos || !attachments)
@@ -322,6 +350,7 @@ const ReportEditor: React.FC<{ id: string; back: string }> = ({ id, back }) => {
       photos,
       attachments,
       ...patch,
+      manualEdits: patch.manualEdits ?? (r.manualEdits || dirty),
       revisions: withRevision(r, user.name, action, note.trim() || undefined, withSnapshot ? (patch.sections as NarrativeSection[]) || sections : undefined),
       updatedAt: nowIso(),
       updatedBy: user.name,
@@ -330,6 +359,7 @@ const ReportEditor: React.FC<{ id: string; back: string }> = ({ id, back }) => {
       const where = await narrativeStore.put(next);
       setNote('');
       if (patch.sections) setSections(patch.sections);
+      base.current = pack(next.sections, next.photos, next.attachments);
       setMsg(where === 'shared' ? { kind: 'ok', text: okText } : { kind: 'warn', text: `${okText} Saved on this device only — it will sync when the connection returns.` });
     } catch (e) {
       setMsg({ kind: 'error', text: `Not saved: ${e instanceof Error ? e.message : 'the database refused the change'}. Your edits are still on screen.` });
@@ -359,16 +389,24 @@ const ReportEditor: React.FC<{ id: string; back: string }> = ({ id, back }) => {
     });
   };
 
-  const refresh = () => {
-    const facts = collectFacts({ type: r.type, start: r.periodStart, end: r.periodEnd, subjectId: r.subjectId }, { ...sources, narratives: sources.narratives.filter((n) => n.id !== r.id) });
-    const fresh = composeSections(facts);
+  const refresh = async () => {
     setModal('');
-    void save(
-      { sections: fresh, figures: factFigures(facts), photos: mergePhotos(photos, facts.photos), sources: { ...r.sources, dailyReports: facts.reports.map((d) => d.id) } },
-      'Refreshed from project records',
-      'The text was rebuilt from the current records. The original generated version is unchanged.'
-    );
-    setPhotos(mergePhotos(photos, facts.photos));
+    setBusy('refresh');
+    const next = refreshedReport({ ...r, photos, attachments }, sources, user.name, 'Refreshed from project records');
+    try {
+      const where = await narrativeStore.put(next);
+      base.current = pack(next.sections, next.photos, next.attachments);
+      setSections(next.sections);
+      setPhotos(next.photos);
+      setMsg(
+        where === 'shared'
+          ? { kind: 'ok', text: 'The text was rebuilt from the current records. Earlier text is in the revision history; the original generated version is unchanged.' }
+          : { kind: 'warn', text: 'Rebuilt, but saved on this device only — it will sync when the connection returns.' }
+      );
+    } catch (e) {
+      setMsg({ kind: 'error', text: `Not refreshed: ${e instanceof Error ? e.message : 'the database refused the change'}.` });
+    }
+    setBusy('');
   };
 
   const exportPdf = async () => {
@@ -435,6 +473,26 @@ const ReportEditor: React.FC<{ id: string; back: string }> = ({ id, back }) => {
         </button>
       </div>
       {msg && <Banner kind={msg.kind}>{msg.text}</Banner>}
+      {liveStamp && r.sourceStamp && liveStamp !== r.sourceStamp && (
+        <Banner kind={r.status === 'approved' || r.status === 'final' ? 'info' : 'warn'}>
+          {r.status === 'approved' || r.status === 'final' ? (
+            <>{r.type === 'monthly' ? 'Daily or weekly reports' : 'Daily Construction Reports'} for this period changed after approval. The approved text is unchanged; generate a new report if a correction is needed.</>
+          ) : r.status === 'draft' && !r.manualEdits ? (
+            <>New {r.type === 'monthly' ? 'daily or weekly report' : 'daily report'} information is being added to this draft automatically…</>
+          ) : (
+            <>
+              {r.type === 'monthly' ? 'Daily or weekly reports' : 'Daily Construction Reports'} for this period changed after this text was written.{' '}
+              {editable ? (
+                <>
+                  Press <b>Refresh from Records</b> to include them (your edited text stays in the revision history).
+                </>
+              ) : (
+                'A reviewer can refresh it from the records.'
+              )}
+            </>
+          )}
+        </Banner>
+      )}
       {r.status !== 'final' && r.status !== 'approved' && (
         <Banner kind="info">
           This report is a <b>{NARRATIVE_STATUS_LABEL[r.status].toLowerCase()}</b>. It is not submitted, approved or shared with anyone until an authorized user does so.
@@ -941,6 +999,22 @@ const References: React.FC<{ r: NarrativeReport; sources: ReturnType<typeof useN
               open
             </button>
           </li>
+          {(r.sources.weekly || []).length > 0 && (
+            <li>
+              Weekly Accomplishment Reports:{' '}
+              {(r.sources.weekly || []).map((wid, i) => {
+                const w = sources.narratives.find((n) => n.id === wid);
+                return (
+                  <React.Fragment key={wid}>
+                    {i ? ', ' : ''}
+                    <button type="button" className="cv-linkbtn" onClick={() => actions.navigate(`narrative/archive/${wid}`)}>
+                      {w ? w.reference : wid.replace(/^NR-/, 'NAR-')}
+                    </button>
+                  </React.Fragment>
+                );
+              })}
+            </li>
+          )}
           {prev && (
             <li>
               Previous report:{' '}
@@ -1341,7 +1415,7 @@ const SchedulePanel: React.FC = () => {
   // shown immediately; reverted if the save fails
   const [view, setView] = useState(sched);
   useEffect(() => setView(sched), [sched]);
-  const set = async (k: 'daily' | 'weekly' | 'monthly', v: boolean) => {
+  const set = async (k: 'daily' | 'weekly' | 'monthly' | 'dailyReporter', v: boolean | DailyReporter | null) => {
     setBusy(true);
     const next = { ...view, [k]: v };
     setView(next);
@@ -1356,10 +1430,125 @@ const SchedulePanel: React.FC = () => {
   };
   const due = duePeriods(view, today);
   const upcoming = upcomingPreparations(view, today, 45).slice(0, 10);
+  // Who can be required to report: people who have submitted daily reports, plus (administrators) every active internal staff account
+  const daily = useStore(dailyReportStore);
+  const [accounts, setAccounts] = useState<DailyReporter[]>([]);
+  const { isAdmin } = useCommand();
+  useEffect(() => {
+    if (!isAdmin) return;
+    void authService
+      .getAllUsers()
+      .then((us) => setAccounts(us.filter((u: any) => (u.status || 'active') === 'active' && ['admin', 'director', 'manager', 'construction_manager', 'engineer', 'production', 'quality', 'staff'].includes(u.role)).map((u) => ({ uid: u.id, name: u.name || u.email }))))
+      .catch(() => undefined);
+  }, [isAdmin]);
+  const people = useMemo(() => {
+    const m = new Map<string, string>();
+    accounts.forEach((a) => m.set(a.uid, a.name));
+    daily.items.forEach((d) => d.preparedById && !m.has(d.preparedById) && m.set(d.preparedById, d.preparedBy));
+    if (view.dailyReporter && !m.has(view.dailyReporter.uid)) m.set(view.dailyReporter.uid, view.dailyReporter.name);
+    return [...m.entries()].map(([uid, name]) => ({ uid, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [accounts, daily.items, view.dailyReporter]);
+  const wk = weekRange(today);
+  const cov = summarizeDailyReports(daily.items, wk.start, wk.end, today, view.dailyReporter || null);
+  const weekly = store.items.find((n) => n.id === narrativeId('weekly', wk.start, wk.end));
+  const mo = monthRange(today);
+  const monthly = store.items.find((n) => n.id === narrativeId('monthly', mo.start, mo.end));
   return (
     <div className="cv-grid" style={{ gap: 14 }}>
       {msg && <Banner kind={msg.kind}>{msg.text}</Banner>}
-      <Card title="Automatic preparation" note="When a team member opens the system after a period ends, its report is prepared as a draft from the records. Drafts are never submitted, approved or published automatically.">
+      <Card title="Daily → weekly → monthly" note="How the reports are connected">
+        <ol className="nr-chain">
+          <li>
+            <b>Daily Construction Report</b> — submitted every working day (Monday–Saturday, except holidays){view.dailyReporter ? ` by ${view.dailyReporter.name}` : ''}. Missing days appear in Notifications.
+          </li>
+          <li>
+            <b>Weekly Accomplishment Report</b> — prepared automatically as a draft as soon as a daily report of the week is submitted, and updated each time a daily report of that week is submitted, edited or approved.
+          </li>
+          <li>
+            <b>Monthly Construction Progress Report</b> — consolidates the month week by week from the weekly reports and their daily reports, and is updated whenever one of them changes.
+          </li>
+        </ol>
+        <p className="cv-dim" style={{ margin: '8px 0 0' }}>
+          Automatic updates apply only to drafts nobody has edited. Edited drafts show a notice with <b>Refresh from Records</b>; reports under review, approved or final never change by themselves.
+        </p>
+      </Card>
+      <div className="cv-grid cv-g2">
+        <Card title="Required daily reporter" note="The person who must submit the Daily Construction Report each working day">
+          <Field label="Daily Construction Report required from">
+            <select
+              className="cv-select"
+              value={view.dailyReporter?.uid || ''}
+              disabled={!isManager || busy}
+              onChange={(e) => {
+                const p = people.find((x) => x.uid === e.target.value);
+                void set('dailyReporter', p ? { uid: p.uid, name: p.name } : null);
+              }}
+            >
+              <option value="">Anyone on the site team</option>
+              {people.map((p) => (
+                <option key={p.uid} value={p.uid}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          {isManager && !isAdmin && <p className="cv-dim">The list shows people who have submitted daily reports. An administrator sees every staff account.</p>}
+        </Card>
+        <Card title={`This week · ${periodLabel({ type: 'weekly', periodStart: wk.start, periodEnd: wk.end })}`} note={`${cov.reportedDays.length} of ${plural(cov.workDays.length, 'working day')} reported so far`}>
+          <ul className="nr-days">
+            {[...new Set([...cov.workDays, ...cov.reports.filter((x) => x.date <= today).map((x) => x.date)])].sort().map((d) => {
+              const reps = cov.reports.filter((x) => x.date === d && (!cov.reporter || x.preparedById === cov.reporter.uid));
+              const working = cov.workDays.includes(d);
+              return (
+                <li key={d} className={reps.length ? 'ok' : working ? 'miss' : 'off'}>
+                  <span>
+                    {fmtDate(d)}
+                    {!working && <span className="cv-dim"> · non-working day</span>}
+                  </span>
+                  {reps.length ? (
+                    <span>
+                      {reps.map((x, i) => (
+                        <React.Fragment key={x.id}>
+                          {i ? ', ' : ''}
+                          <button type="button" className="cv-linkbtn" onClick={() => actions.navigate(`site/history/${x.id}`)}>
+                            {x.reference}
+                          </button>
+                        </React.Fragment>
+                      ))}
+                    </span>
+                  ) : (
+                    <span className="nr-miss">Not submitted</span>
+                  )}
+                </li>
+              );
+            })}
+            {cov.workDays.length === 0 && cov.reports.length === 0 && <li className="cv-dim">No working days yet this week.</li>}
+          </ul>
+          <div className="nr-links">
+            <span>
+              Weekly report:{' '}
+              {weekly ? (
+                <button type="button" className="cv-linkbtn" onClick={() => actions.navigate(`narrative/archive/${weekly.id}`)}>
+                  {weekly.reference} · {NARRATIVE_STATUS_LABEL[weekly.status]}
+                </button>
+              ) : (
+                <span className="cv-dim">{view.weekly ? 'prepared when the first daily report is submitted' : 'automatic preparation is off'}</span>
+              )}
+            </span>
+            <span>
+              Monthly report:{' '}
+              {monthly ? (
+                <button type="button" className="cv-linkbtn" onClick={() => actions.navigate(`narrative/archive/${monthly.id}`)}>
+                  {monthly.reference} · {NARRATIVE_STATUS_LABEL[monthly.status]}
+                </button>
+              ) : (
+                <span className="cv-dim">{view.monthly ? 'prepared when the first daily report of the month is submitted' : 'automatic preparation is off'}</span>
+              )}
+            </span>
+          </div>
+        </Card>
+      </div>
+      <Card title="Automatic preparation" note="Reports are prepared as drafts from the records. Drafts are never submitted, approved or published automatically.">
         <div className="nr-sched">
           {(['daily', 'weekly', 'monthly'] as const).map((k) => (
             <label key={k} className="nr-check">
@@ -1431,7 +1620,6 @@ const SchedulePanel: React.FC = () => {
 // =====================================================================
 export const NarrativeDashboardCard: React.FC = () => {
   const { actions, today, canEdit } = useCommand();
-  useAutoPrepare();
   const store = useStore(narrativeStore);
   const sched = useNarrativeSchedule();
   const items = store.items;

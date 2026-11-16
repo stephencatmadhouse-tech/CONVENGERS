@@ -20,6 +20,38 @@ Export PDF / print or DOCX (CONVENGERS template) · Archive (search, filter, com
         └─ linked back to the daily reports, tracker, issues and the previous report
 ```
 
+## Daily → weekly → monthly chain
+
+```
+Daily Construction Report (required reporter, every working day: Monday–Saturday except holidays)
+   │  submitted / edited / approved
+   ▼
+Weekly Accomplishment Report  — draft created automatically when the first daily report of the week is submitted,
+   │                             and rebuilt each time a daily report of that week changes
+   ▼
+Monthly Construction Progress Report — consolidated week by week from the weekly reports (and their daily reports),
+                                       rebuilt whenever a weekly or daily report of the month changes
+```
+
+* **Required daily reporter** (Narrative Reports → Schedule, managers):
+  * Choose the person who must submit the Daily Construction Report, for example the site engineer.
+  * Administrators see every staff account. Managers see everyone who has submitted daily reports.
+* **Coverage:**
+  * Weekly and monthly reports state how many working days up to the report date have a submitted report from that person, and list the days without one.
+  * Working days follow the project calendar: Monday–Saturday, excluding Philippine holidays, the NCR special non-working days and the December stoppage.
+  * Reports filed on non-working days are still included.
+* **Reminders:** a working day in the last 7 days without a report appears in **Notifications** ("Daily report missing"). The required reporter and managers see it.
+* **Automatic updates:**
+  * They apply only to **drafts nobody has edited**. Each update is a revision ("Updated automatically …"), and the generated original never changes.
+  * If someone edited the draft, it is not overwritten. The editor shows a notice with **Refresh from Records**, and the edited text stays in the revision history.
+  * Reports **For Review, Approved or Final never change by themselves**. If their records change afterwards, the editor shows a notice.
+* **Monthly report content:**
+  * a paragraph per week: its weekly report reference and status, the activities recorded in that week's daily reports, completed activities, and progress at week end;
+  * the conclusion of each approved weekly report;
+  * links to the weekly reports.
+* **Weekly & Monthly Reports (the tracker-based reports):** they now include a **Daily Construction Reports** section. It shows coverage, missing days, worker-days, and each report's reference (linked), preparer, status, activities, manpower, photos and concerns. The section is also in the CSV export. Reports approved before this change keep their frozen content.
+* **Where it runs:** the automation runs in the app for signed-in staff, so updates happen as soon as anyone on the team has the app open.
+
 ## Report types
 
 | Type | Default period |

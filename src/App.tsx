@@ -66,6 +66,7 @@ import { portalStore, procurementStore, manpowerStore, documentStore, publicatio
 import { Shell, SlideKey, useHashRoute } from './command/Shell.tsx';
 import { ActivityEditor } from './command/ActivityEditor.tsx';
 import { NotificationsProvider, NotificationBell } from './command/Notifications.tsx';
+import { NarrativeAutomation } from './command/Narrative.tsx';
 import { MobileShell } from './command/MobileShell.tsx';
 import { useIsPhone } from './pwa/pwa.ts';
 import { SyncChip } from './command/ui.tsx';
@@ -1654,6 +1655,7 @@ export default function App() {
     <div className={isEditingText ? 'editing' : ''}>
       <CommandProvider value={commandState}>
       <NotificationsProvider>
+      <NarrativeAutomation />
       {!isPhone && (
         <>
       <BrandHeader />

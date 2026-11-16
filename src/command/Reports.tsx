@@ -27,6 +27,10 @@ import { addDays, fmtDate, fmtRange, monthLabel, monthRange, weekRange } from '.
 import { Banner, Kpi, StatusPill, Empty, ConfirmDialog, downloadFile, pct, HealthBadge, Pill } from './ui.tsx';
 import { parseParams } from './Tracker.tsx';
 import { LOGO_SVG } from '../constants/assets.ts';
+import { useStore } from '../firebase/useStore.ts';
+import { dailyReportStore } from '../firebase/opsStores.ts';
+import { summarizeDailyReports, type DailySummary } from '../domain/dailyCompliance.ts';
+import { useNarrativeSchedule } from './narrativeApi.ts';
 
 const WEEKLY_FIELDS: { k: keyof ReportNarrative; label: string }[] = [
   { k: 'executiveSummary', label: 'Executive summary' },
@@ -67,13 +71,15 @@ export const ReportsPage: React.FC<{ type: ReportType }> = ({ type }) => {
   // Approved, published and archived reports are frozen
   const approved = !!saved && ['approved', 'published', 'archived'].includes(saved.status);
 
-  const live = useMemo<ReportContent>(
-    () =>
-      type === 'weekly'
-        ? buildWeeklyContent(register, data.milestones, issues, snapshots, anchor, today)
-        : buildMonthlyContent(register, data.milestones, issues, snapshots, reports, anchor, today),
-    [type, register, data.milestones, issues, snapshots, reports, anchor, today]
-  );
+  // Daily Construction Reports of the period (submitted / under review / approved) and the required reporter's coverage
+  const dailyStore = useStore(dailyReportStore);
+  const sched = useNarrativeSchedule();
+  const live = useMemo<ReportContent>(() => {
+    const daily = summarizeDailyReports(dailyStore.items, range.start, range.end, today, sched.dailyReporter || null);
+    return type === 'weekly'
+      ? { ...buildWeeklyContent(register, data.milestones, issues, snapshots, anchor, today), daily }
+      : { ...buildMonthlyContent(register, data.milestones, issues, snapshots, reports, anchor, today), daily };
+  }, [type, register, data.milestones, issues, snapshots, reports, anchor, today, dailyStore.items, range.start, range.end, sched.dailyReporter]);
   const content: ReportContent = approved && saved?.frozen ? (saved.frozen as ReportContent) : live;
 
   const [narrative, setNarrative] = useState<ReportNarrative>(saved?.narrative || {});
@@ -405,6 +411,61 @@ const IssuesTable: React.FC<{ rows: IssueRow[]; empty: string }> = ({ rows, empt
     <p className="cv-dim">{empty}</p>
   );
 
+/** Daily Construction Reports behind a weekly / monthly report: coverage of working days and the reports themselves. */
+const DailyReportsSection: React.FC<{ d: DailySummary; heading: string; sub?: boolean }> = ({ d, heading, sub }) => {
+  const H = sub ? 'h3' : 'h2';
+  return (
+    <>
+      <H>{heading}</H>
+      <p style={{ fontSize: 13 }}>
+        {d.reporter && <>Required daily reporter: {d.reporter.name}. </>}
+        {d.workDays.length
+          ? `${d.reportedDays.length} of ${d.workDays.length} working days up to ${fmtDate(d.asOf)} have a submitted report${d.reporter ? ` from ${d.reporter.name}` : ''}.`
+          : 'No working days have passed in this period yet.'}
+        {d.missingDays.length > 0 && <> Not submitted: {d.missingDays.map((x) => fmtDate(x, false)).join(', ')}.</>}
+        {d.workerDays !== null && <> Recorded manpower: {d.workerDays} worker-days.</>}
+        {d.unverified.length > 0 && <> {d.unverified.length} more {d.unverified.length === 1 ? 'report is' : 'reports are'} not yet submitted and not included.</>}
+      </p>
+      {d.reports.length ? (
+        <div className="cv-table-wrap">
+          <table className="cv-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Reference</th>
+                <th>Prepared by</th>
+                <th>Status</th>
+                <th className="num">Activities</th>
+                <th className="num">Manpower</th>
+                <th className="num">Photos</th>
+                <th>Issues, delays, safety</th>
+              </tr>
+            </thead>
+            <tbody>
+              {d.reports.map((r) => (
+                <tr key={r.id}>
+                  <td className="nowrap">{fmtDate(r.date, false)}</td>
+                  <td className="nowrap">
+                    <a href={`#/site/history/${r.id}`}>{r.reference}</a>
+                  </td>
+                  <td>{r.preparedBy}</td>
+                  <td>{r.status === 'under_review' ? 'Under review' : r.status === 'approved' ? 'Approved' : 'Submitted'}</td>
+                  <td className="num">{r.activities}</td>
+                  <td className="num">{r.manpower === null ? 'Not recorded' : r.manpower}</td>
+                  <td className="num">{r.photos}</td>
+                  <td className="cv-dim">{r.concerns || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="cv-dim">No Daily Construction Reports were submitted for this period.</p>
+      )}
+    </>
+  );
+};
+
 const Narr: React.FC<{ text?: string; fallback?: string }> = ({ text, fallback }) =>
   text && text.trim() ? <p>{text}</p> : fallback ? <p className="cv-dim">{fallback}</p> : null;
 
@@ -458,6 +519,7 @@ const WeeklyBody: React.FC<{ c: WeeklyContent; n: ReportNarrative }> = ({ c, n }
     <h2>Executive summary</h2>
     <Narr text={n.executiveSummary} fallback={c.autoSummary} />
     <ProgressStrip c={c} />
+    {c.daily && <DailyReportsSection d={c.daily} heading="Daily Construction Reports" />}
     <h2>Construction accomplishments</h2>
     <Narr text={n.construction} />
     <RowsTable rows={c.constructionUpdates} empty="No construction progress updates were recorded this week." />
@@ -575,6 +637,7 @@ const MonthlyBody: React.FC<{ c: MonthlyContent; n: ReportNarrative }> = ({ c, n
     ) : (
       <p className="cv-dim">No weeks in this period.</p>
     )}
+    {c.daily && <DailyReportsSection d={c.daily} heading="Daily Construction Reports this month" sub />}
     <h2>6. Milestone accomplishments</h2>
     <RowsTable rows={c.milestones} empty="No milestones fell within this month." />
     <h2>7. Issues and corrective actions</h2>

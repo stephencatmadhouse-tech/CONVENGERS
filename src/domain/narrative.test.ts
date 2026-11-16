@@ -126,3 +126,88 @@ test('narrative: AI guard rejects added numbers and number words', () => {
   assert.equal(addsNoNumberWords(src, 'three crews worked'), false);
   assert.equal(addsNoNumberWords(src, 'crews worked'), true);
 });
+
+// ---------------------------------------------------------------- daily → weekly → monthly chain
+import { summarizeDailyReports, workingDays } from './dailyCompliance.ts';
+import { buildNotifications } from './notifications.ts';
+import type { NarrativeReport } from './narrative.ts';
+
+const RICH = { uid: 'u-richard', name: 'Engr. Richard' };
+
+test('chain: working days and daily report coverage for the required reporter', () => {
+  // Nov 9–15, 2026: Mon–Sat are working days, Sunday is not
+  assert.deepEqual(workingDays('2026-11-09', '2026-11-15'), ['2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13', '2026-11-14']);
+  const reps = [
+    dcr({ id: 'a', reference: 'DCR-A', date: '2026-11-09', preparedById: 'u-richard' }),
+    dcr({ id: 'b', reference: 'DCR-B', date: '2026-11-10', preparedById: 'u-other' }),
+    dcr({ id: 'c', reference: 'DCR-C', date: '2026-11-11', preparedById: 'u-richard', status: 'draft' }),
+  ];
+  const s = summarizeDailyReports(reps, '2026-11-09', '2026-11-15', TODAY, RICH);
+  assert.deepEqual(s.workDays, ['2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12'], 'only up to today');
+  assert.deepEqual(s.reportedDays, ['2026-11-09'], 'another person and a draft do not count for the required reporter');
+  assert.deepEqual(s.missingDays, ['2026-11-10', '2026-11-11', '2026-11-12']);
+  assert.equal(s.unverified.length, 1);
+  const any = summarizeDailyReports(reps, '2026-11-09', '2026-11-15', TODAY, null);
+  assert.deepEqual(any.reportedDays, ['2026-11-09', '2026-11-10']);
+});
+
+test('chain: weekly narrative states coverage and lists the missing days', () => {
+  const src = { ...base([dcr({ id: 'a', reference: 'DCR-A', date: '2026-11-09', preparedById: 'u-richard' })]), reporter: RICH };
+  const facts = collectFacts({ type: 'weekly', start: '2026-11-09', end: '2026-11-15' }, src);
+  const text = composeSections(facts).find((x) => x.key === 'summary')!.text;
+  assert.match(text, /Daily Construction Reports from Engr\. Richard cover 1 of 4 working days up to November 12, 2026; no report was submitted for November 10, 2026; November 11, 2026; and November 12, 2026\./);
+  assert.equal(figures(facts).workDays, 4);
+  assert.equal(figures(facts).daysReported, 1);
+});
+
+test('chain: monthly report consolidates the weekly reports week by week', () => {
+  const r1 = dcr({ id: 'a', reference: 'DCR-A', date: '2026-11-03' });
+  const r2 = dcr({ id: 'b', reference: 'DCR-B', date: '2026-11-10' });
+  const wFacts = collectFacts({ type: 'weekly', start: '2026-11-02', end: '2026-11-08' }, base([r1, r2]));
+  const weekly = {
+    id: 'NR-W-20261102-20261108',
+    reference: 'NAR-W-20261102-20261108',
+    type: 'weekly',
+    periodStart: '2026-11-02',
+    periodEnd: '2026-11-08',
+    status: 'approved',
+    sections: composeSections(wFacts),
+    figures: figures(wFacts),
+    updatedAt: '2026-11-09T01:00:00Z',
+  } as unknown as NarrativeReport;
+  const src = { ...base([r1, r2]), narratives: [weekly] };
+  const facts = collectFacts({ type: 'monthly', start: '2026-11-01', end: '2026-11-30' }, src);
+  assert.equal(facts.weeks.length, 6, 'Oct 26 – Dec 6: six Monday–Sunday weeks overlap November');
+  assert.equal(facts.weeks.filter((w) => w.report).length, 1);
+  const s = composeSections(facts);
+  const c = s.find((x) => x.key === 'activities')!.text;
+  assert.match(c, /Week of November 2–8, 2026 \(NAR-W-20261102-20261108, approved\): 1 Daily Construction Report recorded work on Column rebar; no activities were completed/);
+  assert.match(c, /Approved weekly conclusion \(NAR-W-20261102-20261108\):/);
+  assert.match(c, /Week of November 9–15, 2026: 1 Daily Construction Report recorded work on Column rebar; no Weekly Accomplishment Report has been prepared\./);
+  assert.match(s.find((x) => x.key === 'summary')!.text, /consolidates 1 Weekly Accomplishment Report covering 1 of 6 weeks of the month \(1 approved\)/);
+  // a change to the weekly report (or a daily report) changes the monthly source marker
+  const before = facts.sourceStamp;
+  const after = collectFacts({ type: 'monthly', start: '2026-11-01', end: '2026-11-30' }, { ...src, narratives: [{ ...weekly, updatedAt: '2026-11-10T00:00:00Z' }] }).sourceStamp;
+  assert.notEqual(before, after);
+  const afterDaily = collectFacts({ type: 'monthly', start: '2026-11-01', end: '2026-11-30' }, { ...src, dailyReports: [r1, { ...r2, status: 'approved' }] }).sourceStamp;
+  assert.notEqual(before, afterDaily);
+});
+
+test('chain: missing daily report notification goes to the reporter and managers only', () => {
+  const daily = [dcr({ id: 'a', reference: 'DCR-A', date: '2026-11-10', preparedById: 'u-richard' })];
+  const rich = buildNotifications({ register: [], dailyReports: daily, dailyReporter: RICH, viewer: { name: 'Engr. Richard', email: 'r@example.com', role: 'engineer', id: 'u-richard' }, today: TODAY });
+  const miss = rich.filter((n) => n.type === 'dailyReport').map((n) => n.date);
+  assert.deepEqual(miss.sort(), ['2026-11-05', '2026-11-06', '2026-11-07', '2026-11-09', '2026-11-11']);
+  const mgr = buildNotifications({ register: [], dailyReports: daily, dailyReporter: RICH, viewer: { name: 'M', email: 'm@example.com', role: 'manager', id: 'u-m' }, today: TODAY });
+  assert.equal(mgr.filter((n) => n.type === 'dailyReport').length, 5);
+  const other = buildNotifications({ register: [], dailyReports: daily, dailyReporter: RICH, viewer: { name: 'E', email: 'e@example.com', role: 'engineer', id: 'u-e' }, today: TODAY });
+  assert.equal(other.filter((n) => n.type === 'dailyReport').length, 0);
+});
+
+test('chain: project non-working days (NCR special days Nov 16–18) are not counted as missing', () => {
+  const src = { ...base([dcr({ id: 'a', reference: 'DCR-A', date: '2026-11-16', preparedById: 'u-richard' })]), reporter: RICH, today: '2026-11-17' };
+  const facts = collectFacts({ type: 'weekly', start: '2026-11-16', end: '2026-11-22' }, src);
+  assert.deepEqual(facts.compliance!.workDays, []);
+  assert.equal(facts.reports.length, 1, 'a report filed on a non-working day is still used');
+  assert.match(composeSections(facts)[0].text, /No working day of this period has passed up to November 17, 2026, so Daily Construction Report coverage for Engr\. Richard is not yet measured\./);
+});

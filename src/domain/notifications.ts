@@ -24,6 +24,8 @@ import {
 } from '../types/index.ts';
 import { RegisterActivity } from './register.ts';
 import { addDays, diffDays, fmtDate, isoDateOf, todayIso } from './dates.ts';
+import { summarizeDailyReports, type DailyReporter } from './dailyCompliance.ts';
+import type { DailyReport } from '../types/index.ts';
 
 export type NotifPriority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 export const PRIORITY_RANK: Record<NotifPriority, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
@@ -37,6 +39,7 @@ export const NOTIF_TYPES: { id: NotificationType; label: string; rule: string }[
   { id: 'verification', label: 'Awaiting verification', rule: 'Inspection, date confirmation or report / client sign-off waiting more than 3 days (Medium)' },
   { id: 'turnover', label: 'Handover / turnover', rule: 'Handover or turnover within 30 days (High) or 60 days (Medium)' },
   { id: 'document', label: 'New document', rule: 'Document uploaded by someone else in the last 3 days (Low)' },
+  { id: 'dailyReport', label: 'Daily report missing', rule: 'A working day in the last 7 days has no submitted Daily Construction Report from the required reporter (High)' },
 ];
 
 export const DEFAULT_PREFS: NotificationPrefs = { off: {}, leadDays: 3 };
@@ -62,6 +65,7 @@ export interface Viewer {
   name: string;
   email: string;
   role: UserRole;
+  id?: string;
 }
 
 /** What a role is allowed to be notified about. */
@@ -105,6 +109,9 @@ export interface NotificationInput {
   publications?: Publication[];
   documents?: ProjectDocument[];
   events?: CalendarEvent[];
+  /** Daily Construction Reports and the person required to submit them (missing-report reminders). */
+  dailyReports?: DailyReport[];
+  dailyReporter?: DailyReporter | null;
   viewer: Viewer;
   prefs?: NotificationPrefs;
   today?: string;
@@ -357,6 +364,28 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
         activityId: doc.linkedActivityId,
       });
     });
+  }
+
+  // Missing Daily Construction Reports (last 7 days, working days only, before today).
+  // Shown to the required reporter and to managers; with no reporter set, to managers only.
+  if (input.dailyReports) {
+    const rep = input.dailyReporter || null;
+    const mine = !!rep && !!input.viewer.id && rep.uid === input.viewer.id;
+    if (mine || scope === 'all') {
+      const sum = summarizeDailyReports(input.dailyReports, addDays(today, -7), addDays(today, -1), today, rep);
+      sum.missingDays.forEach((d) =>
+        add({
+          key: `dcr-missing:${rep?.uid || 'any'}:${d}`,
+          type: 'dailyReport',
+          priority: 'HIGH',
+          title: `No Daily Construction Report for ${fmtDate(d)}`,
+          detail: rep ? `Required from ${rep.name} · not submitted` : 'No report was submitted for this working day',
+          date: d,
+          action: mine ? 'Submit the Daily Construction Report for this date' : rep ? `Ask ${rep.name} to submit the report` : 'Ask the site engineer to submit the report',
+          route: 'site/new',
+        })
+      );
+    }
   }
 
   // De-duplicate keys (a rule can match the same item twice)

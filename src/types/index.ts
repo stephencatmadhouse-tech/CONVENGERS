@@ -510,7 +510,8 @@ export type NotificationType =
   | 'changed'
   | 'verification'
   | 'turnover'
-  | 'document';
+  | 'document'
+  | 'dailyReport';
 
 export interface NotificationPrefs {
   /** Notification types this user has switched off. */
