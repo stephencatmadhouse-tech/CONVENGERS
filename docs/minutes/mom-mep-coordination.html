@@ -150,7 +150,7 @@ mark { background: var(--yellow-soft); color: var(--yellow-ink); font-weight: 70
 .item { display: grid; gap: 6px; }
 .item h4 { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: .05em; color: var(--navy-ink); text-transform: uppercase; }
 .item h4 .no { font-variant-numeric: tabular-nums; }
-.tag { font-family: var(--body); font-size: 10.5px; font-weight: 700; letter-spacing: .14em; padding: 2px 8px; border-radius: 2px; background: var(--yellow-soft); color: var(--yellow-ink); border: 1px solid color-mix(in srgb, var(--yellow) 55%, transparent); }
+.tag { font-family: var(--body); font-size: 10.5px; font-weight: 700; letter-spacing: .14em; padding: 2px 8px; border-radius: 2px; background: var(--yellow-soft); color: var(--yellow-ink); border: 1px solid var(--yellow); }
 .tag.scope { background: transparent; color: var(--navy-ink); border: 1px dashed var(--muted); }
 .item ul { margin: 0; padding-left: 22px; display: grid; gap: 3px; }
 .item li::marker { content: '▪  '; color: var(--yellow); }
@@ -175,9 +175,28 @@ mark { background: var(--yellow-soft); color: var(--yellow-ink); font-weight: 70
   background-size: 5px 5px; background-repeat: no-repeat;
 }
 .status:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
-.status[data-v="Pending"] { color: var(--pending); background-color: var(--pending-bg); }
-.status[data-v="Ongoing"] { color: var(--ongoing); background-color: var(--ongoing-bg); }
-.status[data-v="Completed"] { color: var(--done); background-color: var(--done-bg); }
+.status[data-v="Pending"], .status-pill[data-v="Pending"] { color: var(--pending); background-color: var(--pending-bg); }
+.status[data-v="Ongoing"], .status-pill[data-v="Ongoing"] { color: var(--ongoing); background-color: var(--ongoing-bg); }
+.status[data-v="Completed"], .status-pill[data-v="Completed"] { color: var(--done); background-color: var(--done-bg); }
+.status-pill { display: inline-block; font-size: 13px; font-weight: 700; padding: 4px 14px; border-radius: 999px; }
+
+/* ---------- PDF export ---------- */
+.toolbar { max-width: 860px; margin: 0 auto 12px; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 14px; }
+.toolbar .msg { font-size: 13px; color: var(--muted); }
+.toolbar .msg.err { color: #B42318; }
+.pdf-btn {
+  font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: .1em; text-transform: uppercase;
+  color: #0A1140; background: var(--yellow); border: 0; border-radius: 4px;
+  padding: 9px 18px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  box-shadow: inset 0 -3px 0 rgba(10,17,64,.25);
+}
+.pdf-btn:hover { filter: brightness(1.05); }
+.pdf-btn:focus-visible { outline: 2px solid var(--navy-ink); outline-offset: 2px; }
+.pdf-btn[disabled] { opacity: .6; cursor: progress; }
+.pdf-btn svg { width: 16px; height: 16px; }
+.sheet.pdf { border: 0; box-shadow: none; }
+.sheet.pdf .foot { display: none; }
+.field.ph { color: var(--muted); }
 .status option { color: var(--ink); background: var(--sheet); }
 .legend { margin: 0; font-size: 12.5px; color: var(--muted); }
 
@@ -235,11 +254,19 @@ mark { background: var(--yellow-soft); color: var(--yellow-ink); font-weight: 70
   body { background: #fff; padding: 0; font-size: 12px; }
   .sheet { border: 0; box-shadow: none; max-width: none; }
   .band, thead th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .foot button, .saved { display: none; }
+  .foot button, .saved, .toolbar { display: none; }
   .field:empty::before { content: '\00a0'; }
   .status { border: 0; background-image: none; padding: 0; }
 }
 </style>
+
+<div class="toolbar" id="toolbar" hidden>
+  <span class="msg" id="pdf-msg" role="status" aria-live="polite"></span>
+  <button type="button" class="pdf-btn" id="pdf-btn">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 2v8m0 0L4.8 6.8M8 10l3.2-3.2M2.5 11.5v2h11v-2"/></svg>
+    Download PDF
+  </button>
+</div>
 
 <div class="sheet">
   <header class="band">
@@ -332,6 +359,8 @@ mark { background: var(--yellow-soft); color: var(--yellow-ink); font-weight: 70
   </footer>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (function () {
   var KEY = 'cbb-mom-mep-2026-11';
@@ -374,5 +403,125 @@ mark { background: var(--yellow-soft); color: var(--yellow-ink); font-weight: 70
     btn.textContent = 'Cleared'; btn.classList.remove('arm');
     setTimeout(function () { btn.textContent = 'Clear my entries'; }, 1800);
   });
+
+  /* ---------------- PDF export (A4, row-safe page breaks, branded footer) ---------------- */
+  var FILE = 'MOM_MEP-Construction-Drawings-Coordination.pdf';
+  var bar = document.getElementById('toolbar');
+  var pdfBtn = document.getElementById('pdf-btn');
+  var msg = document.getElementById('pdf-msg');
+  var downloads = null;
+
+  function say(text, isErr) { msg.textContent = text || ''; msg.classList.toggle('err', !!isErr); }
+
+  async function buildPdf() {
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    var sheet = document.querySelector('.sheet');
+    var breaks = [], cssW = 0;
+    var canvas = await window.html2canvas(sheet, {
+      scale: 2, backgroundColor: '#FFFFFF', windowWidth: 1200, logging: false,
+      onclone: function (doc) {
+        doc.documentElement.setAttribute('data-theme', 'light');
+        var s = doc.querySelector('.sheet');
+        s.classList.add('pdf');
+        doc.querySelectorAll('select.status').forEach(function (sel) {
+          var sp = doc.createElement('span');
+          sp.className = 'status-pill'; sp.dataset.v = sel.value; sp.textContent = sel.value;
+          sel.replaceWith(sp);
+        });
+        doc.querySelectorAll('.field').forEach(function (f) {
+          if (!f.textContent.trim() && f.dataset.ph) { f.textContent = f.dataset.ph; f.classList.add('ph'); }
+        });
+        var box = s.getBoundingClientRect();
+        cssW = box.width;
+        s.querySelectorAll('.band, .title, section > table, .item, .item li, .resp, tbody tr, .legend').forEach(function (el) {
+          breaks.push(el.getBoundingClientRect().bottom - box.top);
+        });
+      }
+    });
+
+    var jsPDF = window.jspdf.jsPDF;
+    var pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+    var PW = 210, PH = 297, mL = 10, cw = PW - 2 * mL, mB = 16;
+    var px = canvas.width / cw;                    // canvas px per mm
+    var k = canvas.width / (cssW || sheet.offsetWidth);
+    var bp = breaks.map(function (b) { return Math.round(b * k); }).sort(function (a, b) { return a - b; });
+    bp.push(canvas.height);
+
+    var slices = [], y = 0, page = 0;
+    var firstAvail = (PH - 10 - mB) * px;
+    if (canvas.height <= firstAvail * 1.25) {
+      // close to one page: scale down slightly so the minutes stay on a single sheet
+      slices.push({ y: 0, h: canvas.height, top: 10, fit: Math.min(1, firstAvail / canvas.height) });
+      y = canvas.height;
+    }
+    while (y < canvas.height - 2) {
+      var top = page === 0 ? 10 : 20;
+      var avail = (PH - top - mB) * px;
+      var end;
+      if (y + avail >= canvas.height) end = canvas.height;
+      else {
+        var cand = bp.filter(function (b) { return b > y + avail * 0.35 && b <= y + avail; });
+        end = cand.length ? cand[cand.length - 1] : Math.floor(y + avail);
+      }
+      slices.push({ y: y, h: end - y, top: top });
+      y = end; page++;
+    }
+
+    var total = slices.length;
+    slices.forEach(function (sl, i) {
+      if (i) pdf.addPage();
+      var c = document.createElement('canvas');
+      c.width = canvas.width; c.height = sl.h;
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(canvas, 0, sl.y, canvas.width, sl.h, 0, 0, canvas.width, sl.h);
+      var f = sl.fit || 1, iw = cw * f;
+      pdf.addImage(c.toDataURL('image/jpeg', 0.94), 'JPEG', mL + (cw - iw) / 2, sl.top, iw, (sl.h / px) * f);
+
+      if (i) { // running header on continuation pages
+        pdf.setFillColor(10, 17, 64); pdf.rect(mL, 8, cw, 7, 'F');
+        pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8.5); pdf.setTextColor(255, 255, 255);
+        pdf.text('CONVENGERS BAHAY BUILD', mL + 3, 12.6);
+        pdf.setFont('helvetica', 'normal'); pdf.setTextColor(201, 206, 219);
+        pdf.text('Minutes of Meeting | MEP Construction Drawings Coordination', PW - mL - 3, 12.6, { align: 'right' });
+        pdf.setFillColor(245, 197, 24); pdf.rect(mL, 15, cw, 0.9, 'F');
+      }
+      // footer
+      var fy = PH - 10;
+      pdf.setDrawColor(245, 197, 24); pdf.setLineWidth(0.5); pdf.line(mL, fy - 4, PW - mL, fy - 4);
+      pdf.setFontSize(7.5);
+      pdf.setFont('helvetica', 'bold'); pdf.setTextColor(10, 17, 64);
+      pdf.text('CONVENGERS BAHAY BUILD', mL, fy);
+      var w = pdf.getTextWidth('CONVENGERS BAHAY BUILD');
+      pdf.setFont('helvetica', 'normal'); pdf.setTextColor(104, 115, 138);
+      pdf.text('  |  PROJECT MANAGEMENT • DOCUMENT CONTROL', mL + w, fy);
+      pdf.text('Page ' + (i + 1) + ' of ' + total, PW - mL, fy, { align: 'right' });
+    });
+    pdf.setProperties({ title: 'Minutes of Meeting - MEP Construction Drawings Coordination', creator: 'Convengers Bahay Build' });
+    return pdf.output('blob');
+  }
+  window.__buildMomPdf = buildPdf; // used for local checks only
+
+  pdfBtn.addEventListener('click', async function () {
+    if (!downloads) return;
+    if (!window.html2canvas || !window.jspdf) { say('The PDF tools did not load. Reload the page and try again.', true); return; }
+    pdfBtn.disabled = true; say('Building PDF…');
+    try {
+      var blob = await buildPdf();
+      say('Confirm the save to download.');
+      await downloads.save({ filename: FILE, data: blob });
+      say('PDF saved.');
+    } catch (e) {
+      var code = e && e.code;
+      if (code === 'declined') say('Download cancelled.');
+      else if (code === 'rate_limited') say('A save prompt is already open. Finish it, then try again.', true);
+      else if (code) say('Downloads are not available here.', true);
+      else say('Could not build the PDF. Reload the page and try again.', true);
+    } finally { pdfBtn.disabled = false; }
+  });
+
+  if (window.claude && typeof window.claude.use === 'function') {
+    window.claude.use('downloads').then(function (d) { downloads = d; if (d) bar.hidden = false; }).catch(function () {});
+  }
 })();
 </script>
