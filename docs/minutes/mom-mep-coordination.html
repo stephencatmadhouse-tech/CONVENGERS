@@ -1,0 +1,420 @@
+<title>MEP Drawings Coordination Minutes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: one A4-proportioned record sheet on a light-gray desk; navy band header, yellow rules divide numbered sections. */
+:root {
+  --desk: #EEF0F4;
+  --sheet: #FFFFFF;
+  --ink: #172033;
+  --muted: #5E6880;
+  --navy: #0A1140;
+  --navy-ink: #0A1140;      /* navy used as text colour */
+  --band-ink: #FFFFFF;
+  --band-sub: #C3C9D9;
+  --yellow: #F5C518;
+  --yellow-soft: #FFF4C7;
+  --yellow-ink: #0A1140;
+  --line: #D9DCE3;
+  --zebra: #F5F6F9;
+  --label: #F1F3F7;
+  --field: #FBFBFD;
+  --pending: #8A6A00;  --pending-bg: #FFF4C7;
+  --ongoing: #1C4FB8;  --ongoing-bg: #E3ECFF;
+  --done: #146C43;     --done-bg: #DDF3E6;
+  --display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
+  --body: 'Barlow', 'Segoe UI', Calibri, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --desk: #060A22; --sheet: #0E1535; --ink: #E4E8F2; --muted: #9AA3BC;
+    --navy: #050929; --navy-ink: #E9ECF7; --band-ink: #FFFFFF; --band-sub: #9AA3BC;
+    --yellow: #F5C518; --yellow-soft: rgba(245,197,24,.16); --yellow-ink: #FFE27A;
+    --line: #26305A; --zebra: #121B42; --label: #141D46; --field: #121A40;
+    --pending: #FFD85C; --pending-bg: rgba(245,197,24,.16);
+    --ongoing: #9DBBFF; --ongoing-bg: rgba(90,130,255,.18);
+    --done: #7FD9A8; --done-bg: rgba(60,180,120,.18);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --desk: #060A22; --sheet: #0E1535; --ink: #E4E8F2; --muted: #9AA3BC;
+  --navy: #050929; --navy-ink: #E9ECF7; --band-ink: #FFFFFF; --band-sub: #9AA3BC;
+  --yellow: #F5C518; --yellow-soft: rgba(245,197,24,.16); --yellow-ink: #FFE27A;
+  --line: #26305A; --zebra: #121B42; --label: #141D46; --field: #121A40;
+  --pending: #FFD85C; --pending-bg: rgba(245,197,24,.16);
+  --ongoing: #9DBBFF; --ongoing-bg: rgba(90,130,255,.18);
+  --done: #7FD9A8; --done-bg: rgba(60,180,120,.18);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--desk);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-block: 28px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.sheet {
+  max-width: 860px;
+  margin: 0 auto;
+  background: var(--sheet);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 2px rgba(10,17,64,.06), 0 10px 30px rgba(10,17,64,.07);
+}
+
+/* ---------- brand band ---------- */
+.band {
+  background: var(--navy);
+  color: var(--band-ink);
+  border-bottom: 5px solid var(--yellow);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px 24px;
+  padding: 18px 32px;
+}
+.brand { display: grid; gap: 2px; }
+.brand b { font-family: var(--display); font-weight: 700; font-size: 30px; letter-spacing: .14em; line-height: 1; }
+.brand span { font-family: var(--display); font-weight: 600; font-size: 14px; letter-spacing: .42em; color: var(--yellow); line-height: 1.1; }
+.band-meta { text-align: right; display: grid; gap: 2px; }
+.band-meta b { font-family: var(--display); font-weight: 600; font-size: 14px; letter-spacing: .2em; }
+.band-meta span { font-size: 12.5px; color: var(--band-sub); }
+
+.content { padding: 28px 32px 8px; display: grid; gap: 4px; }
+
+/* ---------- title ---------- */
+.title { display: grid; gap: 4px; padding-bottom: 14px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.title h1 { margin: 0; font-family: var(--display); font-weight: 700; font-size: clamp(32px, 6vw, 44px); letter-spacing: .04em; color: var(--navy-ink); line-height: 1; text-wrap: balance; }
+.title h2 { margin: 0; font-family: var(--display); font-weight: 600; font-size: clamp(18px, 3.2vw, 22px); letter-spacing: .06em; color: var(--navy-ink); text-wrap: balance; }
+.title p { margin: 4px 0 0; font-size: 11.5px; font-weight: 700; letter-spacing: .22em; color: var(--muted); text-transform: uppercase; }
+
+/* ---------- sections ---------- */
+section { padding-top: 22px; display: grid; gap: 12px; min-width: 0; }
+.sec-h {
+  margin: 0;
+  display: flex; gap: 10px; align-items: baseline;
+  font-family: var(--display); font-weight: 700; font-size: 20px; letter-spacing: .08em;
+  color: var(--navy-ink); text-transform: uppercase;
+  padding-bottom: 6px; border-bottom: 3px solid var(--yellow);
+  text-wrap: balance;
+}
+.sec-h .n { font-variant-numeric: tabular-nums; }
+
+/* ---------- tables ---------- */
+.scroll { overflow-x: auto; min-width: 0; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { border: 1px solid var(--line); padding: 8px 11px; text-align: left; vertical-align: middle; }
+thead th {
+  background: var(--navy); color: #FFFFFF; border-color: var(--navy);
+  font-family: var(--display); font-weight: 600; font-size: 13px; letter-spacing: .12em; text-transform: uppercase;
+}
+:root[data-theme="dark"] thead th { border-color: var(--line); }
+tbody tr:nth-child(even) td { background: var(--zebra); }
+
+.info th { width: 21%; background: var(--label); color: var(--navy-ink); font-weight: 700; font-size: 13.5px; }
+.info td { width: 29%; }
+.strong { font-weight: 700; color: var(--navy-ink); }
+
+/* editable fields */
+.field {
+  display: block; min-height: 1.5em; padding: 2px 4px; margin: -2px -4px;
+  border-radius: 3px; outline: none; color: var(--ink);
+  transition: background-color .15s;
+}
+.field:hover { background: var(--field); }
+.field:focus-visible, .field:focus { background: var(--field); box-shadow: inset 0 0 0 2px var(--yellow); }
+.field:empty::before { content: attr(data-ph); color: var(--muted); }
+.field.multi { min-height: 3.2em; }
+
+/* ---------- summary + key dates ---------- */
+.prose p { margin: 0 0 10px; max-width: 72ch; text-align: justify; }
+mark { background: var(--yellow-soft); color: var(--yellow-ink); font-weight: 700; padding: 0 3px; border-radius: 2px; }
+.dates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); }
+.date { padding: 14px 16px 16px; border-top: 4px solid var(--yellow); display: grid; gap: 2px; align-content: start; min-width: 0; }
+.date + .date { border-left: 1px solid var(--line); }
+.date time { font-family: var(--display); font-weight: 700; font-size: 24px; color: var(--navy-ink); letter-spacing: .03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.date .day { font-size: 11px; font-weight: 700; letter-spacing: .18em; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+.date .what { font-weight: 700; font-size: 14px; line-height: 1.3; }
+.date .who { font-size: 13px; color: var(--muted); }
+
+/* ---------- discussion items ---------- */
+.items { display: grid; gap: 16px; }
+.item { display: grid; gap: 6px; }
+.item h4 { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: .05em; color: var(--navy-ink); text-transform: uppercase; }
+.item h4 .no { font-variant-numeric: tabular-nums; }
+.tag { font-family: var(--body); font-size: 10.5px; font-weight: 700; letter-spacing: .14em; padding: 2px 8px; border-radius: 2px; background: var(--yellow-soft); color: var(--yellow-ink); border: 1px solid color-mix(in srgb, var(--yellow) 55%, transparent); }
+.tag.scope { background: transparent; color: var(--navy-ink); border: 1px dashed var(--muted); }
+.item ul { margin: 0; padding-left: 22px; display: grid; gap: 3px; }
+.item li::marker { content: '▪  '; color: var(--yellow); }
+.resp { margin: 2px 0 0 22px; display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: 13.5px; }
+.resp span { color: var(--muted); font-weight: 600; }
+.resp b { color: var(--navy-ink); }
+.resp mark { font-weight: 700; }
+
+/* ---------- action items ---------- */
+.actions { min-width: 640px; }
+.actions th:first-child { text-align: center; width: 54px; }
+.actions td:first-child { text-align: center; width: 54px; font-weight: 700; color: var(--navy-ink); font-variant-numeric: tabular-nums; }
+.actions .due { background: var(--yellow-soft) !important; color: var(--yellow-ink); font-weight: 700; white-space: nowrap; }
+.actions .who { font-weight: 700; color: var(--navy-ink); }
+.actions th:last-child, .actions td:last-child { width: 132px; text-align: center; }
+.status {
+  appearance: none; -webkit-appearance: none;
+  font: inherit; font-size: 13px; font-weight: 700; letter-spacing: .02em;
+  padding: 5px 26px 5px 12px; border-radius: 999px; border: 1px solid transparent; cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 13px) 55%, calc(100% - 8px) 55%;
+  background-size: 5px 5px; background-repeat: no-repeat;
+}
+.status:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+.status[data-v="Pending"] { color: var(--pending); background-color: var(--pending-bg); }
+.status[data-v="Ongoing"] { color: var(--ongoing); background-color: var(--ongoing-bg); }
+.status[data-v="Completed"] { color: var(--done); background-color: var(--done-bg); }
+.status option { color: var(--ink); background: var(--sheet); }
+.legend { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+/* ---------- notes ---------- */
+.notes th[scope="row"] { width: 27%; background: var(--label); color: var(--navy-ink); font-weight: 700; font-size: 13.5px; vertical-align: top; }
+.notes td { vertical-align: top; height: 72px; }
+
+/* ---------- acknowledgment ---------- */
+.ack-note { margin: 0; font-size: 13px; font-style: italic; color: var(--muted); }
+.sigs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); }
+.sig { padding: 12px 14px 14px; border-top: 3px solid var(--yellow); display: grid; gap: 8px; align-content: start; min-width: 0; }
+.sig + .sig { border-left: 1px solid var(--line); }
+.sig h5 { margin: 0 0 30px; font-family: var(--display); font-weight: 700; font-size: 14px; letter-spacing: .16em; color: var(--navy-ink); text-transform: uppercase; }
+.sig .line { border-bottom: 1.5px solid var(--navy-ink); }
+.sig .cap { font-size: 11px; color: var(--muted); text-align: center; margin-top: -4px; }
+.sig label { display: grid; gap: 0; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 3px; }
+.sig .field { font-size: 13.5px; }
+
+/* ---------- footer ---------- */
+.foot {
+  margin: 26px 32px 0; padding: 10px 0 18px; border-top: 2px solid var(--yellow);
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 20px;
+  font-size: 12px; color: var(--muted);
+}
+.foot b { color: var(--navy-ink); letter-spacing: .04em; }
+.foot button {
+  font: inherit; font-size: 12px; color: var(--muted); background: none; border: 1px solid var(--line);
+  border-radius: 4px; padding: 3px 10px; cursor: pointer;
+}
+.foot button:hover { color: var(--ink); border-color: var(--muted); }
+.foot button:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+.foot button.arm { color: #B42318; border-color: #B42318; }
+.saved { font-style: italic; }
+
+/* ---------- narrow screens ---------- */
+@media (max-width: 680px) {
+  body { padding-block: 12px 24px; }
+  .band { padding: 16px 18px; }
+  .band-meta { text-align: left; }
+  .content { padding: 20px 18px 4px; }
+  .foot { margin: 22px 18px 0; }
+  .dates, .sigs { grid-template-columns: 1fr; }
+  .date + .date, .sig + .sig { border-left: 0; border-top-width: 4px; }
+  .info, .info tbody { display: block; }
+  .info tr { display: grid; grid-template-columns: 40% minmax(0, 1fr); }
+  .info th, .info td { width: auto; display: block; border-top: 0; }
+  .info th { border-right: 0; }
+  .info tr:first-child th, .info tr:first-child td { border-top: 1px solid var(--line); }
+  .resp { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+@media print {
+  @page { size: A4 portrait; margin: 12mm 14mm; }
+  body { background: #fff; padding: 0; font-size: 12px; }
+  .sheet { border: 0; box-shadow: none; max-width: none; }
+  .band, thead th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .foot button, .saved { display: none; }
+  .field:empty::before { content: '\00a0'; }
+  .status { border: 0; background-image: none; padding: 0; }
+}
+</style>
+
+<div class="sheet">
+  <header class="band">
+    <div class="brand"><b>CONVENGERS</b><span>BAHAY BUILD</span></div>
+    <div class="band-meta"><b>MINUTES OF MEETING</b><span>MEP Construction Drawings Coordination</span></div>
+  </header>
+
+  <main class="content">
+    <div class="title">
+      <h1>MINUTES OF MEETING</h1>
+      <h2>MEP CONSTRUCTION DRAWINGS COORDINATION</h2>
+      <p>Project Management &nbsp;|&nbsp; Technical Coordination &nbsp;|&nbsp; Document Control</p>
+    </div>
+
+    <!-- 1 -->
+    <section aria-labelledby="s1">
+      <h3 class="sec-h" id="s1"><span class="n">1.</span> Meeting Information</h3>
+      <table class="info">
+        <tbody>
+          <tr><th scope="row">Project</th><td colspan="3" class="strong">CONVENGERS BAHAY BUILD</td></tr>
+          <tr><th scope="row">Subject</th><td colspan="3">Plumbing, Electrical, and Mechanical Construction Drawings Coordination</td></tr>
+          <tr class="pair"><th scope="row">Meeting Date</th><td><span class="field" id="f-date" contenteditable="true" data-ph="[To be provided]"></span></td>
+              <th scope="row">Meeting Time</th><td><span class="field" id="f-time" contenteditable="true" data-ph="[To be provided]"></span></td></tr>
+          <tr class="pair"><th scope="row">Venue / Platform</th><td><span class="field" id="f-venue" contenteditable="true" data-ph="[To be provided]"></span></td>
+              <th scope="row">Meeting Lead / Facilitator</th><td><span class="field" id="f-lead" contenteditable="true" data-ph="[To be provided]"></span></td></tr>
+          <tr><th scope="row">Attendees</th><td colspan="3"><span class="field multi" id="f-attendees" contenteditable="true" data-ph="[To be provided]"></span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 2 -->
+    <section aria-labelledby="s2">
+      <h3 class="sec-h" id="s2"><span class="n">2.</span> Executive Summary</h3>
+      <div class="prose">
+        <p>The meeting was held to coordinate the preparation, submission, and scope of the Plumbing, Electrical, and Mechanical (MEP) Construction Drawings for the CONVENGERS BAHAY BUILD project.</p>
+        <p>The Plumbing Construction Drawings are to be expedited for submission by <mark>Thursday, November 19, 2026</mark>, while the Electrical and Mechanical Construction Drawings are targeted for submission by <mark>Friday or Saturday, November 20–21, 2026</mark>. The termite-related plumbing layout was clarified as outside the scope of work of the Ingeniare Team. The meeting agreed to proceed with the current MEP proposals, with any proposed changes, revisions, or adjustments to be coordinated by <mark>December 4, 2026</mark>. Finalization is subject to coordination with Ar. Dax and Idr. Zach.</p>
+      </div>
+      <div class="dates" role="list" aria-label="Key dates">
+        <div class="date" role="listitem"><time datetime="2026-11-19">NOV 19, 2026</time><span class="day">Thursday</span><span class="what">Plumbing Construction Drawings</span><span class="who">Engr. JA</span></div>
+        <div class="date" role="listitem"><time datetime="2026-11-20">NOV 20–21, 2026</time><span class="day">Friday – Saturday</span><span class="what">Electrical &amp; Mechanical Construction Drawings</span><span class="who">Engr. Jysar</span></div>
+        <div class="date" role="listitem"><time datetime="2026-12-04">DEC 4, 2026</time><span class="day">Friday</span><span class="what">Coordination of proposed MEP changes / revisions</span><span class="who">Ar. Dax and Idr. Zach</span></div>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section aria-labelledby="s3">
+      <h3 class="sec-h" id="s3"><span class="n">3.</span> Key Discussion Points and Agreements</h3>
+      <div class="items">
+        <article class="item">
+          <h4><span><span class="no">3.1</span>&nbsp; Plumbing Construction Drawings</span><span class="tag">CONSTRUCTION DRAWINGS</span></h4>
+          <ul><li>The Plumbing Construction Drawings shall be provided and expedited for submission by <b>Thursday, November 19, 2026</b>.</li></ul>
+          <div class="resp"><div><span>Person-in-Charge:</span> <b>Engr. JA</b></div><div><span>Target Date:</span> <mark>November 19, 2026</mark></div></div>
+        </article>
+        <article class="item">
+          <h4><span><span class="no">3.2</span>&nbsp; Electrical and Mechanical Construction Drawings</span><span class="tag">CONSTRUCTION DRAWINGS</span></h4>
+          <ul><li>The Electrical and Mechanical Construction Drawings shall be submitted by the end of the week, targeted for <b>Friday or Saturday, November 20–21, 2026</b>.</li></ul>
+          <div class="resp"><div><span>Person-in-Charge:</span> <b>Engr. Jysar</b></div><div><span>Target Date:</span> <mark>November 20–21, 2026</mark></div></div>
+        </article>
+        <article class="item">
+          <h4><span><span class="no">3.3</span>&nbsp; Termite-Related Plumbing Layout</span><span class="tag scope">SCOPE CLARIFICATION</span></h4>
+          <ul>
+            <li>It was clarified that the termite-related plumbing layout is <b>outside the scope of work of the Ingeniare Team</b>.</li>
+            <li>This item is recorded as a scope clarification only and is not carried as an action item in Section 4.</li>
+          </ul>
+        </article>
+        <article class="item">
+          <h4><span><span class="no">3.4</span>&nbsp; Proceeding with MEP Construction Drawing Proposals</span><span class="tag">COORDINATION REQUIREMENT</span></h4>
+          <ul>
+            <li>The current proposals for the Plumbing, Electrical, and Mechanical works shall proceed.</li>
+            <li>Any proposed changes, revisions, or adjustments shall be coordinated by <b>December 4, 2026</b>.</li>
+            <li>Finalization shall be subject to coordination with <b>Ar. Dax and Idr. Zach</b>.</li>
+          </ul>
+          <div class="resp"><div><span>Person-in-Charge:</span> <b>Ar. Dax and Idr. Zach</b></div><div><span>Target Date:</span> <mark>December 4, 2026</mark></div></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section aria-labelledby="s4">
+      <h3 class="sec-h" id="s4"><span class="n">4.</span> Consolidated Action Items</h3>
+      <div class="scroll">
+        <table class="actions">
+          <thead><tr><th>No.</th><th>Deliverable / Action</th><th>Person-in-Charge</th><th>Target Date</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>4.1</td><td>Plumbing Construction Drawings</td><td class="who">Engr. JA</td><td class="due">November 19, 2026</td>
+                <td><select class="status" id="st-1" aria-label="Status of 4.1"><option>Pending</option><option>Ongoing</option><option>Completed</option></select></td></tr>
+            <tr><td>4.2</td><td>Electrical Construction Drawings</td><td class="who">Engr. Jysar</td><td class="due">November 20–21, 2026</td>
+                <td><select class="status" id="st-2" aria-label="Status of 4.2"><option>Pending</option><option>Ongoing</option><option>Completed</option></select></td></tr>
+            <tr><td>4.3</td><td>Mechanical Construction Drawings</td><td class="who">Engr. Jysar</td><td class="due">November 20–21, 2026</td>
+                <td><select class="status" id="st-3" aria-label="Status of 4.3"><option>Pending</option><option>Ongoing</option><option>Completed</option></select></td></tr>
+            <tr><td>4.4</td><td>Coordination and finalization of proposed MEP changes / revisions</td><td class="who">Ar. Dax and Idr. Zach</td><td class="due">December 4, 2026</td>
+                <td><select class="status" id="st-4" aria-label="Status of 4.4"><option>Pending</option><option>Ongoing</option><option>Completed</option></select></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="legend"><b>Status legend:</b> Pending • Ongoing • Completed. All items are Pending at issuance; choose a status to update it.</p>
+    </section>
+
+    <!-- 5 -->
+    <section aria-labelledby="s5">
+      <h3 class="sec-h" id="s5"><span class="n">5.</span> Notes and Clarifications</h3>
+      <table class="notes">
+        <tbody>
+          <tr><th scope="row">Technical Clarifications</th><td><span class="field multi" id="n-tech" contenteditable="true" data-ph=""></span></td></tr>
+          <tr><th scope="row">Pending Concerns</th><td><span class="field multi" id="n-pending" contenteditable="true" data-ph=""></span></td></tr>
+          <tr><th scope="row">Coordination Requirements</th><td><span class="field multi" id="n-coord" contenteditable="true" data-ph=""></span></td></tr>
+          <tr><th scope="row">Other Remarks</th><td><span class="field multi" id="n-other" contenteditable="true" data-ph=""></span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 6 -->
+    <section aria-labelledby="s6">
+      <h3 class="sec-h" id="s6"><span class="n">6.</span> Acknowledgment</h3>
+      <p class="ack-note">These minutes record the discussions and agreements of the meeting. Corrections or omissions should be communicated to the preparer prior to approval.</p>
+      <div class="sigs">
+        <div class="sig"><h5>Prepared by</h5><div class="line"><span class="field" id="sg-p-name" contenteditable="true" data-ph=""></span></div><div class="cap">Signature over Printed Name</div>
+          <label>Designation<span class="field" id="sg-p-des" contenteditable="true" data-ph=""></span></label><label>Date<span class="field" id="sg-p-date" contenteditable="true" data-ph=""></span></label></div>
+        <div class="sig"><h5>Reviewed by</h5><div class="line"><span class="field" id="sg-r-name" contenteditable="true" data-ph=""></span></div><div class="cap">Signature over Printed Name</div>
+          <label>Designation<span class="field" id="sg-r-des" contenteditable="true" data-ph=""></span></label><label>Date<span class="field" id="sg-r-date" contenteditable="true" data-ph=""></span></label></div>
+        <div class="sig"><h5>Noted by</h5><div class="line"><span class="field" id="sg-n-name" contenteditable="true" data-ph=""></span></div><div class="cap">Signature over Printed Name</div>
+          <label>Designation<span class="field" id="sg-n-des" contenteditable="true" data-ph=""></span></label><label>Date<span class="field" id="sg-n-date" contenteditable="true" data-ph=""></span></label></div>
+        <div class="sig"><h5>Approved by</h5><div class="line"><span class="field" id="sg-a-name" contenteditable="true" data-ph=""></span></div><div class="cap">Signature over Printed Name</div>
+          <label>Designation<span class="field" id="sg-a-des" contenteditable="true" data-ph=""></span></label><label>Date<span class="field" id="sg-a-date" contenteditable="true" data-ph=""></span></label></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div><b>CONVENGERS BAHAY BUILD</b> &nbsp;|&nbsp; PROJECT MANAGEMENT • DOCUMENT CONTROL</div>
+    <div><span class="saved" id="saved">Entries are saved in this browser only.</span> <button type="button" id="reset">Clear my entries</button></div>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var KEY = 'cbb-mom-mep-2026-11';
+  var data = {};
+  try { data = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { data = {}; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {} }
+
+  var fields = document.querySelectorAll('.field[contenteditable]');
+  fields.forEach(function (el) {
+    if (typeof data[el.id] === 'string') el.textContent = data[el.id];
+    el.addEventListener('input', function () {
+      if (!el.textContent.trim()) el.textContent = '';
+      data[el.id] = el.textContent; save();
+    });
+    el.addEventListener('paste', function (e) {
+      e.preventDefault();
+      var txt = (e.clipboardData || window.clipboardData).getData('text');
+      document.execCommand('insertText', false, txt);
+    });
+  });
+
+  var selects = document.querySelectorAll('select.status');
+  selects.forEach(function (s) {
+    if (data[s.id]) s.value = data[s.id];
+    s.dataset.v = s.value;
+    s.addEventListener('change', function () { s.dataset.v = s.value; data[s.id] = s.value; save(); });
+  });
+
+  var btn = document.getElementById('reset'), armed = null;
+  btn.addEventListener('click', function () {
+    if (!armed) {
+      btn.textContent = 'Click again to clear'; btn.classList.add('arm');
+      armed = setTimeout(function () { btn.textContent = 'Clear my entries'; btn.classList.remove('arm'); armed = null; }, 3500);
+      return;
+    }
+    clearTimeout(armed); armed = null;
+    data = {}; try { localStorage.removeItem(KEY); } catch (e) {}
+    fields.forEach(function (el) { el.textContent = ''; });
+    selects.forEach(function (s) { s.value = 'Pending'; s.dataset.v = 'Pending'; });
+    btn.textContent = 'Cleared'; btn.classList.remove('arm');
+    setTimeout(function () { btn.textContent = 'Clear my entries'; }, 1800);
+  });
+})();
+</script>
