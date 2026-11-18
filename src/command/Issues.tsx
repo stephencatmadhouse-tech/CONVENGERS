@@ -99,8 +99,13 @@ export const IssueLog: React.FC = () => {
   // Quick action: #/issues/log/new opens a blank issue
   useEffect(() => {
     if (route.param === 'new' && canEdit) setEditing(blank());
+    // Links from the Command Center and notifications: #/issues/log/<issue id> opens that issue
+    else if (route.param) {
+      const found = issues.find((i) => i.id === route.param);
+      if (found) setEditing(found);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [route.param]);
+  }, [route.param, issues.length]);
   const [status, setStatus] = useState<string>('open');
   const [type, setType] = useState<string>('');
   const [q, setQ] = useState('');
