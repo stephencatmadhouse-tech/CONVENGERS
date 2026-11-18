@@ -511,7 +511,10 @@ export type NotificationType =
   | 'verification'
   | 'turnover'
   | 'document'
-  | 'dailyReport';
+  | 'dailyReport'
+  | 'dcrApproval'
+  | 'dcrUpdate'
+  | 'dcrReview';
 
 export interface NotificationPrefs {
   /** Notification types this user has switched off. */

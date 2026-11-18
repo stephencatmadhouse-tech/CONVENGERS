@@ -149,6 +149,13 @@ Uploads come from:
 * The preparer can edit until review starts, and can revise a returned report.
 * Submitting never approves a report. The database rules also stop preparers from approving or editing review remarks.
 
+**Notifications (bell and Notifications page, listed first):**
+* **Daily report for approval:** administrators, directors and managers see every report that is Submitted or Under Review, with reference, date, preparer, submission date and photo count. A resubmission after a return appears again as unread. The item disappears once the report is approved or returned.
+* **Daily report updated:** a submitted or approved report changed by someone else in the last 3 days. Each new change shows again as unread.
+* **Daily report reviewed:** the preparer is told when their report is approved, or returned for revision with the remarks.
+* **Daily report missing:** working days in the last 7 days with no report from the required reporter.
+* Opening a notification opens that report.
+
 **Master Project Tracker:**
 * Submitting or approving a report does **not** change progress.
 * After approval, a manager can press **Apply X% to Tracker** for each activity. This uses the normal activity update path and is recorded in the audit log.

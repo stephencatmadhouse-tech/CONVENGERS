@@ -95,7 +95,7 @@ const RAW_SECTIONS: Section[] = [
     num: '00',
     label: 'Notifications',
     title: 'Notifications',
-    sub: 'Overdue and upcoming targets, missing owners, blocked items, recent changes, pending verifications, handover and new documents — derived from the project records.',
+    sub: 'Daily Construction Reports for approval, updated or reviewed reports and missing reports, then overdue and upcoming targets, missing owners, blocked items, recent changes, pending verifications, handover and new documents — derived from the project records.',
   },
   {
     id: 'calendar',

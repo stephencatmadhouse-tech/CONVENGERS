@@ -39,8 +39,14 @@ export const NOTIF_TYPES: { id: NotificationType; label: string; rule: string }[
   { id: 'verification', label: 'Awaiting verification', rule: 'Inspection, date confirmation or report / client sign-off waiting more than 3 days (Medium)' },
   { id: 'turnover', label: 'Handover / turnover', rule: 'Handover or turnover within 30 days (High) or 60 days (Medium)' },
   { id: 'document', label: 'New document', rule: 'Document uploaded by someone else in the last 3 days (Low)' },
+  { id: 'dcrApproval', label: 'Daily report for approval', rule: 'A Daily Construction Report submitted or resubmitted and waiting for review or approval (High) — administrators, directors and managers' },
+  { id: 'dcrUpdate', label: 'Daily report updated', rule: 'A submitted or approved Daily Construction Report changed by someone else in the last 3 days (Medium)' },
+  { id: 'dcrReview', label: 'Daily report reviewed', rule: 'Your Daily Construction Report was approved (Low) or returned for revision (High) in the last 7 days' },
   { id: 'dailyReport', label: 'Daily report missing', rule: 'A working day in the last 7 days has no submitted Daily Construction Report from the required reporter (High)' },
 ];
+
+/** Daily Construction Report items come first, in this order: approvals, updates, reviews, missing reports. */
+const DCR_ORDER: Partial<Record<NotificationType, number>> = { dcrApproval: 0, dcrUpdate: 1, dcrReview: 2, dailyReport: 3 };
 
 export const DEFAULT_PREFS: NotificationPrefs = { off: {}, leadDays: 3 };
 
@@ -366,6 +372,64 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
     });
   }
 
+  // Daily Construction Report workflow
+  if (input.dailyReports) {
+    const photos = (d: DailyReport) => d.photos.filter((p) => p.uploadStatus === 'uploaded').length;
+    const when = (iso?: string) => (iso ? fmtDate(iso.slice(0, 10)) : '');
+    input.dailyReports.forEach((d) => {
+      const route = `site/history/${d.id}`;
+      const last = [...d.history].sort((a, b) => b.at.localeCompare(a.at))[0];
+      // 1. waiting for review / approval (until approved or returned)
+      if (scope === 'all' && (d.status === 'submitted' || d.status === 'under_review')) {
+        const resub = d.history.filter((h) => h.to === 'submitted').length > 1;
+        add({
+          key: `dcr-approval:${d.id}:${d.submittedAt || d.updatedAt}`,
+          type: 'dcrApproval',
+          priority: 'HIGH',
+          title: `${d.reference} · ${fmtDate(d.date)}${d.status === 'under_review' ? ' · under review' : resub ? ' · resubmitted' : ''}`,
+          detail: `${resub ? 'Resubmitted' : 'Submitted'} by ${d.preparedBy}${d.submittedAt ? ` on ${when(d.submittedAt)}` : ''} · ${plural(photos(d), 'photo')} · ${d.projectName}`,
+          date: (d.submittedAt || d.updatedAt || d.date).slice(0, 10),
+          action: d.status === 'under_review' ? 'Finish the review: approve or return for revision' : 'Review and approve the report, or return it for revision',
+          route,
+        });
+      }
+      // 2. changed after its last status change (an edit, a correction, progress applied) by someone else
+      const changedAt = d.updatedAt || '';
+      const statusAt = [last?.at, d.submittedAt].filter(Boolean).sort().pop() || '';
+      const editedLater = !!changedAt && !!statusAt && Date.parse(changedAt) - Date.parse(statusAt) > 60_000;
+      const age = changedAt ? diffDays(changedAt.slice(0, 10), today) : 99;
+      if (scope === 'all' && editedLater && age >= 0 && age <= 3 && ['submitted', 'under_review', 'approved'].includes(d.status) && !isMe(d.updatedBy, input.viewer)) {
+        add({
+          key: `dcr-update:${d.id}:${changedAt}`,
+          type: 'dcrUpdate',
+          priority: 'MEDIUM',
+          title: `${d.reference} · ${fmtDate(d.date)} updated`,
+          detail: `Changed by ${d.updatedBy || 'a team member'} on ${when(changedAt)} · ${d.status === 'approved' ? 'approved report' : 'awaiting approval'} · ${plural(photos(d), 'photo')}`,
+          date: changedAt.slice(0, 10),
+          action: 'Open the report to see the latest version',
+          route,
+        });
+      }
+      // 3. the preparer hears about approval or return
+      const mine = !!input.viewer.id && d.preparedById === input.viewer.id;
+      const rv = d.review;
+      const rvAge = rv?.reviewedAt ? diffDays(rv.reviewedAt.slice(0, 10), today) : 99;
+      if (mine && rv?.reviewedAt && rvAge >= 0 && rvAge <= 7 && (d.status === 'approved' || d.status === 'returned') && rv.reviewedById !== input.viewer.id) {
+        const returned = d.status === 'returned';
+        add({
+          key: `dcr-review:${d.id}:${d.status}:${rv.reviewedAt}`,
+          type: 'dcrReview',
+          priority: returned ? 'HIGH' : 'LOW',
+          title: `${d.reference} · ${fmtDate(d.date)} ${returned ? 'returned for revision' : 'approved'}`,
+          detail: `${returned ? 'Returned' : 'Approved'} by ${rv.reviewedBy || 'a reviewer'} on ${when(rv.reviewedAt)}${rv.remarks ? ` · “${rv.remarks}”` : ''}`,
+          date: rv.reviewedAt.slice(0, 10),
+          action: returned ? 'Revise the report and submit it again' : 'No action needed',
+          route,
+        });
+      }
+    });
+  }
+
   // Missing Daily Construction Reports (last 7 days, working days only, before today).
   // Shown to the required reporter and to managers; with no reporter set, to managers only.
   if (input.dailyReports) {
@@ -392,5 +456,13 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
   const seen = new Set<string>();
   return out
     .filter((n) => (seen.has(n.key) ? false : (seen.add(n.key), true)))
-    .sort((a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] || String(a.date || '9999').localeCompare(String(b.date || '9999')));
+    // Daily Construction Report workflow items (approvals, updates, reviews, missing reports) come first: they need action today
+    .sort((a, b) => {
+      const ra = DCR_ORDER[a.type] ?? 9;
+      const rb = DCR_ORDER[b.type] ?? 9;
+      if (ra !== rb) return ra - rb;
+      // daily report items: newest first; everything else: by priority, then date
+      if (ra < 9) return String(b.date || '').localeCompare(String(a.date || ''));
+      return PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] || String(a.date || '9999').localeCompare(String(b.date || '9999'));
+    });
 }

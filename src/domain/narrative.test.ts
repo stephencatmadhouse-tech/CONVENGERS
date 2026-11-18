@@ -218,3 +218,47 @@ test('chain: changing the required reporter changes the source marker (drafts ar
   const b = collectFacts({ type: 'weekly', start: '2026-11-09', end: '2026-11-15' }, { ...base(reps), reporter: RICH }).sourceStamp;
   assert.notEqual(a, b);
 });
+
+test('notifications: daily report submitted for approval, updated, and reviewed', () => {
+  const admin = { name: 'QA Admin', email: 'a@example.com', role: 'admin' as const, id: 'u-admin' };
+  const richardV = { name: 'Richard Solido', email: 'r@example.com', role: 'engineer' as const, id: 'u-richard' };
+  const sub = dcr({ id: 'd1', reference: 'DCR-20261111-AAAA', date: '2026-11-11', preparedBy: 'Richard Solido', preparedById: 'u-richard', status: 'submitted', submittedAt: '2026-11-11T09:00:00Z', updatedAt: '2026-11-11T09:00:00Z', updatedBy: 'Richard Solido', history: [{ at: '2026-11-11T09:00:00Z', by: 'Richard Solido', to: 'submitted' }] });
+  const n1 = buildNotifications({ register: [], dailyReports: [sub], viewer: admin, today: TODAY }).filter((n) => n.type.startsWith('dcr'));
+  assert.equal(n1.length, 1);
+  assert.equal(n1[0].type, 'dcrApproval');
+  assert.equal(n1[0].route, 'site/history/d1');
+  assert.match(n1[0].detail, /Submitted by Richard Solido on November 11, 2026 · 1 photo/);
+  // the engineer does not get approval requests
+  assert.equal(buildNotifications({ register: [], dailyReports: [sub], viewer: richardV, today: TODAY }).filter((n) => n.type === 'dcrApproval').length, 0);
+  // edited after submission → "updated" (new key each time, so it shows as unread again)
+  const edited = { ...sub, updatedAt: '2026-11-11T11:30:00Z' };
+  const n2 = buildNotifications({ register: [], dailyReports: [edited], viewer: admin, today: TODAY });
+  const upd = n2.find((n) => n.type === 'dcrUpdate')!;
+  assert.match(upd.title, /DCR-20261111-AAAA · November 11, 2026 updated/);
+  assert.match(upd.detail, /Changed by Richard Solido/);
+  assert.notEqual(n2.find((n) => n.type === 'dcrUpdate')!.key, buildNotifications({ register: [], dailyReports: [{ ...sub, updatedAt: '2026-11-12T08:00:00Z' }], viewer: admin, today: TODAY }).find((n) => n.type === 'dcrUpdate')!.key);
+  // resubmission after return → a new approval notification
+  const resub = { ...sub, submittedAt: '2026-11-12T08:00:00Z', updatedAt: '2026-11-12T08:00:00Z', history: [...sub.history, { at: '2026-11-11T12:00:00Z', by: 'M', to: 'returned' as const }, { at: '2026-11-12T08:00:00Z', by: 'Richard Solido', to: 'submitted' as const }] };
+  const n3 = buildNotifications({ register: [], dailyReports: [resub], viewer: admin, today: TODAY }).find((n) => n.type === 'dcrApproval')!;
+  assert.match(n3.title, /resubmitted/);
+  assert.notEqual(n3.key, n1[0].key);
+  // approved → gone for the admin, "approved" for the preparer
+  const appr = { ...sub, status: 'approved' as const, review: { reviewedBy: 'QA Manager', reviewedById: 'u-m', reviewedAt: '2026-11-12T10:00:00Z' }, history: [...sub.history, { at: '2026-11-12T10:00:00Z', by: 'QA Manager', to: 'approved' as const }], updatedAt: '2026-11-12T10:00:00Z', updatedBy: 'QA Manager' };
+  assert.equal(buildNotifications({ register: [], dailyReports: [appr], viewer: admin, today: TODAY }).filter((n) => n.type === 'dcrApproval').length, 0);
+  const mine = buildNotifications({ register: [], dailyReports: [appr], viewer: richardV, today: TODAY }).find((n) => n.type === 'dcrReview')!;
+  assert.match(mine.title, /approved/);
+  const ret = { ...appr, status: 'returned' as const, review: { ...appr.review, remarks: 'Add the slab area.' } };
+  const r2 = buildNotifications({ register: [], dailyReports: [ret], viewer: richardV, today: TODAY }).find((n) => n.type === 'dcrReview')!;
+  assert.equal(r2.priority, 'HIGH');
+  assert.match(r2.detail, /Returned by QA Manager .*“Add the slab area\.”/);
+});
+
+test('notifications: daily report items are listed before other notifications', () => {
+  const sub = dcr({ id: 'd9', reference: 'DCR-20261111-ZZZZ', date: '2026-11-11', status: 'submitted', submittedAt: '2026-11-11T09:00:00Z', updatedAt: '2026-11-11T09:00:00Z', history: [] });
+  const all = buildNotifications({ register: reg, dailyReports: [sub], viewer: { name: 'A', email: 'a@example.com', role: 'admin', id: 'x' }, today: TODAY });
+  assert.ok(all.some((n) => n.priority === 'CRITICAL'), 'there are critical items too');
+  assert.equal(all[0].type, 'dcrApproval', 'approval requests first');
+  const firstOther = all.findIndex((n) => !['dcrApproval', 'dcrUpdate', 'dcrReview', 'dailyReport'].includes(n.type));
+  const lastDcr = all.map((n) => n.type).lastIndexOf('dailyReport');
+  assert.ok(lastDcr < firstOther, 'all daily report items before the rest');
+});
