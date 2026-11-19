@@ -6,47 +6,27 @@
 <style>
 /* Layout: one A4-proportioned record sheet on a light-gray desk; navy band header, yellow rules divide numbered sections. */
 :root {
-  --desk: #EEF0F4;
-  --sheet: #FFFFFF;
-  --ink: #172033;
-  --muted: #5E6880;
-  --navy: #0A1140;
-  --navy-ink: #0A1140;      /* navy used as text colour */
+  /* single committed look: deep navy sheet, white type, construction-yellow accents */
+  --desk: #060A22;
+  --sheet: #0E1535;
+  --ink: #E4E8F2;
+  --muted: #9AA3BC;
+  --navy: #050929;
+  --navy-ink: #F2F4FA;
   --band-ink: #FFFFFF;
-  --band-sub: #C3C9D9;
+  --band-sub: #9AA3BC;
   --yellow: #F5C518;
-  --yellow-soft: #FFF4C7;
-  --yellow-ink: #0A1140;
-  --line: #D9DCE3;
-  --zebra: #F5F6F9;
-  --label: #F1F3F7;
-  --field: #FBFBFD;
-  --pending: #8A6A00;  --pending-bg: #FFF4C7;
-  --ongoing: #1C4FB8;  --ongoing-bg: #E3ECFF;
-  --done: #146C43;     --done-bg: #DDF3E6;
+  --yellow-soft: rgba(245,197,24,.16);
+  --yellow-ink: #FFE27A;
+  --line: #26305A;
+  --zebra: #121B42;
+  --label: #141D46;
+  --field: #121A40;
+  --pending: #FFD85C;  --pending-bg: rgba(245,197,24,.16);
+  --ongoing: #9DBBFF;  --ongoing-bg: rgba(90,130,255,.18);
+  --done: #7FD9A8;     --done-bg: rgba(60,180,120,.18);
   --display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
   --body: 'Barlow', 'Segoe UI', Calibri, Arial, sans-serif;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --desk: #060A22; --sheet: #0E1535; --ink: #E4E8F2; --muted: #9AA3BC;
-    --navy: #050929; --navy-ink: #E9ECF7; --band-ink: #FFFFFF; --band-sub: #9AA3BC;
-    --yellow: #F5C518; --yellow-soft: rgba(245,197,24,.16); --yellow-ink: #FFE27A;
-    --line: #26305A; --zebra: #121B42; --label: #141D46; --field: #121A40;
-    --pending: #FFD85C; --pending-bg: rgba(245,197,24,.16);
-    --ongoing: #9DBBFF; --ongoing-bg: rgba(90,130,255,.18);
-    --done: #7FD9A8; --done-bg: rgba(60,180,120,.18);
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --desk: #060A22; --sheet: #0E1535; --ink: #E4E8F2; --muted: #9AA3BC;
-  --navy: #050929; --navy-ink: #E9ECF7; --band-ink: #FFFFFF; --band-sub: #9AA3BC;
-  --yellow: #F5C518; --yellow-soft: rgba(245,197,24,.16); --yellow-ink: #FFE27A;
-  --line: #26305A; --zebra: #121B42; --label: #141D46; --field: #121A40;
-  --pending: #FFD85C; --pending-bg: rgba(245,197,24,.16);
-  --ongoing: #9DBBFF; --ongoing-bg: rgba(90,130,255,.18);
-  --done: #7FD9A8; --done-bg: rgba(60,180,120,.18);
   color-scheme: dark;
 }
 
@@ -116,7 +96,7 @@ thead th {
   background: var(--navy); color: #FFFFFF; border-color: var(--navy);
   font-family: var(--display); font-weight: 600; font-size: 13px; letter-spacing: .12em; text-transform: uppercase;
 }
-:root[data-theme="dark"] thead th { border-color: var(--line); }
+thead th { border-color: var(--line); }
 tbody tr:nth-child(even) td { background: var(--zebra); }
 
 .info th { width: 21%; background: var(--label); color: var(--navy-ink); font-weight: 700; font-size: 13.5px; }
@@ -183,7 +163,7 @@ mark { background: var(--yellow-soft); color: var(--yellow-ink); font-weight: 70
 /* ---------- PDF export ---------- */
 .toolbar { max-width: 860px; margin: 0 auto 12px; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 14px; }
 .toolbar .msg { font-size: 13px; color: var(--muted); }
-.toolbar .msg.err { color: #B42318; }
+.toolbar .msg.err { color: #FF8A80; }
 .pdf-btn {
   font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: .1em; text-transform: uppercase;
   color: #0A1140; background: var(--yellow); border: 0; border-radius: 4px;
@@ -191,7 +171,7 @@ mark { background: var(--yellow-soft); color: var(--yellow-ink); font-weight: 70
   box-shadow: inset 0 -3px 0 rgba(10,17,64,.25);
 }
 .pdf-btn:hover { filter: brightness(1.05); }
-.pdf-btn:focus-visible { outline: 2px solid var(--navy-ink); outline-offset: 2px; }
+.pdf-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .pdf-btn[disabled] { opacity: .6; cursor: progress; }
 .pdf-btn svg { width: 16px; height: 16px; }
 .sheet.pdf { border: 0; box-shadow: none; }
@@ -228,7 +208,7 @@ mark { background: var(--yellow-soft); color: var(--yellow-ink); font-weight: 70
 }
 .foot button:hover { color: var(--ink); border-color: var(--muted); }
 .foot button:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
-.foot button.arm { color: #B42318; border-color: #B42318; }
+.foot button.arm { color: #FF8A80; border-color: #FF8A80; }
 .saved { font-style: italic; }
 
 /* ---------- narrow screens ---------- */
@@ -251,7 +231,7 @@ mark { background: var(--yellow-soft); color: var(--yellow-ink); font-weight: 70
 
 @media print {
   @page { size: A4 portrait; margin: 12mm 14mm; }
-  body { background: #fff; padding: 0; font-size: 12px; }
+  body { padding: 0; font-size: 12px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .sheet { border: 0; box-shadow: none; max-width: none; }
   .band, thead th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .foot button, .saved, .toolbar { display: none; }
@@ -418,9 +398,8 @@ mark { background: var(--yellow-soft); color: var(--yellow-ink); font-weight: 70
     var sheet = document.querySelector('.sheet');
     var breaks = [], cssW = 0;
     var canvas = await window.html2canvas(sheet, {
-      scale: 2, backgroundColor: '#FFFFFF', windowWidth: 1200, logging: false,
+      scale: 2, backgroundColor: '#0E1535', windowWidth: 1200, logging: false,
       onclone: function (doc) {
-        doc.documentElement.setAttribute('data-theme', 'light');
         var s = doc.querySelector('.sheet');
         s.classList.add('pdf');
         doc.querySelectorAll('select.status').forEach(function (sel) {
@@ -470,16 +449,17 @@ mark { background: var(--yellow-soft); color: var(--yellow-ink); font-weight: 70
     var total = slices.length;
     slices.forEach(function (sl, i) {
       if (i) pdf.addPage();
+      pdf.setFillColor(6, 10, 34); pdf.rect(0, 0, PW, PH, 'F'); // dark page ground
       var c = document.createElement('canvas');
       c.width = canvas.width; c.height = sl.h;
       var ctx = c.getContext('2d');
-      ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.fillStyle = '#0E1535'; ctx.fillRect(0, 0, c.width, c.height);
       ctx.drawImage(canvas, 0, sl.y, canvas.width, sl.h, 0, 0, canvas.width, sl.h);
       var f = sl.fit || 1, iw = cw * f;
       pdf.addImage(c.toDataURL('image/jpeg', 0.94), 'JPEG', mL + (cw - iw) / 2, sl.top, iw, (sl.h / px) * f);
 
       if (i) { // running header on continuation pages
-        pdf.setFillColor(10, 17, 64); pdf.rect(mL, 8, cw, 7, 'F');
+        pdf.setFillColor(5, 9, 41); pdf.rect(mL, 8, cw, 7, 'F');
         pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8.5); pdf.setTextColor(255, 255, 255);
         pdf.text('CONVENGERS BAHAY BUILD', mL + 3, 12.6);
         pdf.setFont('helvetica', 'normal'); pdf.setTextColor(201, 206, 219);
@@ -490,10 +470,10 @@ mark { background: var(--yellow-soft); color: var(--yellow-ink); font-weight: 70
       var fy = PH - 10;
       pdf.setDrawColor(245, 197, 24); pdf.setLineWidth(0.5); pdf.line(mL, fy - 4, PW - mL, fy - 4);
       pdf.setFontSize(7.5);
-      pdf.setFont('helvetica', 'bold'); pdf.setTextColor(10, 17, 64);
+      pdf.setFont('helvetica', 'bold'); pdf.setTextColor(255, 255, 255);
       pdf.text('CONVENGERS BAHAY BUILD', mL, fy);
       var w = pdf.getTextWidth('CONVENGERS BAHAY BUILD');
-      pdf.setFont('helvetica', 'normal'); pdf.setTextColor(104, 115, 138);
+      pdf.setFont('helvetica', 'normal'); pdf.setTextColor(154, 163, 188);
       pdf.text('  |  PROJECT MANAGEMENT • DOCUMENT CONTROL', mL + w, fy);
       pdf.text('Page ' + (i + 1) + ' of ' + total, PW - mL, fy, { align: 'right' });
     });
