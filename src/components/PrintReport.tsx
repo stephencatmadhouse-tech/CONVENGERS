@@ -486,7 +486,7 @@ export const PrintReport: React.FC<PrintReportProps> = ({ data, register, metric
 
       <footer className="pmrep-footer">
         <span>Convengers Bahay Build · www.ConvengersAssemble.com</span>
-        <span>Assumes Mon–Sat workweek excluding listed Philippine holidays &amp; Dec 20–Jan 3 stoppage.</span>
+        <span>Assumes Mon–Sat workweek excluding listed Philippine holidays &amp; Dec 21–Jan 2 stoppage.</span>
       </footer>
     </div>
   );

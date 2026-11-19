@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { isNoticeMilestone } from './domain/announcements.ts';
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from './api/client.ts';
@@ -330,6 +331,11 @@ export default function App() {
     return () => unsubAudit();
   }, [user?.role]);
 
+  // Work stoppage / work resumes are project announcements, not milestones: the records stay in the
+  // database and in backups, but every milestone view, count and report uses this list.
+  const projectMilestones = useMemo(() => data.milestones.filter((m) => !isNoticeMilestone(m)), [data.milestones]);
+  const viewData = useMemo(() => ({ ...data, milestones: projectMilestones }), [data, projectMilestones]);
+
   // ===== MASTER PROJECT REGISTER (single derived source of truth) =====
   const register = useMemo(
     () =>
@@ -337,7 +343,7 @@ export default function App() {
         {
           scopes: data.scopes,
           pours: data.pours,
-          milestones: data.milestones,
+          milestones: projectMilestones,
           episodes: data.episodes,
           activities: data.activities,
           overrides: data.overrides,
@@ -345,11 +351,11 @@ export default function App() {
         },
         today
       ),
-    [data.scopes, data.pours, data.milestones, data.episodes, data.activities, data.overrides, data.characters, today]
+    [data.scopes, data.pours, projectMilestones, data.episodes, data.activities, data.overrides, data.characters, today]
   );
   const registerRef = useRef(register);
   registerRef.current = register;
-  const metrics = useMemo(() => computeMetrics(register, data.milestones, today), [register, data.milestones, today]);
+  const metrics = useMemo(() => computeMetrics(register, projectMilestones, today), [register, projectMilestones, today]);
   const alignment = useMemo(() => buildAlignment(register, today), [register, today]);
   const attention = useMemo(() => buildAttention(register, control.issues, alignment, today), [register, control.issues, alignment, today]);
 
@@ -1451,7 +1457,7 @@ export default function App() {
   };
 
   const commandState: CommandState = {
-    data,
+    data: viewData,
     register,
     metrics,
     alignment,
@@ -1505,7 +1511,7 @@ export default function App() {
   const slides: Record<SlideKey, () => React.ReactNode> = {
     overview: () => (
       <OverviewSlide
-        milestones={data.milestones}
+        milestones={projectMilestones}
         scopes={data.scopes}
         pours={data.pours}
         episodes={data.episodes}
@@ -1522,7 +1528,7 @@ export default function App() {
       <UpcomingActivitiesSlide
         activities={data.activities}
         scopes={data.scopes}
-        milestones={data.milestones}
+        milestones={projectMilestones}
         episodes={data.episodes}
         pours={data.pours}
         overrides={data.overrides}
@@ -1583,7 +1589,7 @@ export default function App() {
     ),
     master: () => (
       <OverallProjectTimelineSlide
-        milestones={data.milestones}
+        milestones={projectMilestones}
         scopes={data.scopes}
         pours={data.pours}
         episodes={data.episodes}
@@ -1718,7 +1724,7 @@ export default function App() {
       </CommandProvider>
 
       {/* Printable Report View (shown during Print Report) */}
-      <PrintReport data={data} register={register} metrics={metrics} attention={attention} today={today} />
+      <PrintReport data={viewData} register={register} metrics={metrics} attention={attention} today={today} />
 
       {/* Modals */}
       {isAuthOpen && (

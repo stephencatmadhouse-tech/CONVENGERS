@@ -514,7 +514,8 @@ export type NotificationType =
   | 'dailyReport'
   | 'dcrApproval'
   | 'dcrUpdate'
-  | 'dcrReview';
+  | 'dcrReview'
+  | 'announcement';
 
 export interface NotificationPrefs {
   /** Notification types this user has switched off. */

@@ -39,6 +39,7 @@ import {
   Image as ImageIcon,
   Columns2,
   History,
+  Megaphone,
 } from 'lucide-react';
 import './commandCenter.css';
 import { useCommand } from './context.tsx';
@@ -60,6 +61,8 @@ import { weeklyReportId } from '../domain/reports.ts';
 import { DR_STATUS_LABEL } from '../domain/dailyReport.ts';
 import { NARRATIVE_STATUS_LABEL } from '../domain/narrative.ts';
 import type { RegisterActivity } from '../domain/register.ts';
+import { activeNotices, noticeDate, noticePublicationId, type ProjectNotice } from '../domain/announcements.ts';
+import type { Publication } from '../types/index.ts';
 
 const PERIOD_KEY = 'convengers_cc_period';
 const fmtTimeOf = (d: Date) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' });
@@ -172,6 +175,11 @@ export const CommandCenter: React.FC = () => {
         </Banner>
       )}
 
+      {/* IMPORTANT ANNOUNCEMENTS — pinned until they are over */}
+      {activeNotices(today).map((n) => (
+        <NoticeBanner key={n.id} n={n} />
+      ))}
+
       {/* HEADER — status line, period filter, data refresh time */}
       <div className="cc2-head">
         <div className="cc2-head-l">
@@ -233,6 +241,80 @@ export const CommandCenter: React.FC = () => {
         working-day weighted average of the construction scopes; “Not recorded” means no record exists — it is not the same as zero.
       </p>
     </div>
+  );
+};
+
+// =====================================================================
+// IMPORTANT ANNOUNCEMENT
+// =====================================================================
+const NoticeBanner: React.FC<{ n: ProjectNotice }> = ({ n }) => {
+  const { today, actions, isManager, user } = useCommand();
+  const pubs = useStore(publicationStore);
+  const pubId = noticePublicationId(n);
+  const pub = pubs.items.find((p) => p.id === pubId);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  const state = today < n.start ? `Starts in ${plural(diffDays(today, n.start), 'day')}` : today <= n.end ? 'In effect now' : `Work resumes ${today === n.resume ? 'today' : `in ${plural(diffDays(today, n.resume), 'day')}`}`;
+  const prepare = async () => {
+    setBusy(true);
+    const at = new Date().toISOString();
+    const rec: Publication = {
+      id: pubId,
+      kind: 'consideration',
+      title: n.title,
+      status: 'draft',
+      payload: { text: n.message, date: n.start, category: n.category, impact: `No site work from ${fmtDate(n.start)} to ${fmtDate(n.end)}; work resumes ${fmtDate(n.resume)}.` },
+      periodStart: n.start,
+      periodEnd: n.end,
+      history: [{ at, by: user.name, to: 'draft', note: 'Prepared from the Command Center announcement' }],
+      createdAt: at,
+      createdBy: user.name,
+      updatedAt: at,
+      updatedBy: user.name,
+    };
+    try {
+      const where = await publicationStore.put(rec);
+      setMsg(where === 'shared' ? 'Draft prepared in Client Portal Management. Clients see it only after review and publishing.' : 'Draft saved on this device only.');
+    } catch (e) {
+      setMsg(`Not prepared: ${e instanceof Error ? e.message : 'the database refused the change'}.`);
+    }
+    setBusy(false);
+  };
+  return (
+    <section className="cc2-notice" role="region" aria-label="Important announcement">
+      <div className="cc2-notice-ico" aria-hidden>
+        <Megaphone size={22} />
+      </div>
+      <div className="cc2-notice-b">
+        <span className="cc2-notice-k">Important announcement · {state}</span>
+        <h2>{n.title}</h2>
+        <p>{n.message}</p>
+        <div className="cc2-notice-d">
+          <span>
+            <b>Work stoppage</b> {fmtDate(n.start)} – {fmtDate(n.end)}
+          </span>
+          <span>
+            <b>Work resumes</b> {noticeDate(n.resume)}
+          </span>
+        </div>
+        {msg && <p className="cc2-notice-msg">{msg}</p>}
+      </div>
+      <div className="cc2-notice-a">
+        <button type="button" className="cv-btn sm" onClick={() => actions.navigate(`calendar/month/${n.start}`)}>
+          Project Calendar
+        </button>
+        {isManager &&
+          (pub ? (
+            <button type="button" className="cv-btn sm" onClick={() => actions.navigate('publishing/considerations')}>
+              Client portal: {pub.status === 'published' ? 'Published' : pub.status === 'review' ? 'For review' : pub.status === 'approved' ? 'Approved' : 'Draft'}
+            </button>
+          ) : (
+            <button type="button" className="cv-btn sm primary" disabled={busy || !pubs.loaded} onClick={prepare}>
+              Prepare for Client Portal
+            </button>
+          ))}
+      </div>
+    </section>
   );
 };
 

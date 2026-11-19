@@ -24,8 +24,9 @@ export const PHILIPPINE_HOLIDAYS_SET = new Set([
   '2027-04-09', // Araw ng Kagitingan
 ]);
 
-export const WORK_STOPPAGE_START = new Date(2026, 11, 20); // Dec 20, 2026
-export const WORK_STOPPAGE_END = new Date(2027, 0, 3);    // Jan 3, 2027
+// Holiday work stoppage: December 21, 2026 – January 2, 2027; work resumes Monday, January 4, 2027
+export const WORK_STOPPAGE_START = new Date(2026, 11, 21); // Dec 21, 2026
+export const WORK_STOPPAGE_END = new Date(2027, 0, 2);     // Jan 2, 2027
 export const PROJECT_START = new Date(2026, 9, 5);        // Oct 5, 2026
 export const PROJECT_END = new Date(2027, 3, 30);         // Apr 30, 2027
 

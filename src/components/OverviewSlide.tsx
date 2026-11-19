@@ -164,7 +164,7 @@ export const OverviewSlide: React.FC<OverviewSlideProps> = ({
                 <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '18px', letterSpacing: '1px', color: 'var(--sx-text-3)', textTransform: 'uppercase' }}>
                   Work stoppage:
                 </div>
-                <div style={{ fontSize: '25px', fontWeight: 700, lineHeight: 1.2 }}>Dec 20 – Jan 3 (resume Jan 4)</div>
+                <div style={{ fontSize: '25px', fontWeight: 700, lineHeight: 1.2 }}>Dec 21 – Jan 2 (resume Jan 4)</div>
               </div>
               <div style={{ flex: 1, padding: '14px 22px', borderRight: 'var(--sx-border-31)' }}>
                 <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, fontSize: '18px', letterSpacing: '1px', color: 'var(--sx-text-3)', textTransform: 'uppercase' }}>

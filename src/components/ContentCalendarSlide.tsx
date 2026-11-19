@@ -112,7 +112,7 @@ export const ContentCalendarSlide: React.FC<ContentCalendarSlideProps> = ({
     return Math.max(0, Math.min(100, ((d.getTime() - laneStart.getTime()) / (86400000 * laneDays)) * 100));
   };
 
-  const stoppageStartPct = calcLanePct(new Date(2026, 11, 20));
+  const stoppageStartPct = calcLanePct(new Date(2026, 11, 21));
   const stoppageEndPct = calcLanePct(new Date(2027, 0, 4));
 
   return (

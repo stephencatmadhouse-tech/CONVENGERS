@@ -25,6 +25,7 @@ import {
 import { RegisterActivity } from './register.ts';
 import { addDays, diffDays, fmtDate, isoDateOf, todayIso } from './dates.ts';
 import { summarizeDailyReports, type DailyReporter } from './dailyCompliance.ts';
+import { activeNotices } from './announcements.ts';
 import type { DailyReport } from '../types/index.ts';
 
 export type NotifPriority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
@@ -39,6 +40,7 @@ export const NOTIF_TYPES: { id: NotificationType; label: string; rule: string }[
   { id: 'verification', label: 'Awaiting verification', rule: 'Inspection, date confirmation or report / client sign-off waiting more than 3 days (Medium)' },
   { id: 'turnover', label: 'Handover / turnover', rule: 'Handover or turnover within 30 days (High) or 60 days (Medium)' },
   { id: 'document', label: 'New document', rule: 'Document uploaded by someone else in the last 3 days (Low)' },
+  { id: 'announcement', label: 'Important announcement', rule: 'Project announcements such as the holiday work stoppage, from 14 days before until work resumes (High)' },
   { id: 'dcrApproval', label: 'Daily report for approval', rule: 'A Daily Construction Report submitted or resubmitted and waiting for review or approval (High) — administrators, directors and managers' },
   { id: 'dcrUpdate', label: 'Daily report updated', rule: 'A submitted or approved Daily Construction Report changed by someone else in the last 3 days (Medium)' },
   { id: 'dcrReview', label: 'Daily report reviewed', rule: 'Your Daily Construction Report was approved (Low) or returned for revision (High) in the last 7 days' },
@@ -46,7 +48,7 @@ export const NOTIF_TYPES: { id: NotificationType; label: string; rule: string }[
 ];
 
 /** Daily Construction Report items come first, in this order: approvals, updates, reviews, missing reports. */
-const DCR_ORDER: Partial<Record<NotificationType, number>> = { dcrApproval: 0, dcrUpdate: 1, dcrReview: 2, dailyReport: 3 };
+const DCR_ORDER: Partial<Record<NotificationType, number>> = { announcement: -1, dcrApproval: 0, dcrUpdate: 1, dcrReview: 2, dailyReport: 3 };
 
 export const DEFAULT_PREFS: NotificationPrefs = { off: {}, leadDays: 3 };
 
@@ -371,6 +373,22 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
       });
     });
   }
+
+  // Important announcements (holiday work stoppage): from 14 days before it starts until work resumes
+  activeNotices(today)
+    .filter((n) => diffDays(today, n.start) <= 14)
+    .forEach((n) =>
+      add({
+        key: `notice:${n.id}`,
+        type: 'announcement',
+        priority: 'HIGH',
+        title: n.title,
+        detail: `No site work from ${fmtDate(n.start)} to ${fmtDate(n.end)} · work resumes ${fmtDate(n.resume)}`,
+        date: n.start,
+        action: today < n.start ? 'Plan manpower, deliveries and inspections around the stoppage' : 'Prepare for work to resume',
+        route: 'command',
+      })
+    );
 
   // Daily Construction Report workflow
   if (input.dailyReports) {

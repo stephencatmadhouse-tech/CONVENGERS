@@ -21,6 +21,7 @@ import { CAL_TYPES, CAL_COLOR, CalItem, CalType, buildCalendar, buildForecast, i
 import { addDays, diffDays, fmtDate, fmtRange, fmtTime, isValidIso, monthLabel, monthRange, weekRange } from '../domain/dates.ts';
 import { CalendarEvent, CalendarEventType } from '../types/index.ts';
 import { useNarrativeCalendar } from './Narrative.tsx';
+import { workStoppageNotice } from '../domain/announcements.ts';
 
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const EVENT_TYPES: CalendarEventType[] = ['Inspection', 'Site visit', 'Delivery', 'Handover / turnover', 'Meeting', 'Other'];
@@ -31,7 +32,7 @@ export function useCalendarItems(): { items: CalItem[]; manual: CalendarEvent[];
   const proc = useStore(procurementStore);
   const ev = useStore(eventStore);
   const reports = useNarrativeCalendar();
-  const items = useMemo(() => buildCalendar({ register, procurement: proc.items, manual: ev.items, reports, today }), [register, proc.items, ev.items, reports, today]);
+  const items = useMemo(() => buildCalendar({ register, procurement: proc.items, manual: ev.items, reports, notices: [workStoppageNotice()], today }), [register, proc.items, ev.items, reports, today]);
   return { items, manual: ev.items, manualShared: ev.shared };
 }
 

@@ -12,9 +12,9 @@
 import { CalendarEvent, ProcurementItem } from '../types/index.ts';
 import { RegisterActivity } from './register.ts';
 import { isTurnover } from './notifications.ts';
-import { addDays, diffDays, isValidIso, weekRange } from './dates.ts';
+import { addDays, diffDays, fmtDate, isValidIso, weekRange } from './dates.ts';
 
-export type CalType = 'Milestone' | 'Construction' | 'Concrete pour' | 'Production' | 'Inspection' | 'Delivery' | 'Handover / turnover' | 'Report' | 'Manual';
+export type CalType = 'Milestone' | 'Construction' | 'Concrete pour' | 'Production' | 'Inspection' | 'Delivery' | 'Handover / turnover' | 'Report' | 'Announcement' | 'Manual';
 
 export const CAL_TYPES: { id: CalType; color: string }[] = [
   { id: 'Milestone', color: '#F5C518' },
@@ -25,6 +25,7 @@ export const CAL_TYPES: { id: CalType; color: string }[] = [
   { id: 'Delivery', color: '#121C5A' },
   { id: 'Handover / turnover', color: '#4BE08A' },
   { id: 'Report', color: '#0B7A75' },
+  { id: 'Announcement', color: '#E0213B' },
   { id: 'Manual', color: '#68738A' },
 ];
 export const CAL_COLOR: Record<CalType, string> = Object.fromEntries(CAL_TYPES.map((t) => [t.id, t.color])) as Record<CalType, string>;
@@ -52,6 +53,8 @@ export interface CalInput {
   manual?: CalendarEvent[];
   /** Narrative report preparation dates (scheduled) and prepared reports awaiting approval. */
   reports?: { id: string; date: string; title: string; sub: string; done: boolean; route?: string }[];
+  /** Important announcements (e.g. the holiday work stoppage): shown on their start and resume dates. */
+  notices?: { id: string; title: string; start: string; end: string; resume: string }[];
   today: string;
 }
 
@@ -137,6 +140,13 @@ export function buildCalendar(input: CalInput): CalItem[] {
   (input.reports || []).forEach((r) => {
     if (!isValidIso(r.date)) return;
     out.push({ id: `NR:${r.id}`, date: r.date, type: 'Report', marker: 'Report', title: r.title, sub: r.sub, owner: '', done: r.done, overdue: false, route: r.route || 'narrative' });
+  });
+
+  (input.notices || []).forEach((n) => {
+    if (isValidIso(n.start))
+      out.push({ id: `AN:${n.id}:start`, date: n.start, type: 'Announcement', marker: 'Announcement', title: `${n.title} begins`, sub: `No site work until ${fmtDate(n.end)}; work resumes ${fmtDate(n.resume)}`, owner: '', done: n.start < today, overdue: false, route: 'command' });
+    if (isValidIso(n.resume))
+      out.push({ id: `AN:${n.id}:resume`, date: n.resume, type: 'Announcement', marker: 'Announcement', title: 'Work resumes', sub: `After the ${n.title.toLowerCase()} (${fmtDate(n.start)} – ${fmtDate(n.end)})`, owner: '', done: n.resume < today, overdue: false, route: 'command' });
   });
 
   return out.sort((a, b) => (a.date + (a.time || '99:99')).localeCompare(b.date + (b.time || '99:99')) || a.title.localeCompare(b.title));

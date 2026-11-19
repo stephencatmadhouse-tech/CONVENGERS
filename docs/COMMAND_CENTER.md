@@ -11,6 +11,28 @@ The Command Center (`#/command`) was redesigned to make the information hierarch
 
 All of these appeared at the same time. No routes, records, permissions or back-end processes changed.
 
+## Important announcements
+
+The **holiday work stoppage** is a project announcement, not a milestone.
+
+**Dates:**
+* Stoppage: December 21, 2026 – January 2, 2027.
+* Work resumes: Monday, January 4, 2027.
+
+**Where it appears:**
+* A pinned banner at the top of the Command Center, on desktop and phone, until work resumes.
+* The Project Calendar: an *Announcement* entry on December 21 and on January 4.
+* Notifications ("Important announcement"), from 14 days before the stoppage until work resumes.
+* The schedule calculations, Gantt shading and presentation slides, all of which use the same dates (`WORK_STOPPAGE_START` / `WORK_STOPPAGE_END`).
+
+**The former milestone records:**
+* The milestone records "Work stoppage: work stops after Dec 19, 2026" and "Work resumes" are kept in the database and in backups.
+* They no longer appear in any milestone list, count, timeline, report or client snapshot.
+
+**Client portal:**
+* **Prepare for Client Portal** (managers) creates a draft in Client Portal Management → Updates & Announcements, with the category *Important announcement*.
+* Clients see it only after the usual review and publishing.
+
 ## 1. Audit — existing components and data sources
 
 | Existing element | Data source | In the redesign |

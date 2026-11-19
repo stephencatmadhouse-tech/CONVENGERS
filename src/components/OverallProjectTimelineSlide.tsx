@@ -191,10 +191,10 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
       {
         id: 'sync_holiday',
         phase: 'Mandatory Work Stoppage',
-        monthRange: 'Dec 20 – Jan 3',
+        monthRange: 'Dec 21 – Jan 2',
         constructionItem: 'Holiday Work Stoppage (Site Closed / Curing Period)',
         constructionFloor: 'ALL',
-        constructionDate: 'Dec 20, 2026 – Jan 3, 2027',
+        constructionDate: 'Dec 21, 2026 – Jan 2, 2027',
         constructionStatus: findMilestoneStatus(['stoppage', 'holiday'], 'Scheduled'),
         constructionProgress: 0,
         productionEpisodeNum: 10,
@@ -581,7 +581,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
               Synchronized Dual-Track Timeline <span style={{ color: 'var(--sx-text-3)' }}>at a glance</span>
             </span>
             <span style={{ fontSize: '12px', color: 'var(--sx-text-2)' }}>
-              Oct 2026 – May 2027 · Bars = Activity Duration · Red Hatching = Holiday Stoppage (Dec 20 – Jan 3)
+              Oct 2026 – May 2027 · Bars = Activity Duration · Red Hatching = Holiday Stoppage (Dec 21 – Jan 2)
             </span>
           </div>
 
@@ -633,7 +633,7 @@ export const OverallProjectTimelineSlide: React.FC<OverallProjectTimelineSlidePr
 
           {/* Holiday Work Stoppage Band Marker */}
           <div
-            title="Work Stoppage: Dec 20 – Jan 3 (resume Jan 4)"
+            title="Work Stoppage: Dec 21 – Jan 2 (resume Jan 4)"
             style={{
               position: 'absolute',
               top: 0,
