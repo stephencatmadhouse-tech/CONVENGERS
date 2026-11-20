@@ -1,0 +1,14 @@
+{
+  "name": "madhouse-standard",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Madhouse Standard Interior Fit-Out Defect & Repair Classification System (single-file artifact build)",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node test/engine.test.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.2"
+  }
+}
