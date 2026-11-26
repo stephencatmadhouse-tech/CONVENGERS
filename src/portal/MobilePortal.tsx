@@ -8,6 +8,7 @@
  * It reads exactly the same published records as the desktop portal.
  */
 
+import { CalendarPage, UpcomingSchedule } from './ProductionCalendar.tsx';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Home,
@@ -15,6 +16,7 @@ import {
   Box,
   Megaphone,
   FileDown,
+  CalendarDays,
   Menu,
   Bell,
   X,
@@ -44,8 +46,8 @@ const BOTTOM = [
   { id: 'overview', label: 'Home', icon: Home },
   { id: 'progress', label: 'Progress', icon: HardHat },
   { id: 'journey', label: '3D Journey', icon: Box },
+  { id: 'calendar', label: 'Calendar', icon: CalendarDays },
   { id: 'updates', label: 'Updates', icon: Megaphone },
-  { id: 'documents', label: 'Documents', icon: FileDown },
 ];
 
 interface Props {
@@ -134,6 +136,8 @@ export const MobilePortal: React.FC<Props> = ({ user, authReady, onLogin, tab, n
     ctx.snap?.journey ? <JourneyViewer journey={ctx.snap.journey} photos={ctx.photos} asOf={`status as of ${fmtDate(ctx.snap.asOf)}`} /> : <NoSnapshot />
   ) : tab === 'timeline' ? (
     <ClientTimeline {...ctx} />
+  ) : tab === 'calendar' ? (
+    <CalendarPage events={ctx.events || []} snap={ctx.snap} />
   ) : tab === 'gallery' ? (
     renderGallery()
   ) : tab === 'updates' ? (
@@ -183,6 +187,9 @@ export const MobilePortal: React.FC<Props> = ({ user, authReady, onLogin, tab, n
       {menu && (
         <Sheet title="Menu" onClose={() => setMenu(false)}>
           <div className="mb-menu">
+            <button type="button" onClick={() => ctx.go('documents')}>
+              <FileDown size={20} aria-hidden /> Documents &amp; Reports
+            </button>
             <button type="button" onClick={() => ctx.go('timeline')}>
               <ChartGantt size={20} aria-hidden /> Project Timeline
             </button>
@@ -316,7 +323,12 @@ export const Sheet: React.FC<{ title: string; onClose: () => void; children: Rea
 const MobileHome: React.FC<{ ctx: ClientCtx }> = ({ ctx }) => {
   const { snap, snapRec, updates, considerations, photos, go } = ctx;
   if (!snap) return <NoSnapshot />;
-  return <MobileHomeBody snap={snap} snapRec={snapRec} updates={updates} considerations={considerations} photos={photos} go={go} />;
+  return (
+    <>
+      <MobileHomeBody snap={snap} snapRec={snapRec} updates={updates} considerations={considerations} photos={photos} go={go} />
+      <UpcomingSchedule events={ctx.events} snap={snap} go={go} className="mb-card" />
+    </>
+  );
 };
 
 const MobileHomeBody: React.FC<{

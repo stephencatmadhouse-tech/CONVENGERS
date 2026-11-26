@@ -12,6 +12,8 @@
  *   project owner / executive / internal → + approved project documents
  */
 
+import { CalendarPage } from './ProductionCalendar.tsx';
+import { clientEvents, recentUpdates } from '../domain/productionCalendar.ts';
 import React, { useEffect, useMemo, useState } from 'react';
 import { BrandHeader } from '../components/BrandHeader.tsx';
 import { Pill, Bar, Empty, PhotoGrid } from './portalUi.tsx';
@@ -50,6 +52,7 @@ const TAB_ICONS: Record<string, LucideIcon> = {
   progress: HardHat,
   journey: Box,
   timeline: ChartGantt,
+  calendar: CalendarDays,
   gallery: Images,
   updates: Megaphone,
   documents: FileDown,
@@ -61,6 +64,7 @@ const TABS = [
   { id: 'progress', label: 'Construction Progress' },
   { id: 'journey', label: '3D Construction Journey' },
   { id: 'timeline', label: 'Project Timeline' },
+  { id: 'calendar', label: 'Production Calendar' },
   { id: 'gallery', label: 'Progress Gallery' },
   { id: 'updates', label: 'Updates & Announcements' },
   { id: 'documents', label: 'Documents & Reports' },
@@ -123,10 +127,13 @@ export const PortalApp: React.FC<{ user: User; authReady: boolean; onLogin: () =
       documents: items.filter((r) => r.kind === 'document').sort(sort),
       considerations: items.filter((r) => r.kind === 'consideration').sort(sort),
       updates: items.filter((r) => r.kind === 'update').sort((a, b) => (b.content?.date || '').localeCompare(a.content?.date || '')),
+      events: items.filter((r) => r.kind === 'event'),
     };
   }, [portal.items, internal, full]);
 
   const snap = byKind.snapshot?.content as PortalSnapshot | undefined;
+  // schedule changes (added / rescheduled / postponed / cancelled) in the last 14 days
+  const calUpdates = useMemo(() => recentUpdates(clientEvents(byKind.events), todayIso()).length, [byKind.events]);
   const ctx = { snap, snapRec: byKind.snapshot, ...byKind, go, param, full, onLogin };
   const isPhone = useIsPhone();
   if (isPhone) {
@@ -191,6 +198,11 @@ export const PortalApp: React.FC<{ user: User; authReady: boolean; onLogin: () =
             <button key={t.id} type="button" className={`pt-side-btn ${navTab === t.id ? 'on' : ''}`} onClick={() => go(t.id)} aria-current={navTab === t.id ? 'page' : undefined}>
               {React.createElement(TAB_ICONS[t.id], { size: 19, strokeWidth: 1.9, 'aria-hidden': true })}
               <span>{t.label}</span>
+              {t.id === 'calendar' && calUpdates > 0 && (
+                <span className="pt-nav-dot" title={`${calUpdates} recent schedule ${calUpdates === 1 ? 'update' : 'updates'}`}>
+                  {calUpdates}
+                </span>
+              )}
             </button>
           ))}
         </nav>
@@ -234,6 +246,7 @@ export const PortalApp: React.FC<{ user: User; authReady: boolean; onLogin: () =
                     <NoSnapshot />
                   ))}
                 {tab === 'timeline' && <ClientTimeline {...ctx} />}
+                {tab === 'calendar' && <CalendarPage events={byKind.events} snap={snap} />}
                 {tab === 'gallery' && <Gallery {...ctx} />}
                 {tab === 'updates' && <ClientUpdates {...ctx} />}
                 {tab === 'documents' && <ClientDocuments {...ctx} />}
@@ -448,3 +461,4 @@ const Gallery: React.FC<Ctx> = ({ photos }) => {
 };
 
 export const _portalHelpers = { addDays, todayIso };
+

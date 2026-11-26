@@ -500,6 +500,41 @@ export interface CalendarEvent {
   updatedAt: string;
   updatedBy: string;
   localOnly?: boolean;
+  // ---- Production Calendar (optional; older calendar entries do not have them) ----
+  category?: ProdCategory;
+  subcategory?: string;
+  description?: string;
+  /** End time HH:MM (`time` is the start time). */
+  endTime?: string;
+  location?: string;
+  personnel?: string[];
+  department?: string;
+  phase?: string;
+  status?: EventStatus;
+  photos?: { fileId: string; caption?: string }[];
+  attachments?: { fileId?: string; title: string; url?: string }[];
+  /** "stakeholder": may be published to the client portal; "internal": never leaves the internal app. */
+  visibility?: 'internal' | 'stakeholder';
+  /** Production team proposals wait for an administrator. */
+  approval?: 'proposed' | 'approved';
+  proposedBy?: string;
+  proposedById?: string;
+  published?: boolean;
+  publishedAt?: string;
+  publishedBy?: string;
+  /** Schedule modification record: previous / updated date, editor and time. */
+  history?: EventChange[];
+}
+
+export type ProdCategory = 'construction' | 'content' | 'photo' | 'meeting' | 'milestone' | 'announcement';
+export type EventStatus = 'Scheduled' | 'Confirmed' | 'Ongoing' | 'Completed' | 'Rescheduled' | 'Postponed' | 'Cancelled';
+export interface EventChange {
+  at: string;
+  by: string;
+  action: string;
+  from?: { date?: string; endDate?: string; time?: string; endTime?: string; status?: string };
+  to?: { date?: string; endDate?: string; time?: string; endTime?: string; status?: string };
+  note?: string;
 }
 
 export type NotificationType =

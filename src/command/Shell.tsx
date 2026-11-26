@@ -37,6 +37,7 @@ import {
   Bell,
   CalendarDays,
   BookOpenText,
+  CalendarRange,
   type LucideIcon,
 } from 'lucide-react';
 import { ROLE_LABEL, canOpenModule, landingModule } from '../auth/roles.ts';
@@ -63,6 +64,7 @@ import { JourneyManagement } from './JourneyManagement.tsx';
 import { RolesPermissions, SyncPanel } from './SystemAdmin.tsx';
 import { DailyReports } from './DailyReport.tsx';
 import { NarrativeReports } from './Narrative.tsx';
+import { ProductionCalendarAdmin } from './ProductionCalendarAdmin.tsx';
 
 export type SlideKey = 'overview' | 'upcoming' | 'gf' | '2f' | '3f' | 'pours' | 'production' | 'episodes' | 'master' | 'methodology' | 'watch' | 'notes';
 
@@ -270,6 +272,18 @@ const RAW_SECTIONS: Section[] = [
     ],
   },
   {
+    id: 'prodcal',
+    num: '00',
+    label: 'Production Calendar',
+    title: 'Production Calendar Management',
+    sub: 'Construction activities, content production, photo and video shoots, meetings, milestones and announcements. Publish stakeholder-visible events to the client portal; the production team proposes schedules for approval.',
+    tabs: [
+      { id: 'schedule', label: 'Schedule' },
+      { id: 'proposals', label: 'Proposals' },
+      { id: 'log', label: 'Change Log' },
+    ],
+  },
+  {
     id: 'journey',
     num: '00',
     label: '3D Construction Journey',
@@ -340,6 +354,7 @@ const ORDER: [string, string][] = [
   ['archive', 'Reports & Documents'],
   ['overview', 'Reports & Documents'],
   ['publishing', 'Client Experience'],
+  ['prodcal', 'Client Experience'],
   ['journey', 'Client Experience'],
   ['roles', 'System Administration'],
   ['settings', 'System Administration'],
@@ -378,6 +393,7 @@ const ICONS: Record<string, LucideIcon> = {
   sync: RefreshCw,
   site: ClipboardPen,
   narrative: BookOpenText,
+  prodcal: CalendarRange,
 };
 
 export function parseRoute(hash: string): { section: string; tab?: string; param?: string } {
@@ -452,6 +468,8 @@ export function renderSectionBody(
         return <SyncPanel />;
       case 'site':
         return <DailyReports key={tab?.id} tab={tab?.id} />;
+      case 'prodcal':
+        return <ProductionCalendarAdmin key={tab?.id} tab={tab?.id} />;
       case 'narrative':
         return <NarrativeReports key={`${tab?.id}:${route.param || ''}`} tab={tab?.id} param={route.param} />;
       case 'issues':

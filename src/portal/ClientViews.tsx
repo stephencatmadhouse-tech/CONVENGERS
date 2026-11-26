@@ -9,6 +9,7 @@
  * functions as the internal Command Center at the time of publication.
  */
 
+import { UpcomingSchedule } from './ProductionCalendar.tsx';
 import React, { useMemo, useState } from 'react';
 import {
   Home,
@@ -47,6 +48,8 @@ export interface ClientCtx {
   documents: PortalRecord[];
   considerations: PortalRecord[];
   updates: PortalRecord[];
+  /** Published Production Calendar events. */
+  events?: PortalRecord[];
   go: (t: string, p?: string) => void;
   param?: string;
   full: boolean;
@@ -114,7 +117,7 @@ const MiniList: React.FC<{ items: PortalActivity[] | { name: string; finish?: st
   );
 
 // ======================= A. PROJECT OVERVIEW =======================
-export const ClientOverview: React.FC<ClientCtx> = ({ snap, snapRec, updates, considerations, go }) => {
+export const ClientOverview: React.FC<ClientCtx> = ({ snap, snapRec, updates, considerations, go, events }) => {
   if (!snap) return <NoSnapshot />;
   const st = scheduleStatus(snap.status);
   const forecast = forecastOf(snap);
@@ -175,6 +178,8 @@ export const ClientOverview: React.FC<ClientCtx> = ({ snap, snapRec, updates, co
           </div>
         </dl>
       </section>
+
+      <UpcomingSchedule events={events} snap={snap} go={go} />
 
       <section className="cx-big3">
         <div className="cx-card cx-progress">

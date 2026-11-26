@@ -155,14 +155,14 @@ export function clientStatus(s: string): ClientStatus {
   return 'Upcoming';
 }
 
-export type PortalRecordKind = 'snapshot' | 'report' | 'photo' | 'document' | 'consideration' | 'update';
+export type PortalRecordKind = 'snapshot' | 'report' | 'photo' | 'document' | 'consideration' | 'update' | 'event';
 
 /**
  * Published content visible on the PUBLIC client-facing dashboard (no sign-in).
  * Approved project documents (`document`) are restricted to the Project Owner,
  * Executives and internal users — enforced by firestore.rules.
  */
-export const PUBLIC_PORTAL_KINDS: PortalRecordKind[] = ['snapshot', 'report', 'photo', 'consideration', 'update'];
+export const PUBLIC_PORTAL_KINDS: PortalRecordKind[] = ['snapshot', 'report', 'photo', 'consideration', 'update', 'event'];
 
 /** Shape of every document in the external `portal` collection. */
 export interface PortalRecord {

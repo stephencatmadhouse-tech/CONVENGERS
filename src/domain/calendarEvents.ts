@@ -119,19 +119,21 @@ export function buildCalendar(input: CalInput): CalItem[] {
       });
     });
 
+  const CAT_TYPE: Record<string, CalType> = { construction: 'Construction', content: 'Production', photo: 'Production', meeting: 'Manual', milestone: 'Milestone', announcement: 'Announcement' };
   (input.manual || []).forEach((e) => {
     if (!isValidIso(e.date)) return;
+    const flag = e.approval === 'proposed' ? ' (proposed)' : e.status === 'Cancelled' ? ' (cancelled)' : e.status === 'Postponed' ? ' (postponed)' : '';
     out.push({
       id: `EV:${e.id}`,
       date: e.date,
       time: e.time,
-      type: MANUAL_TYPE[e.type] || 'Manual',
-      marker: e.type,
-      title: e.title,
-      sub: e.notes || 'Calendar entry',
+      type: (e.category && CAT_TYPE[e.category]) || MANUAL_TYPE[e.type] || 'Manual',
+      marker: e.subcategory || e.type,
+      title: `${e.title}${flag}`,
+      sub: [e.status, e.location, e.department, e.published ? 'published to stakeholders' : ''].filter(Boolean).join(' · ') || e.notes || 'Calendar entry',
       owner: e.owner || '',
-      done: !!e.done,
-      overdue: !e.done && e.date < today,
+      done: !!e.done || e.status === 'Completed',
+      overdue: !e.done && e.status !== 'Cancelled' && e.status !== 'Completed' && (e.endDate || e.date) < today,
       activityId: e.linkedActivityId,
       manualId: e.id,
     });

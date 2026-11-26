@@ -269,17 +269,28 @@ service cloud.firestore {
     // are readable only by the Project Owner, Executives and internal users.
     // Only Project Managers / Administrators publish (write).
     match /portal/{id} {
-      allow read: if resource.data.kind in ['snapshot', 'report', 'photo', 'consideration', 'update']
+      allow read: if resource.data.kind in ['snapshot', 'report', 'photo', 'consideration', 'update', 'event']
         || isInternal() || isPortalDocumentReader();
       allow write: if isManager();
     }
 
-    // --- CALENDAR: manually added entries (inspections, site visits, deliveries, handover) ---
+    // --- CALENDAR / PRODUCTION CALENDAR: one schedule (inspections, meetings, filming, milestones, announcements) ---
+    // Managers create, edit, approve and publish. Staff (e.g. the production team) may PROPOSE events and edit
+    // their own proposals until an administrator approves them; proposals can never be published.
     match /events/{id} {
+      function evValid() {
+        return isValidId(id) && incoming().id == id && incoming().date is string && incoming().title is string;
+      }
+      function evProposal() {
+        return incoming().get('approval', '') == 'proposed' && incoming().get('published', false) == false
+          && incoming().get('proposedById', '') == request.auth.uid;
+      }
       allow read: if isInternal();
-      allow create, update: if isManager() && isValidId(id) && incoming().id == id
-        && incoming().date is string && incoming().title is string;
-      allow delete: if isManager();
+      allow create: if evValid() && (isManager() || (isStaff() && evProposal()));
+      allow update: if evValid() && (isManager()
+        || (isStaff() && existing().get('approval', '') == 'proposed' && existing().get('proposedById', '') == request.auth.uid && evProposal()));
+      allow delete: if isManager()
+        || (isStaff() && existing().get('approval', '') == 'proposed' && existing().get('proposedById', '') == request.auth.uid);
     }
 
     // --- DAILY SITE REPORTS (mobile site reporting) ---
