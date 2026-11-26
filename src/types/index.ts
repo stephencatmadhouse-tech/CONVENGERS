@@ -550,7 +550,8 @@ export type NotificationType =
   | 'dcrApproval'
   | 'dcrUpdate'
   | 'dcrReview'
-  | 'announcement';
+  | 'announcement'
+  | 'production';
 
 export interface NotificationPrefs {
   /** Notification types this user has switched off. */
@@ -687,4 +688,59 @@ export interface DailyOverallStatus {
   actualPct?: number;
   plannedPct?: number;
   asOf?: string;
+}
+
+// ---------------------------------------------------------------------------
+// PRODUCTION ALIGNMENT — production details for an existing episode.
+// One document per episode in `episodeProduction`, keyed by the episode ID.
+// Titles, dates, director and cast stay on the episode record itself.
+// ---------------------------------------------------------------------------
+export type ProdClass = 'time' | 'flexible';
+export type CastAvailability = 'Available' | 'Pending' | 'Unavailable';
+export type TeamRole = 'coordinator' | 'camera' | 'site' | 'technical' | 'other';
+export type ChecklistKey =
+  | 'script'
+  | 'talkingPoints'
+  | 'milestone'
+  | 'cast'
+  | 'director'
+  | 'siteAccess'
+  | 'camera'
+  | 'shot'
+  | 'footage'
+  | 'docs';
+
+export interface ProdChange {
+  at: string;
+  by: string;
+  action: string;
+  from?: string;
+  to?: string;
+  note?: string;
+}
+
+export interface EpisodeProduction {
+  id: string; // = episode ID
+  classification?: ProdClass;
+  category?: string;
+  objective?: string;
+  description?: string;
+  duration?: string;
+  directorConfirmed?: boolean;
+  team?: Partial<Record<TeamRole, { name: string; confirmed?: boolean }>>;
+  cast?: Record<string, { role?: string; availability?: CastAvailability }>;
+  checklist?: Partial<Record<ChecklistKey, boolean>>;
+  /** Alternative shoot date proposed by the production team (not confirmed). */
+  proposed?: { start: string; end?: string; by: string; at: string; note?: string };
+  /** Confirmed shoot date — only directors / authorized managers set this. */
+  approval?: { start: string; end?: string; by: string; at: string };
+  actualStart?: string;
+  actualEnd?: string;
+  /** Construction dates the episode was last reviewed against (change detection). */
+  alignedTo?: Record<string, { start?: string; finish?: string }>;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  history?: ProdChange[];
+  updatedAt?: string;
+  updatedBy?: string;
 }

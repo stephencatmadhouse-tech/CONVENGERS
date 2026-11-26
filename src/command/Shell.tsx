@@ -39,6 +39,7 @@ import {
   BookOpenText,
   CalendarRange,
   type LucideIcon,
+  Link2,
 } from 'lucide-react';
 import { ROLE_LABEL, canOpenModule, landingModule } from '../auth/roles.ts';
 import { Procurement, Manpower } from './Operations.tsx';
@@ -65,6 +66,7 @@ import { RolesPermissions, SyncPanel } from './SystemAdmin.tsx';
 import { DailyReports } from './DailyReport.tsx';
 import { NarrativeReports } from './Narrative.tsx';
 import { ProductionCalendarAdmin } from './ProductionCalendarAdmin.tsx';
+import { ProductionAlignmentAdmin, ProductionPortalSync } from './ProductionAlignmentAdmin.tsx';
 
 export type SlideKey = 'overview' | 'upcoming' | 'gf' | '2f' | '3f' | 'pours' | 'production' | 'episodes' | 'master' | 'methodology' | 'watch' | 'notes';
 
@@ -198,6 +200,18 @@ const RAW_SECTIONS: Section[] = [
       { id: 'calendar', label: 'Production calendar', slide: 'production' },
       { id: 'episodes', label: 'Episodes table', slide: 'episodes' },
       { id: 'alignment', label: 'Schedule alignment' },
+    ],
+  },
+  {
+    id: 'palign',
+    num: '05',
+    label: 'Production Alignment',
+    title: 'Production Alignment & Educational Shoot Calendar',
+    sub: 'Connecting construction milestones, educational episodes and production schedules: classification, construction links, cast availability, team assignments, readiness, approvals and alerts. Publish it to the client portal for stakeholders.',
+    tabs: [
+      { id: 'dashboard', label: 'Dashboard' },
+      { id: 'episodes', label: 'Episodes' },
+      { id: 'history', label: 'Revision History' },
     ],
   },
   {
@@ -343,6 +357,7 @@ const ORDER: [string, string][] = [
   ['milestones', 'Project Management'],
   ['construction', 'Construction Operations'],
   ['production', 'Construction Operations'],
+  ['palign', 'Construction Operations'],
   ['site', 'Construction Operations'],
   ['procurement', 'Construction Operations'],
   ['schedule', 'Monitoring & Control'],
@@ -394,6 +409,7 @@ const ICONS: Record<string, LucideIcon> = {
   site: ClipboardPen,
   narrative: BookOpenText,
   prodcal: CalendarRange,
+  palign: Link2,
 };
 
 export function parseRoute(hash: string): { section: string; tab?: string; param?: string } {
@@ -470,6 +486,8 @@ export function renderSectionBody(
         return <DailyReports key={tab?.id} tab={tab?.id} />;
       case 'prodcal':
         return <ProductionCalendarAdmin key={tab?.id} tab={tab?.id} />;
+      case 'palign':
+        return <ProductionAlignmentAdmin key={tab?.id} tab={tab?.id} param={route.param} />;
       case 'narrative':
         return <NarrativeReports key={`${tab?.id}:${route.param || ''}`} tab={tab?.id} param={route.param} />;
       case 'issues':
@@ -607,6 +625,7 @@ export const Shell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNode; re
           <div>www.ConvengersAssemble.com</div>
         </div>
       </nav>
+      <ProductionPortalSync />
       <main className="cv-main" id="cv-main">
         <SectionHeader num={section.num} title={section.title} sub={section.sub} onMenu={() => setNavOpen(true)} />
         {section.tabs && (

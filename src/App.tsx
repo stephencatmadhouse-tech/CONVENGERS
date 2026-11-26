@@ -63,7 +63,7 @@ import { makeSnapshot } from './domain/validation.ts';
 import { todayIso, toScopeDateText, isValidIso } from './domain/dates.ts';
 import { CommandProvider, CommandState, ActivityPatch } from './command/context.tsx';
 import { sanitizeReport } from './domain/portal.ts';
-import { portalStore, procurementStore, manpowerStore, documentStore, publicationStore, INTERNAL_STORES, clientConfigStore } from './firebase/opsStores.ts';
+import { portalStore, procurementStore, manpowerStore, documentStore, publicationStore, INTERNAL_STORES, clientConfigStore, episodeProductionStore } from './firebase/opsStores.ts';
 import { Shell, SlideKey, useHashRoute } from './command/Shell.tsx';
 import { ActivityEditor } from './command/ActivityEditor.tsx';
 import { NotificationsProvider, NotificationBell } from './command/Notifications.tsx';
@@ -1037,6 +1037,7 @@ export default function App() {
         manpower: manpowerStore.getState().items,
         documents: documentStore.getState().items,
         publications: publicationStore.getState().items,
+        episodeProduction: episodeProductionStore.getState().items,
       },
     };
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });

@@ -29,6 +29,7 @@ import {
   clientConfigStore,
   portalStore,
   dailyReportStore,
+  episodeProductionStore,
   driveFileStore,
 } from '../firebase/opsStores.ts';
 import { CORE_SYNC_COLLECTIONS } from '../firebase/firestoreData.ts';
@@ -161,6 +162,7 @@ export const SyncPanel: React.FC = () => {
     'Client experience settings': useStore(clientConfigStore),
     'Client portal records': useStore(portalStore),
     'Daily Construction Reports': useStore(dailyReportStore),
+    'Episode production details': useStore(episodeProductionStore),
   };
   const [busy, setBusy] = useState(false);
   const deviceOnly: { name: string; n: number; shared: boolean }[] = [

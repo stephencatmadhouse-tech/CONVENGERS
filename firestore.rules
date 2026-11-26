@@ -270,8 +270,26 @@ service cloud.firestore {
     // Only Project Managers / Administrators publish (write).
     match /portal/{id} {
       allow read: if resource.data.kind in ['snapshot', 'report', 'photo', 'consideration', 'update', 'event']
-        || isInternal() || isPortalDocumentReader();
+        || isInternal() || isPortalDocumentReader()
+        || (resource.data.kind == 'production' && isExternal());
       allow write: if isManager();
+    }
+
+    // --- PRODUCTION ALIGNMENT: production details for an existing episode (one document per episode ID) ---
+    // The production team (staff) plans: classification, team, character availability, checklist, proposed dates.
+    // Only directors / authorized managers confirm shoot dates, confirm the director and review construction changes.
+    match /episodeProduction/{id} {
+      function epValid() {
+        return isValidId(id) && incoming().id == id;
+      }
+      function managerOnlyKeys() {
+        return ['approval', 'directorConfirmed', 'alignedTo', 'reviewedAt', 'reviewedBy'];
+      }
+      allow read: if isInternal();
+      allow create: if epValid() && (isManager() || (isStaff() && !incoming().keys().hasAny(managerOnlyKeys())));
+      allow update: if epValid() && (isManager()
+        || (isStaff() && !incoming().diff(existing()).affectedKeys().hasAny(managerOnlyKeys())));
+      allow delete: if isManager();
     }
 
     // --- CALENDAR / PRODUCTION CALENDAR: one schedule (inspections, meetings, filming, milestones, announcements) ---

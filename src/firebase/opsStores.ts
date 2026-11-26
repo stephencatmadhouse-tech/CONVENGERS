@@ -21,6 +21,7 @@ import {
   SiteReport,
   DriveFile,
   DailyReport,
+  EpisodeProduction,
 } from '../types/index.ts';
 import { PUBLIC_PORTAL_KINDS, type PortalRecord } from '../domain/portal.ts';
 import type { ClientConfigDoc } from '../domain/journey.ts';
@@ -41,6 +42,10 @@ export const clientConfigStore = new CollectionStore<ClientConfigDoc>('clientCon
 export const portalStore = new CollectionStore<PortalRecord>('portal', byDateDesc('publishedAt'));
 /** Public client-facing dashboard: published records of the public kinds only (readable without sign-in). */
 export const publicPortalStore = new CollectionStore<PortalRecord>('portal', byDateDesc('publishedAt'), [where('kind', 'in', PUBLIC_PORTAL_KINDS)]);
+/** Production Alignment published for signed-in stakeholders (server rules: internal and external portal roles, not the public). */
+export const productionPortalStore = new CollectionStore<PortalRecord>('portal', byDateDesc('publishedAt'), [where('kind', '==', 'production')]);
+/** Production details for existing episodes — one document per episode ID (server rules: internal read; staff plan; managers approve). */
+export const episodeProductionStore = new CollectionStore<EpisodeProduction>('episodeProduction');
 
 /** Daily site reports submitted from the field (server rules: internal read; staff-level create / update of their own reports). */
 export const siteReportStore = new CollectionStore<SiteReport>('siteReports', (a, b) => (b.date + b.submittedAt).localeCompare(a.date + a.submittedAt));
@@ -55,4 +60,4 @@ export const narrativeStore = new CollectionStore<NarrativeReport>('narrativeRep
 /** Narrative preparation schedule — one document `schedule` (server rules: internal read; managers write). */
 export const narrativeConfigStore = new CollectionStore<NarrativeSchedule>('narrativeConfig');
 
-export const INTERNAL_STORES = [procurementStore, manpowerStore, documentStore, publicationStore, eventStore, siteReportStore, dailyReportStore, narrativeStore, narrativeConfigStore];
+export const INTERNAL_STORES = [procurementStore, manpowerStore, documentStore, publicationStore, eventStore, siteReportStore, dailyReportStore, narrativeStore, narrativeConfigStore, episodeProductionStore];

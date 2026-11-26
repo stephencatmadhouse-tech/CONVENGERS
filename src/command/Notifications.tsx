@@ -10,6 +10,8 @@ import React, { createContext, useContext, useEffect, useLayoutEffect, useMemo, 
 import { createPortal } from 'react-dom';
 import { Bell, CheckCheck, Settings2 } from 'lucide-react';
 import './exec.css';
+import { useProductionData } from './ProductionAlignmentAdmin.tsx';
+import { ALERT_LABEL } from '../domain/productionAlignment.ts';
 import { useCommand } from './context.tsx';
 import { Card, Empty, Banner } from './ui.tsx';
 import { useStore } from '../firebase/useStore.ts';
@@ -67,6 +69,8 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   const daily = useStore(dailyReportStore);
   const sched = useNarrativeSchedule();
   const up = useUserPrefs(user.id);
+  const prod = useProductionData();
+  const prodAlerts = useMemo(() => prod.data.alerts.map((a) => ({ ...a, label: ALERT_LABEL[a.type] })), [prod.data.alerts]);
 
   const items = useMemo(
     () =>
@@ -78,11 +82,12 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         events: events.items,
         dailyReports: daily.loaded ? daily.items : undefined,
         dailyReporter: sched.dailyReporter || null,
+        production: prodAlerts,
         viewer: { name: user.name, email: user.email, role: user.role, id: user.id },
         prefs: up.state.prefs,
         today,
       }),
-    [register, reports, pubs.items, docs.items, events.items, daily.loaded, daily.items, sched.dailyReporter, user.name, user.email, user.role, user.id, up.state.prefs, today]
+    [register, reports, pubs.items, docs.items, events.items, daily.loaded, daily.items, sched.dailyReporter, prodAlerts, user.name, user.email, user.role, user.id, up.state.prefs, today]
   );
   const readSet = useMemo(() => new Set(up.state.readKeys), [up.state.readKeys]);
   const unread = items.filter((n) => !readSet.has(n.key)).length;

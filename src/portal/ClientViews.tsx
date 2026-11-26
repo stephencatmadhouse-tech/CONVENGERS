@@ -50,6 +50,8 @@ export interface ClientCtx {
   updates: PortalRecord[];
   /** Published Production Calendar events. */
   events?: PortalRecord[];
+  /** Full published list (owner / executive / internal) — Production Alignment reads its record from here. */
+  portalItems?: PortalRecord[];
   go: (t: string, p?: string) => void;
   param?: string;
   full: boolean;

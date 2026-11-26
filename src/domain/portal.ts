@@ -155,7 +155,7 @@ export function clientStatus(s: string): ClientStatus {
   return 'Upcoming';
 }
 
-export type PortalRecordKind = 'snapshot' | 'report' | 'photo' | 'document' | 'consideration' | 'update' | 'event';
+export type PortalRecordKind = 'snapshot' | 'report' | 'photo' | 'document' | 'consideration' | 'update' | 'event' | 'production';
 
 /**
  * Published content visible on the PUBLIC client-facing dashboard (no sign-in).

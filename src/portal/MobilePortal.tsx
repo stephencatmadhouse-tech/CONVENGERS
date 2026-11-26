@@ -9,6 +9,7 @@
  */
 
 import { CalendarPage, UpcomingSchedule } from './ProductionCalendar.tsx';
+import { ProductionAlignmentPage } from './ProductionAlignment.tsx';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Home,
@@ -29,6 +30,7 @@ import {
   Share,
   CheckCircle2,
   RefreshCw,
+  Clapperboard,
 } from 'lucide-react';
 import './mobile.css';
 import { User } from '../types/index.ts';
@@ -138,6 +140,8 @@ export const MobilePortal: React.FC<Props> = ({ user, authReady, onLogin, tab, n
     <ClientTimeline {...ctx} />
   ) : tab === 'calendar' ? (
     <CalendarPage events={ctx.events || []} snap={ctx.snap} />
+  ) : tab === 'production' ? (
+    <ProductionAlignmentPage audience={audience} fullItems={ctx.portalItems} onLogin={onLogin} compact />
   ) : tab === 'gallery' ? (
     renderGallery()
   ) : tab === 'updates' ? (
@@ -187,6 +191,9 @@ export const MobilePortal: React.FC<Props> = ({ user, authReady, onLogin, tab, n
       {menu && (
         <Sheet title="Menu" onClose={() => setMenu(false)}>
           <div className="mb-menu">
+            <button type="button" onClick={() => ctx.go('production')}>
+              <Clapperboard size={20} aria-hidden /> Production Alignment
+            </button>
             <button type="button" onClick={() => ctx.go('documents')}>
               <FileDown size={20} aria-hidden /> Documents &amp; Reports
             </button>

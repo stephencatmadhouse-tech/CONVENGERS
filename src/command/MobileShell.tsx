@@ -25,6 +25,7 @@ import {
 import '../portal/mobile.css';
 import { useCommand } from './context.tsx';
 import { SECTIONS, NAV_GROUPS, renderSectionBody, resolveSection, type SlideKey } from './Shell.tsx';
+import { ProductionPortalSync } from './ProductionAlignmentAdmin.tsx';
 import { SYNC_LABEL } from './ui.tsx';
 import { NotificationBell } from './Notifications.tsx';
 import { CommandCenter, useManagementActions } from './CommandCenter.tsx';
@@ -112,6 +113,7 @@ export const MobileShell: React.FC<{ renderSlide: (k: SlideKey) => React.ReactNo
         </div>
       )}
 
+      <ProductionPortalSync />
       <main className="mb-main" ref={mainRef}>
         {section.id === 'command' ? (
           <CommandCenter />

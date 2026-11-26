@@ -40,6 +40,7 @@ export const NOTIF_TYPES: { id: NotificationType; label: string; rule: string }[
   { id: 'verification', label: 'Awaiting verification', rule: 'Inspection, date confirmation or report / client sign-off waiting more than 3 days (Medium)' },
   { id: 'turnover', label: 'Handover / turnover', rule: 'Handover or turnover within 30 days (High) or 60 days (Medium)' },
   { id: 'document', label: 'New document', rule: 'Document uploaded by someone else in the last 3 days (Low)' },
+  { id: 'production', label: 'Production schedule advisory', rule: 'Production Alignment: construction milestone or shoot approaching, construction delayed or moved, character availability, director approval or team assignment pending, documentation pending (directors, managers and the production team)' },
   { id: 'announcement', label: 'Important announcement', rule: 'Project announcements such as the holiday work stoppage, from 14 days before until work resumes (High)' },
   { id: 'dcrApproval', label: 'Daily report for approval', rule: 'A Daily Construction Report submitted or resubmitted and waiting for review or approval (High) — administrators, directors and managers' },
   { id: 'dcrUpdate', label: 'Daily report updated', rule: 'A submitted or approved Daily Construction Report changed by someone else in the last 3 days (Medium)' },
@@ -117,6 +118,8 @@ export interface NotificationInput {
   publications?: Publication[];
   documents?: ProjectDocument[];
   events?: CalendarEvent[];
+  /** Production Alignment advisories (derived from episodes, construction milestones and production details). */
+  production?: { key: string; type: string; severity: 'critical' | 'warn' | 'info'; episodeId: string; episode: string; impact: string; action: string; date?: string; label: string }[];
   /** Daily Construction Reports and the person required to submit them (missing-report reminders). */
   dailyReports?: DailyReport[];
   dailyReporter?: DailyReporter | null;
@@ -389,6 +392,22 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
         route: 'command',
       })
     );
+
+  // Production Alignment advisories — directors / managers (all) and the production team
+  if (input.production && (scope === 'all' || input.viewer.role === 'production')) {
+    input.production.forEach((a) =>
+      add({
+        key: a.key,
+        type: 'production',
+        priority: a.severity === 'critical' ? 'HIGH' : a.severity === 'warn' ? 'MEDIUM' : 'LOW',
+        title: `${a.label} · ${a.episode}`,
+        detail: a.impact,
+        date: a.date,
+        action: a.action,
+        route: `palign/episodes/id=${encodeURIComponent(a.episodeId)}`,
+      })
+    );
+  }
 
   // Daily Construction Report workflow
   if (input.dailyReports) {

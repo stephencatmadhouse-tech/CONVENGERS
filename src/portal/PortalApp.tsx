@@ -13,6 +13,7 @@
  */
 
 import { CalendarPage } from './ProductionCalendar.tsx';
+import { ProductionAlignmentPage } from './ProductionAlignment.tsx';
 import { clientEvents, recentUpdates } from '../domain/productionCalendar.ts';
 import React, { useEffect, useMemo, useState } from 'react';
 import { BrandHeader } from '../components/BrandHeader.tsx';
@@ -36,6 +37,7 @@ import {
   Flag,
   CalendarCheck,
   CalendarDays,
+  Clapperboard,
   Images,
   MessageSquareWarning,
   FileDown,
@@ -53,6 +55,7 @@ const TAB_ICONS: Record<string, LucideIcon> = {
   journey: Box,
   timeline: ChartGantt,
   calendar: CalendarDays,
+  production: Clapperboard,
   gallery: Images,
   updates: Megaphone,
   documents: FileDown,
@@ -65,6 +68,7 @@ const TABS = [
   { id: 'journey', label: '3D Construction Journey' },
   { id: 'timeline', label: 'Project Timeline' },
   { id: 'calendar', label: 'Production Calendar' },
+  { id: 'production', label: 'Production Alignment' },
   { id: 'gallery', label: 'Progress Gallery' },
   { id: 'updates', label: 'Updates & Announcements' },
   { id: 'documents', label: 'Documents & Reports' },
@@ -134,7 +138,7 @@ export const PortalApp: React.FC<{ user: User; authReady: boolean; onLogin: () =
   const snap = byKind.snapshot?.content as PortalSnapshot | undefined;
   // schedule changes (added / rescheduled / postponed / cancelled) in the last 14 days
   const calUpdates = useMemo(() => recentUpdates(clientEvents(byKind.events), todayIso()).length, [byKind.events]);
-  const ctx = { snap, snapRec: byKind.snapshot, ...byKind, go, param, full, onLogin };
+  const ctx = { snap, snapRec: byKind.snapshot, ...byKind, go, param, full, onLogin, audience, portalItems: full ? portal.items : undefined };
   const isPhone = useIsPhone();
   if (isPhone) {
     const unavailable =
@@ -247,6 +251,7 @@ export const PortalApp: React.FC<{ user: User; authReady: boolean; onLogin: () =
                   ))}
                 {tab === 'timeline' && <ClientTimeline {...ctx} />}
                 {tab === 'calendar' && <CalendarPage events={byKind.events} snap={snap} />}
+                {tab === 'production' && <ProductionAlignmentPage audience={audience} fullItems={full ? portal.items : undefined} onLogin={onLogin} />}
                 {tab === 'gallery' && <Gallery {...ctx} />}
                 {tab === 'updates' && <ClientUpdates {...ctx} />}
                 {tab === 'documents' && <ClientDocuments {...ctx} />}
