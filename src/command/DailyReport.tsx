@@ -30,6 +30,9 @@ import {
   Pencil,
   AlertTriangle,
   ClipboardList,
+  CalendarDays,
+  Copy,
+  Share2,
   Image as ImageIcon,
 } from 'lucide-react';
 import './dailyReport.css';
@@ -40,7 +43,7 @@ import { dailyReportStore, siteReportStore, publicationStore } from '../firebase
 import { newId } from '../firebase/collectionStore.ts';
 import { firestoreData } from '../firebase/firestoreData.ts';
 import { isConstructionItem, CONSTRUCTION_CATEGORIES } from '../domain/categories.ts';
-import { fmtDate, fmtTime, isValidIso } from '../domain/dates.ts';
+import { addDays, fmtDate, fmtTime, isValidIso, workingDaysBetween } from '../domain/dates.ts';
 import {
   DR_PROJECT,
   DR_STATUS_LABEL,
@@ -54,15 +57,137 @@ import {
   canEditReport,
   canReview,
   reviewActions,
+  MANPOWER_ROLES,
+  DEFAULT_ROLES,
+  OVERALL_STATUSES,
+  scheduleStatus,
+  withRoleManpower,
+  linesOf,
+  manpowerRolesOf,
+  dailyUpdateText,
+  accomplishedItems,
+  materialItems,
+  concernItems,
 } from '../domain/dailyReport.ts';
 import { progressEditable } from '../domain/siteReport.ts';
 import { newFileId, uploadToDrive, validateFile, driveFileUrl, driveObjectUrl, finishPendingRecords, driveStatus, isRecordPending } from '../drive/driveClient.ts';
 import { SecureImg } from '../drive/SecureMedia.tsx';
-import type { DailyReport, DailyReportStatus, DailyReportPhoto, DailyReportActivity, Publication } from '../types/index.ts';
+import type { DailyReport, DailyReportStatus, DailyReportPhoto, DailyReportActivity, Publication, DailyOverallStatus } from '../types/index.ts';
 import { LOGO_SVG } from '../constants/assets.ts';
 import { plural } from '../utils/plural.ts';
 
 const draftKey = (uid: string) => `bb_dcr_draft_${uid}`;
+
+/** Older reports (skilled / general / … manpower, no B-rolls or next-day plan) open in the Daily Update layout. */
+function normalizeReport(r: DailyReport): DailyReport {
+  const roles = r.manpowerRoles && r.manpowerRoles.length ? r.manpowerRoles : manpowerRolesOf(r);
+  return {
+    ...r,
+    manpowerRoles: roles.length ? roles : DEFAULT_ROLES.map((role) => ({ role, count: 0 })),
+    bRolls: r.bRolls || [],
+    nextDayPlan: r.nextDayPlan || [],
+  };
+}
+
+/** One input per line; Enter adds a line, pasting several lines splits them. */
+const BulletList: React.FC<{ items: string[]; onChange: (items: string[]) => void; disabled?: boolean; label: string; placeholder?: string }> = ({ items, onChange, disabled, label, placeholder }) => {
+  const rows = items.length ? items : [''];
+  const ref = useRef<HTMLUListElement | null>(null);
+  const focus = (i: number) => setTimeout(() => (ref.current?.querySelectorAll('input')[i] as HTMLInputElement | undefined)?.focus(), 0);
+  const put = (i: number, v: string) => {
+    const parts = v.split(/\n+/);
+    const next = [...rows];
+    next.splice(i, 1, ...parts);
+    onChange(next.filter((x, j) => x.trim() || j === i));
+  };
+  return (
+    <ul className="dr-bullets" ref={ref}>
+      {rows.map((x, i) => (
+        <li key={i}>
+          <span className="dr-bullet" aria-hidden>
+            •
+          </span>
+          <input
+            className="cv-input"
+            aria-label={`${label} ${i + 1}`}
+            value={x}
+            placeholder={i === 0 ? placeholder : undefined}
+            disabled={disabled}
+            onChange={(e) => put(i, e.target.value)}
+            onPaste={(e) => {
+              const t = e.clipboardData.getData('text');
+              if (t.includes('\n')) {
+                e.preventDefault();
+                const lines = t.split(/\n+/).map((l) => l.replace(/^[\s•\-*]+/, '').trim()).filter(Boolean);
+                const next = [...rows];
+                next.splice(i, 1, ...(x.trim() ? [x, ...lines] : lines));
+                onChange(next.filter((v) => v.trim()));
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                const next = [...rows];
+                next.splice(i + 1, 0, '');
+                onChange(next);
+                focus(i + 1);
+              } else if (e.key === 'Backspace' && !x && rows.length > 1) {
+                e.preventDefault();
+                onChange(rows.filter((_, j) => j !== i));
+                focus(Math.max(0, i - 1));
+              }
+            }}
+          />
+          {(rows.length > 1 || x) && !disabled && (
+            <button type="button" className="cv-btn ghost sm" aria-label={`Remove ${label.toLowerCase()} ${i + 1}`} onClick={() => onChange(rows.filter((_, j) => j !== i))}>
+              <Trash2 size={14} />
+            </button>
+          )}
+        </li>
+      ))}
+      {!disabled && (
+        <li className="dr-bullets-add">
+          <button type="button" className="cv-linkbtn" onClick={() => (onChange([...rows, '']), focus(rows.length))}>
+            + Add line
+          </button>
+        </li>
+      )}
+    </ul>
+  );
+};
+
+/** Copy the report as the "Daily Update" message, or share it (with photos where the device supports it). */
+async function copyDailyUpdate(r: DailyReport): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(dailyUpdateText(r));
+    return true;
+  } catch {
+    return false;
+  }
+}
+async function shareDailyUpdate(r: DailyReport): Promise<'shared' | 'copied' | 'failed'> {
+  const text = dailyUpdateText(r);
+  const nav = navigator as Navigator & { canShare?: (d: unknown) => boolean };
+  if (nav.share) {
+    try {
+      const files: File[] = [];
+      for (const p of r.photos.filter((x) => x.uploadStatus === 'uploaded').slice(0, 10)) {
+        try {
+          const blob = await (await fetch(await driveObjectUrl(p.fileId))).blob();
+          files.push(new File([blob], p.fileName || `${p.fileId}.jpg`, { type: blob.type || 'image/jpeg' }));
+        } catch {
+          // share without this photo
+        }
+      }
+      const data = files.length && nav.canShare?.({ files }) ? { text, files } : { text };
+      await nav.share(data);
+      return 'shared';
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return 'shared';
+    }
+  }
+  return (await copyDailyUpdate(r)) ? 'copied' : 'failed';
+}
 const nowIso = () => new Date().toISOString();
 
 export const DrStatus: React.FC<{ s: DailyReportStatus; local?: boolean }> = ({ s, local }) => (
@@ -98,7 +223,7 @@ export const DailyReports: React.FC<{ tab?: string }> = ({ tab }) => {
 // FORM
 // =====================================================================
 const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
-  const { register, today, user, canEdit, actions, dataSync } = useCommand();
+  const { register, today, user, canEdit, actions, dataSync, metrics } = useCommand();
   const store = useStore(dailyReportStore);
   const [rep, setRep] = useState<DailyReport>(() => blankDailyReport(today, user));
   const files = useRef<Record<string, File>>({});
@@ -127,7 +252,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
         setErrors(['This report can no longer be edited (it is under review or approved).']);
         return;
       }
-      setRep(structuredClone(r));
+      setRep(normalizeReport(structuredClone(r)));
       return;
     }
     loaded.current = true;
@@ -146,7 +271,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
                   error: 'Select this photo again (it was not uploaded before the page closed).',
                 },
           );
-          setRep(saved.rep);
+          setRep(normalizeReport(saved.rep));
           setRestored(true);
         }
       }
@@ -175,6 +300,23 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
       ...r,
       activities: r.activities.map((a, j) => (j === i ? { ...a, ...p } : a)),
     }));
+  const setRole = (i: number, p: Partial<{ role: string; count: number }>) =>
+    setRep((r) => ({ ...r, manpowerRoles: (r.manpowerRoles || []).map((x, j) => (j === i ? { ...x, ...p } : x)) }));
+  const addWork = () =>
+    set({ activities: [...rep.activities, { activityId: '', category: '', name: '', workDescription: '', accomplishment: '', progress: null, workStatus: 'In progress', remarks: '' }] });
+  const autoStatus = scheduleStatus(metrics.actualPct, metrics.plannedPct, today);
+  /** Next working day's tracker activities: "Continue …" for work already under way. */
+  const suggestPlan = () => {
+    let d = addDays(rep.date || today, 1);
+    for (let k = 0; k < 10 && workingDaysBetween(d, d) !== 1; k++) d = addDays(d, 1);
+    const items = acts
+      .filter((x) => x.status !== 'Completed' && x.start && x.start <= d && (x.finish || x.start) >= d)
+      .map((x) => (x.start! < d && x.progress > 0 ? `Continue ${x.name.charAt(0).toLowerCase()}${x.name.slice(1)}.` : `${x.name}.`));
+    const have = new Set((rep.nextDayPlan || []).map((x) => x.toLowerCase()));
+    const add = items.filter((x) => !have.has(x.toLowerCase()));
+    set({ nextDayPlan: [...(rep.nextDayPlan || []), ...add] });
+    if (!add.length) setErrors([`No other tracker activities are scheduled for ${fmtDate(d)}.`]);
+  };
   const setPhoto = (fileId: string, p: Partial<DailyReportPhoto>) =>
     setRep((r) => ({
       ...r,
@@ -287,7 +429,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
     return out.filter((p) => (seen.has(p.fileId) ? false : (seen.add(p.fileId), true)));
   };
 
-  const save = (r: DailyReport) => dailyReportStore.put({ ...r, updatedAt: nowIso(), updatedBy: user.name });
+  const save = (r: DailyReport) => dailyReportStore.put(withRoleManpower({ ...r, overallStatus: r.overallStatus || autoStatus, updatedAt: nowIso(), updatedBy: user.name }));
 
   const saveDraft = async () => {
     if (!isValidIso(rep.date)) return setErrors(['Choose the reporting date.']);
@@ -468,7 +610,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
       )}
 
       {/* REPORT INFORMATION */}
-      <Card title="Report information" note={`${rep.reference} · ${DR_STATUS_LABEL[rep.status]}`}>
+      <Card title="📅 Report information" note={`${rep.reference} · ${DR_STATUS_LABEL[rep.status]}`}>
         <div className="dr-grid">
           <Field label="Project">
             <select className="cv-select" value={rep.projectId} disabled>
@@ -514,218 +656,124 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
         </div>
       </Card>
 
-      {/* CONSTRUCTION ACTIVITIES */}
-      <Card
-        title={`Construction accomplishments · ${rep.activities.length}`}
-        note="Reported progress is recorded for review. It changes the Master Project Tracker only after a manager approves and applies it."
-        actions={
-          <button
-            type="button"
-            className="cv-btn sm"
-            disabled={locked}
-            onClick={() =>
-              set({
-                activities: [
-                  ...rep.activities,
-                  {
-                    activityId: '',
-                    category: '',
-                    name: '',
-                    workDescription: '',
-                    accomplishment: '',
-                    progress: null,
-                    workStatus: 'In progress',
-                    remarks: '',
-                  },
-                ],
-              })
-            }
-          >
-            <Plus size={14} aria-hidden /> Add Activity
-          </button>
-        }
-      >
-        {!rep.activities.length && <Empty>No activities yet — add the work done today.</Empty>}
-        {rep.activities.map((a, i) => {
-          const r = register.find((x) => x.id === a.activityId);
-          return (
-            <div key={i} className="dr-row-card">
-              <div className="dr-row-h">
-                <b>Activity {i + 1}</b>
-                <button
-                  type="button"
-                  className="cv-btn ghost sm"
-                  disabled={locked}
-                  aria-label={`Delete activity ${i + 1}`}
-                  onClick={() =>
-                    set({
-                      activities: rep.activities.filter((_, j) => j !== i),
-                    })
-                  }
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
-              <div className="dr-grid">
-                <Field label="Activity *" className="dr-span2">
-                  <select
-                    className="cv-select"
-                    value={a.activityId}
-                    disabled={locked}
-                    onChange={(e) => {
-                      const x = register.find((y) => y.id === e.target.value);
-                      setAct(i, {
-                        activityId: e.target.value,
-                        name: x?.name || '',
-                        category: x?.category || '',
-                        progress: x && progressEditable(x) ? x.progress : null,
-                      });
-                    }}
-                  >
-                    <option value="">Choose an activity</option>
-                    {acts.map((x) => (
-                      <option key={x.id} value={x.id}>
-                        {x.name} · {x.workstream}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Construction category">
-                  <select className="cv-select" value={a.category} disabled={locked} onChange={(e) => setAct(i, { category: e.target.value })}>
-                    <option value="">—</option>
-                    {CONSTRUCTION_CATEGORIES.map((c) => (
-                      <option key={c}>{c}</option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Work status">
-                  <select
-                    className="cv-select"
-                    value={a.workStatus}
-                    disabled={locked}
-                    onChange={(e) =>
-                      setAct(i, {
-                        workStatus: e.target.value as DailyReportActivity['workStatus'],
-                      })
-                    }
-                  >
-                    {WORK_STATUSES.map((w) => (
-                      <option key={w}>{w}</option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Work description" className="dr-span2">
-                  <textarea
-                    className="cv-textarea"
-                    rows={2}
-                    value={a.workDescription}
-                    disabled={locked}
-                    onChange={(e) => setAct(i, { workDescription: e.target.value })}
-                  />
-                </Field>
-                <Field label="Actual accomplishment" className="dr-span2">
-                  <textarea
-                    className="cv-textarea"
-                    rows={2}
-                    value={a.accomplishment}
-                    disabled={locked}
-                    placeholder="What was completed today (quantities, areas)"
-                    onChange={(e) => setAct(i, { accomplishment: e.target.value })}
-                  />
-                </Field>
-                {r && progressEditable(r) ? (
-                  <Field
-                    label={`Reported progress: ${a.progress ?? r.progress}%`}
-                    hint={`Recorded in the tracker: ${r.progress}% · planned today ${r.plannedProgress}%`}
-                    className="dr-span2"
-                  >
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      step={5}
-                      className="dr-range"
-                      value={a.progress ?? r.progress}
-                      disabled={locked}
-                      onChange={(e) => setAct(i, { progress: Number(e.target.value) })}
-                      aria-label="Reported progress"
-                    />
-                  </Field>
-                ) : (
-                  a.activityId && (
-                    <div className="dr-span2 cv-dim" style={{ fontSize: 13 }}>
-                      This item is tracked by status, not percentage.
-                    </div>
-                  )
-                )}
-                <Field label="Remarks" className="dr-span2">
-                  <input className="cv-input" value={a.remarks} disabled={locked} onChange={(e) => setAct(i, { remarks: e.target.value })} />
-                </Field>
-              </div>
-            </div>
-          );
-        })}
-      </Card>
-
-      {/* MANPOWER */}
-      <Card title={`Manpower · total ${manpowerTotal(rep)}`}>
-        <div className="dr-grid four">
-          {(
-            [
-              ['skilled', 'Skilled workers'],
-              ['general', 'General workers'],
-              ['subcontractor', 'Subcontractor personnel'],
-              ['other', 'Other personnel'],
-            ] as const
-          ).map(([k, l]) => (
-            <Field key={k} label={l}>
+      {/* 👷 MANPOWER ATTENDANCE */}
+      <Card title={`👷 Manpower Attendance · ${manpowerTotal(rep)}`} note="Enter the number present for each role. Roles with 0 are left out of the report.">
+        <datalist id="dr-roles">
+          {MANPOWER_ROLES.map((r) => (
+            <option key={r} value={r} />
+          ))}
+        </datalist>
+        <div className="dr-roles">
+          {(rep.manpowerRoles || []).map((x, i) => (
+            <div key={i} className="dr-role">
               <input
                 type="number"
                 inputMode="numeric"
                 min={0}
-                className="cv-input"
-                value={rep.manpower[k]}
+                className="cv-input dr-role-n"
+                aria-label={`Number of ${x.role || 'personnel'}`}
+                value={x.count}
                 disabled={locked}
-                onChange={(e) =>
-                  set({
-                    manpower: {
-                      ...rep.manpower,
-                      [k]: Math.max(0, Math.round(Number(e.target.value) || 0)),
-                    },
-                  })
-                }
+                onChange={(e) => setRole(i, { count: Math.max(0, Math.round(Number(e.target.value) || 0)) })}
               />
-            </Field>
+              <input className="cv-input" list="dr-roles" aria-label="Role" placeholder="Role (e.g. Foreman)" value={x.role} disabled={locked} onChange={(e) => setRole(i, { role: e.target.value })} />
+              <button type="button" className="cv-btn ghost sm" disabled={locked} aria-label={`Remove ${x.role || 'role'}`} onClick={() => set({ manpowerRoles: (rep.manpowerRoles || []).filter((_, j) => j !== i) })}>
+                <Trash2 size={15} />
+              </button>
+            </div>
           ))}
         </div>
+        <button type="button" className="cv-btn sm" disabled={locked} onClick={() => set({ manpowerRoles: [...(rep.manpowerRoles || []), { role: '', count: 0 }] })}>
+          <Plus size={14} aria-hidden /> Add Role
+        </button>
       </Card>
 
-      {/* MATERIALS */}
+      {/* 🏗️ WORK ACCOMPLISHED TODAY */}
       <Card
-        title={`Materials and deliveries · ${rep.materials.length}`}
+        title={`🏗️ Work Accomplished Today · ${rep.activities.length}`}
+        note="One line per item. Link an item to the Master Project Tracker to report its progress (applied to the tracker only after a manager approves)."
         actions={
-          <button
-            type="button"
-            className="cv-btn sm"
-            disabled={locked}
-            onClick={() =>
-              set({
-                materials: [
-                  ...rep.materials,
-                  {
-                    description: '',
-                    quantity: '',
-                    unit: '',
-                    deliveryDate: rep.date,
-                    supplier: '',
-                    remarks: '',
-                  },
-                ],
-              })
-            }
-          >
-            <Plus size={14} aria-hidden /> Add Material
+          <button type="button" className="cv-btn sm" disabled={locked} onClick={addWork}>
+            <Plus size={14} aria-hidden /> Add Item
           </button>
+        }
+      >
+        {!rep.activities.length && <Empty>No work items yet — add what was accomplished today.</Empty>}
+        <ul className="dr-work">
+          {rep.activities.map((a, i) => {
+            const r = register.find((x) => x.id === a.activityId);
+            return (
+              <li key={i} className="dr-work-i">
+                <span className="dr-bullet" aria-hidden>
+                  •
+                </span>
+                <div className="dr-work-b">
+                  <input
+                    className="cv-input"
+                    aria-label={`Work item ${i + 1}`}
+                    placeholder="e.g. Plastering works."
+                    value={a.workDescription || (a.activityId ? '' : a.name)}
+                    disabled={locked}
+                    onChange={(e) => setAct(i, a.activityId ? { workDescription: e.target.value } : { workDescription: e.target.value, name: e.target.value })}
+                  />
+                  <div className="dr-work-d">
+                    <select
+                      className="cv-select"
+                      aria-label={`Tracker activity for item ${i + 1}`}
+                      value={a.activityId}
+                      disabled={locked}
+                      onChange={(e) => {
+                        const x = register.find((y) => y.id === e.target.value);
+                        const text = a.workDescription || a.name;
+                        setAct(i, x ? { activityId: x.id, name: x.name, category: x.category || '', progress: progressEditable(x) ? x.progress : null, workDescription: text } : { activityId: '', name: text, category: '', progress: null, workDescription: text });
+                      }}
+                    >
+                      <option value="">Not linked to the tracker</option>
+                      {acts.map((x) => (
+                        <option key={x.id} value={x.id}>
+                          {x.name} · {x.workstream}
+                        </option>
+                      ))}
+                    </select>
+                    {r && progressEditable(r) && (
+                      <label className="dr-work-p">
+                        <span>
+                          Progress {a.progress ?? r.progress}% <em className="cv-dim">(tracker {r.progress}%)</em>
+                        </span>
+                        <input type="range" min={0} max={100} step={5} className="dr-range" value={a.progress ?? r.progress} disabled={locked} onChange={(e) => setAct(i, { progress: Number(e.target.value) })} aria-label="Reported progress" />
+                      </label>
+                    )}
+                    {a.activityId && (
+                      <select className="cv-select" aria-label={`Status of item ${i + 1}`} value={a.workStatus} disabled={locked} onChange={(e) => setAct(i, { workStatus: e.target.value as DailyReportActivity['workStatus'] })}>
+                        {WORK_STATUSES.map((w) => (
+                          <option key={w}>{w}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                </div>
+                <button type="button" className="cv-btn ghost sm" disabled={locked} aria-label={`Delete work item ${i + 1}`} onClick={() => set({ activities: rep.activities.filter((_, j) => j !== i) })}>
+                  <Trash2 size={15} />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </Card>
+
+      {/* 📦 MATERIALS & EQUIPMENT */}
+      <Card
+        title={`📦 Materials & Equipment · ${rep.materials.length + rep.equipment.length}`}
+        note="Leave empty when there were none — the report shows N/A."
+        actions={
+          <>
+            <button type="button" className="cv-btn sm" disabled={locked} onClick={() => set({ materials: [...rep.materials, { description: '', quantity: '', unit: '', deliveryDate: rep.date, supplier: '', remarks: '' }] })}>
+              <Plus size={14} aria-hidden /> Add Material
+            </button>
+            <button type="button" className="cv-btn sm" disabled={locked} onClick={() => set({ equipment: [...rep.equipment, { description: '', quantity: '1', status: 'Operational', remarks: '' }] })}>
+              <Plus size={14} aria-hidden /> Add Equipment
+            </button>
+          </>
         }
       >
         {rep.materials.map((m, i) => (
@@ -812,34 +860,6 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
             </button>
           </div>
         ))}
-      </Card>
-
-      {/* EQUIPMENT */}
-      <Card
-        title={`Equipment · ${rep.equipment.length}`}
-        actions={
-          <button
-            type="button"
-            className="cv-btn sm"
-            disabled={locked}
-            onClick={() =>
-              set({
-                equipment: [
-                  ...rep.equipment,
-                  {
-                    description: '',
-                    quantity: '1',
-                    status: 'Operational',
-                    remarks: '',
-                  },
-                ],
-              })
-            }
-          >
-            <Plus size={14} aria-hidden /> Add Equipment
-          </button>
-        }
-      >
         {rep.equipment.map((q, i) => (
           <div key={i} className="dr-row-card">
             <div className="dr-grid">
@@ -904,28 +924,76 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
         ))}
       </Card>
 
-      {/* SITE CONDITIONS */}
-      <Card title="Site conditions and issues">
-        <div className="dr-grid">
-          {(
-            [
-              ['observations', 'Site observations'],
-              ['issues', 'Issues encountered'],
-              ['delays', 'Delays'],
-              ['safety', 'Safety concerns'],
-              ['corrective', 'Corrective actions'],
-              ['recommendations', 'Recommendations'],
-            ] as const
-          ).map(([k, l]) => (
-            <Field key={k} label={l}>
-              <textarea className="cv-textarea" rows={2} value={rep.site[k]} disabled={locked} onChange={(e) => set({ site: { ...rep.site, [k]: e.target.value } })} />
-            </Field>
-          ))}
+      {/* ⚠️ SITE ISSUES / CONCERNS */}
+      <Card title="⚠️ Site Issues / Concerns" note="One issue per line. Leave empty when there were none.">
+        <BulletList items={linesOf(rep.site.issues)} disabled={locked} label="Site issue" placeholder="e.g. Late delivery of plywood" onChange={(xs) => set({ site: { ...rep.site, issues: xs.join('\n') } })} />
+        <details className="dr-more" open={!!(rep.site.observations || rep.site.delays || rep.site.safety || rep.site.corrective || rep.site.recommendations)}>
+          <summary>More site notes (optional)</summary>
+          <div className="dr-grid">
+            {(
+              [
+                ['observations', 'Site observations'],
+                ['delays', 'Delays'],
+                ['safety', 'Safety concerns'],
+                ['corrective', 'Corrective actions'],
+                ['recommendations', 'Recommendations'],
+              ] as const
+            ).map(([k, l]) => (
+              <Field key={k} label={l}>
+                <textarea className="cv-textarea" rows={2} value={rep.site[k]} disabled={locked} onChange={(e) => set({ site: { ...rep.site, [k]: e.target.value } })} />
+              </Field>
+            ))}
+          </div>
+        </details>
+      </Card>
+
+      {/* 📸 B-ROLLS / VIDEOS */}
+      <Card title="📸 B-Rolls / Videos" note="What was filmed today (one item per line).">
+        <BulletList items={rep.bRolls || []} disabled={locked} label="B-roll" placeholder="e.g. Backfilling works." onChange={(xs) => set({ bRolls: xs })} />
+      </Card>
+
+      {/* 📋 NEXT DAY WORK PLAN */}
+      <Card
+        title="📋 Next Day Work Plan"
+        note="One item per line."
+        actions={
+          <button type="button" className="cv-btn sm" disabled={locked} onClick={suggestPlan} title="Adds the tracker activities scheduled for the next working day">
+            <CalendarDays size={14} aria-hidden /> Suggest from Schedule
+          </button>
+        }
+      >
+        <BulletList items={rep.nextDayPlan || []} disabled={locked} label="Plan item" placeholder="e.g. Continue plastering works." onChange={(xs) => set({ nextDayPlan: xs })} />
+      </Card>
+
+      {/* 📊 OVERALL STATUS */}
+      <Card title="📊 Overall Status" note="Taken from the schedule (Gantt chart: planned vs actual progress). Change it only if the site assessment differs.">
+        <div className="dr-status-row">
+          <select
+            className="cv-select"
+            aria-label="Overall status"
+            value={(rep.overallStatus || autoStatus).value}
+            disabled={locked}
+            onChange={(e) => {
+              const v = e.target.value as DailyOverallStatus['value'];
+              set({ overallStatus: v === autoStatus.value ? autoStatus : { value: v, basis: 'Site assessment', asOf: today } });
+            }}
+          >
+            {OVERALL_STATUSES.map((v) => (
+              <option key={v} value={v}>
+                {v.toUpperCase()}
+              </option>
+            ))}
+          </select>
+          <span className="cv-dim">
+            {rep.overallStatus?.basis === 'Site assessment'
+              ? `Site assessment · the schedule shows ${autoStatus.value.toLowerCase()} (actual ${autoStatus.actualPct}% vs planned ${autoStatus.plannedPct}%)`
+              : `Based on Gantt chart · actual ${autoStatus.actualPct}% vs planned ${autoStatus.plannedPct}% as of ${fmtDate(today)}`}
+          </span>
         </div>
       </Card>
 
       {/* PHOTOS */}
-      <Card title={`Photo documentation · ${rep.photos.length}`} note="Photos are stored in the project's Google Drive folder and linked to this report.">
+      <Card title={`📸 Site Photos · ${rep.photos.length}`} note="Photos are stored in the project's Google Drive folder and linked to this report.">
         <div className="dr-photo-btns">
           <label className={`cv-btn ${locked ? 'disabled' : ''}`}>
             <Camera size={16} aria-hidden /> Take Photo
@@ -1081,6 +1149,15 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
         <button type="button" className="cv-btn" onClick={() => setPreview(true)} disabled={!!busy}>
           <Eye size={16} aria-hidden /> Preview Report
         </button>
+        <button
+          type="button"
+          className="cv-btn"
+          disabled={!!busy}
+          onClick={async () => ((await copyDailyUpdate(withRoleManpower({ ...rep, overallStatus: rep.overallStatus || autoStatus }))) ? actions.toast('Daily Update copied — paste it into Viber, Messenger or e-mail') : setErrors(['Copying is not available in this browser.']))}
+          title="Copy the report as the Daily Update message"
+        >
+          <Copy size={16} aria-hidden /> Copy Daily Update
+        </button>
         <button type="button" className="cv-btn primary" onClick={submit} disabled={!!busy}>
           <Send size={16} aria-hidden /> {busy === 'submit' ? 'Submitting…' : 'Submit Report'}
         </button>
@@ -1088,7 +1165,7 @@ const ReportForm: React.FC<{ editId?: string }> = ({ editId }) => {
 
       {preview && (
         <Modal title={`Preview · ${rep.reference}`} sub="Exactly what reviewers will see" onClose={() => setPreview(false)} width={980}>
-          <DailyReportDocument r={rep} photoSrc={(p) => photoUrl(p)} />
+          <DailyReportDocument r={withRoleManpower({ ...rep, overallStatus: rep.overallStatus || autoStatus })} photoSrc={(p) => photoUrl(p)} />
         </Modal>
       )}
     </div>
@@ -1345,7 +1422,7 @@ const ReportDetail: React.FC<{ r: DailyReport; onBack: () => void }> = ({ r, onB
         }),
     );
     setBusy(false);
-    actions.printElement(() => <DailyReportDocument r={r} photoSrc={(p) => urls[p.fileId]} print />, `${r.reference} — Daily Construction Report`);
+    actions.printElement(() => <DailyReportDocument r={r} photoSrc={(p) => urls[p.fileId]} print />, `${r.reference} — Convengers Bahay Build Daily Update`);
   };
 
   return (
@@ -1359,6 +1436,29 @@ const ReportDetail: React.FC<{ r: DailyReport; onBack: () => void }> = ({ r, onB
         {canEditReport(r, user) && (
           <button type="button" className="cv-btn sm" onClick={() => actions.navigate(`site/new/${r.id}`)}>
             <Pencil size={14} aria-hidden /> Edit
+          </button>
+        )}
+        <button
+          type="button"
+          className="cv-btn sm"
+          onClick={async () => ((await copyDailyUpdate(r)) ? actions.toast('Daily Update copied — paste it into Viber, Messenger or e-mail') : setNote('Copying is not available in this browser.'))}
+        >
+          <Copy size={14} aria-hidden /> Copy Daily Update
+        </button>
+        {typeof navigator !== 'undefined' && 'share' in navigator && (
+          <button
+            type="button"
+            className="cv-btn sm"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              const res = await shareDailyUpdate(r);
+              setBusy(false);
+              if (res === 'copied') actions.toast('Daily Update copied');
+              else if (res === 'failed') setNote('Sharing is not available on this device.');
+            }}
+          >
+            <Share2 size={14} aria-hidden /> Share
           </button>
         )}
         <button type="button" className="cv-btn primary sm" onClick={exportPdf} disabled={busy}>
@@ -1434,163 +1534,127 @@ export const DailyReportDocument: React.FC<{
   const NP = <span className="dr-np">Not provided</span>;
   const t = (s?: string) => (s && s.trim() ? s : NP);
   const site = r.site;
+  const Bullets: React.FC<{ items: string[] }> = ({ items }) => (
+    <ul className="dr-doc-bul">
+      {(items.length ? items : ['N/A']).map((x, i) => (
+        <li key={i} className={items.length ? '' : 'na'}>
+          {x}
+        </li>
+      ))}
+    </ul>
+  );
+  const team = manpowerRolesOf(r);
+  const notes = (['observations', 'corrective', 'recommendations'] as const).filter((k) => site[k].trim());
+  const st = r.overallStatus;
+  const longDate = new Date(`${r.date}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   return (
-    <article className={`dr-doc ${print ? 'print' : ''}`}>
+    <article className={`dr-doc dr-du ${print ? 'print' : ''}`}>
       <header className="dr-doc-h">
         <img src={LOGO_SVG} alt="Convengers" />
         <div>
-          <div className="dr-doc-k">Convengers · Bahay Build</div>
-          <h1>Daily Construction Report</h1>
+          <div className="dr-doc-k">Convengers Bahay Build</div>
+          <h1>Daily Update</h1>
           <div className="dr-doc-ref">
             {r.reference} · {DR_STATUS_LABEL[r.status]}
           </div>
         </div>
       </header>
-      <section>
-        <h2>Project information</h2>
-        <dl className="dr-doc-grid">
-          <dt>Project</dt>
-          <dd>
-            {r.projectName} ({r.projectId})
-          </dd>
-          <dt>Reporting date</dt>
-          <dd>{fmtDate(r.date)}</dd>
-          <dt>Weather</dt>
-          <dd>{t(r.weather)}</dd>
-          <dt>Site location</dt>
-          <dd>{t(r.siteLocation)}</dd>
-          <dt>Prepared by</dt>
-          <dd>{r.preparedBy}</dd>
-          <dt>Submitted</dt>
-          <dd>
-            {r.submittedAt
-              ? `${fmtDate(r.submittedAt.slice(0, 10))} ${new Date(r.submittedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' })}`
-              : 'Not yet submitted'}
-          </dd>
-        </dl>
+      <section className="dr-du-date">
+        <span aria-hidden>📅</span> <b>{longDate}</b>
+        <span className="dr-doc-sm">
+          {[r.weather && `Weather: ${r.weather}`, r.siteLocation && `Area: ${r.siteLocation}`, `Prepared by ${r.preparedBy}`].filter(Boolean).join(' · ')}
+          {r.submittedAt ? ` · submitted ${fmtDate(r.submittedAt.slice(0, 10))} ${new Date(r.submittedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' })}` : ' · not yet submitted'}
+        </span>
       </section>
       <section>
-        <h2>Construction accomplishments</h2>
+        <h2>
+          <span aria-hidden>👷</span> Manpower Attendance
+          <em>{manpowerTotal(r)} total</em>
+        </h2>
+        <Bullets items={team.map((x) => `${x.count} ${x.role}`)} />
+      </section>
+      <section>
+        <h2>
+          <span aria-hidden>🏗️</span> Work Accomplished Today
+        </h2>
         {r.activities.length ? (
-          <table className="dr-doc-table">
-            <thead>
-              <tr>
-                <th>Activity</th>
-                <th>Category</th>
-                <th>Work / accomplishment</th>
-                <th>Progress</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {r.activities.map((a, i) => (
-                <tr key={i}>
-                  <td>
-                    <b>{a.name || NP}</b>
-                    {a.remarks && <div className="dr-doc-sm">{a.remarks}</div>}
-                  </td>
-                  <td>{a.category || '—'}</td>
-                  <td>
-                    {a.workDescription && <div>{a.workDescription}</div>}
-                    {a.accomplishment && <div className="dr-doc-sm">{a.accomplishment}</div>}
-                    {!a.workDescription && !a.accomplishment && NP}
-                  </td>
-                  <td>{a.progress === null ? '—' : `${a.progress}%${a.progressApplied ? ' (applied)' : ''}`}</td>
-                  <td>{a.workStatus}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p className="dr-np">No construction activities were reported.</p>
-        )}
-      </section>
-      <section className="dr-doc-two">
-        <div>
-          <h2>Manpower summary</h2>
-          <dl className="dr-doc-grid">
-            <dt>Skilled workers</dt>
-            <dd>{r.manpower.skilled}</dd>
-            <dt>General workers</dt>
-            <dd>{r.manpower.general}</dd>
-            <dt>Subcontractor personnel</dt>
-            <dd>{r.manpower.subcontractor}</dd>
-            <dt>Other personnel</dt>
-            <dd>{r.manpower.other}</dd>
-            <dt>
-              <b>Total manpower</b>
-            </dt>
-            <dd>
-              <b>{manpowerTotal(r)}</b>
-            </dd>
-          </dl>
-        </div>
-        <div>
-          <h2>Equipment</h2>
-          {r.equipment.length ? (
-            <ul className="dr-doc-list">
-              {r.equipment.map((q, i) => (
+          <ul className="dr-doc-bul">
+            {r.activities.map((a, i) => {
+              const text = accomplishedItems({ activities: [a] })[0] || a.name;
+              return (
                 <li key={i}>
-                  {q.description} × {q.quantity || '—'} · {q.status}
-                  {q.remarks ? ` · ${q.remarks}` : ''}
+                  {text}
+                  {a.activityId && (
+                    <span className="dr-doc-sm">
+                      {' '}
+                      — tracker: {a.name}
+                      {a.progress !== null ? ` · ${a.progress}%${a.progressApplied ? ' (applied)' : ' reported'}` : ''} · {a.workStatus.toLowerCase()}
+                    </span>
+                  )}
                 </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="dr-np">None recorded.</p>
-          )}
-        </div>
-      </section>
-      <section>
-        <h2>Materials and deliveries</h2>
-        {r.materials.length ? (
-          <table className="dr-doc-table">
-            <thead>
-              <tr>
-                <th>Material</th>
-                <th>Quantity</th>
-                <th>Delivery date</th>
-                <th>Supplier</th>
-                <th>Remarks</th>
-              </tr>
-            </thead>
-            <tbody>
-              {r.materials.map((m, i) => (
-                <tr key={i}>
-                  <td>{m.description}</td>
-                  <td>
-                    {m.quantity || '—'} {m.unit}
-                  </td>
-                  <td>{m.deliveryDate ? fmtDate(m.deliveryDate) : '—'}</td>
-                  <td>{m.supplier || '—'}</td>
-                  <td>{m.remarks || '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              );
+            })}
+          </ul>
         ) : (
-          <p className="dr-np">No deliveries recorded.</p>
+          <Bullets items={[]} />
         )}
       </section>
       <section>
-        <h2>Site conditions and issues</h2>
-        <dl className="dr-doc-grid wide">
-          <dt>Site observations</dt>
-          <dd>{t(site.observations)}</dd>
-          <dt>Issues encountered</dt>
-          <dd>{t(site.issues)}</dd>
-          <dt>Delays</dt>
-          <dd>{t(site.delays)}</dd>
-          <dt>Safety concerns</dt>
-          <dd>{t(site.safety)}</dd>
-          <dt>Corrective actions</dt>
-          <dd>{t(site.corrective)}</dd>
-          <dt>Recommendations</dt>
-          <dd>{t(site.recommendations)}</dd>
-        </dl>
+        <h2>
+          <span aria-hidden>📦</span> Materials &amp; Equipment
+        </h2>
+        <Bullets items={materialItems(r)} />
       </section>
       <section>
-        <h2>Photo documentation · {r.photos.length}</h2>
+        <h2>
+          <span aria-hidden>⚠️</span> Site Issues / Concerns
+        </h2>
+        <Bullets items={concernItems(r)} />
+        {notes.length > 0 && (
+          <dl className="dr-doc-grid wide">
+            {notes.map((k) => (
+              <React.Fragment key={k}>
+                <dt>{k === 'observations' ? 'Site observations' : k === 'corrective' ? 'Corrective actions' : 'Recommendations'}</dt>
+                <dd>{t(site[k])}</dd>
+              </React.Fragment>
+            ))}
+          </dl>
+        )}
+      </section>
+      <section>
+        <h2>
+          <span aria-hidden>📸</span> B-Rolls / Videos
+        </h2>
+        <Bullets items={(r.bRolls || []).map((x) => x.trim()).filter(Boolean)} />
+      </section>
+      <section>
+        <h2>
+          <span aria-hidden>📋</span> Next Day Work Plan
+        </h2>
+        <Bullets items={(r.nextDayPlan || []).map((x) => x.trim()).filter(Boolean)} />
+      </section>
+      <section className="dr-du-status">
+        <h2>
+          <span aria-hidden>📊</span> Overall Status:{' '}
+          {st ? (
+            <>
+              <b className={`dr-du-st ${st.value === 'Delayed' ? 'bad' : st.value === 'On schedule' ? 'ok' : 'good'}`}>{st.value.toUpperCase()}</b>
+              <em>(Based on {st.basis === 'Gantt chart' ? 'Gantt Chart' : 'Site Assessment'})</em>
+            </>
+          ) : (
+            <em>Not recorded</em>
+          )}
+        </h2>
+        {st?.actualPct !== undefined && st.plannedPct !== undefined && (
+          <p className="dr-doc-sm">
+            Schedule as of {fmtDate(st.asOf)}: actual {st.actualPct}% · planned {st.plannedPct}%
+          </p>
+        )}
+      </section>
+      <section>
+        <h2>
+          <span aria-hidden>📸</span> Site Photos · {r.photos.length}
+        </h2>
         {r.photos.length ? (
           <div className="dr-doc-photos">
             {r.photos.map((p) => (
@@ -1633,7 +1697,7 @@ export const DailyReportDocument: React.FC<{
         </dl>
       </section>
       <footer className="dr-doc-f">
-        Convengers Bahay Build · Daily Construction Report {r.reference} · Generated {fmtDate(new Date().toISOString().slice(0, 10))}
+        Convengers Bahay Build · Daily Update {r.reference} · Generated {fmtDate(new Date().toISOString().slice(0, 10))}
       </footer>
     </article>
   );

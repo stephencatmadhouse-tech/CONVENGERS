@@ -14,6 +14,7 @@
 
 import type { DailyReport } from '../types/index.ts';
 import { addDays, workingDaysBetween } from './dates.ts';
+import { manpowerTotal } from './dailyReport.ts';
 
 export interface DailyReporter {
   uid: string;
@@ -64,7 +65,7 @@ export function workingDays(start: string, end: string): string[] {
   return out;
 }
 
-const total = (d: DailyReport) => d.manpower.skilled + d.manpower.general + d.manpower.subcontractor + d.manpower.other;
+const total = (d: DailyReport) => manpowerTotal(d);
 
 export function summarizeDailyReports(all: DailyReport[], start: string, end: string, today: string, reporter?: DailyReporter | null): DailySummary {
   const asOf = end < today ? end : today;

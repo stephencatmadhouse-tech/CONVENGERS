@@ -631,7 +631,25 @@ export interface DailyReport {
   equipment: { description: string; quantity: string; status: string; remarks: string }[];
   site: { observations: string; issues: string; delays: string; safety: string; corrective: string; recommendations: string };
   photos: DailyReportPhoto[];
+  /** Manpower attendance by role (e.g. 1 Foreman, 1 Warehouseman, 12 Workers). When present it is the source of the
+   *  manpower figures; `manpower` then holds the total under `other` for older readers. */
+  manpowerRoles?: { role: string; count: number }[];
+  /** B-rolls / videos captured today (descriptions). */
+  bRolls?: string[];
+  /** Next day work plan (one item per line). */
+  nextDayPlan?: string[];
+  /** Overall status of the project on the reporting date. */
+  overallStatus?: DailyOverallStatus;
   review?: { reviewedBy?: string; reviewedById?: string; reviewedAt?: string; remarks?: string };
   history: { at: string; by: string; to: DailyReportStatus; note?: string }[];
   localOnly?: boolean;
+}
+
+export interface DailyOverallStatus {
+  value: 'Ahead of schedule' | 'On schedule' | 'Delayed';
+  /** "Gantt chart" when taken from the schedule (planned vs actual), "Site assessment" when the preparer chose it. */
+  basis: 'Gantt chart' | 'Site assessment';
+  actualPct?: number;
+  plannedPct?: number;
+  asOf?: string;
 }

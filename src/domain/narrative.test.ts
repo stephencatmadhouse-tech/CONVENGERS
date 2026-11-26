@@ -62,7 +62,7 @@ test('narrative: daily report content comes from the submitted record only', () 
   assert.equal(facts.reports.length, 1, 'drafts are not used');
   const text = composeSections(facts).map((s) => s.text).join('\n');
   assert.match(text, /Tied column bars at grid A/);
-  assert.match(text, /Manpower recorded on Nov(ember)? 10, 2026: 16 workers \(skilled 6, general 9, subcontractor 0, other 1\)/);
+  assert.match(text, /Manpower recorded on Nov(ember)? 10, 2026: 16 workers \(6 Skilled workers, 9 General workers, 1 Other personnel\)/);
   assert.match(text, /Deformed bars 16mm, 120 pcs from Steel Depot/);
   assert.match(text, /Late delivery of form plywood/);
   assert.match(text, /Supplier asked to deliver by Nov 12/);
@@ -261,4 +261,58 @@ test('notifications: daily report items are listed before other notifications', 
   const firstOther = all.findIndex((n) => !['dcrApproval', 'dcrUpdate', 'dcrReview', 'dailyReport'].includes(n.type));
   const lastDcr = all.map((n) => n.type).lastIndexOf('dailyReport');
   assert.ok(lastDcr < firstOther, 'all daily report items before the rest');
+});
+
+// ---------------------------------------------------------------- Daily Update format
+import { dailyUpdateText, manpowerRolesOf, manpowerTotal, scheduleStatus, withRoleManpower, blankDailyReport } from './dailyReport.ts';
+
+test('daily update: message in the "Convengers Bahay Build Daily Update" format', () => {
+  const r = {
+    ...blankDailyReport('2026-11-19', { id: 'u1', name: 'Richard Solido' }),
+    reference: 'DCR-20261119-ABCD',
+    manpowerRoles: [
+      { role: 'Foreman', count: 1 },
+      { role: 'Warehouseman', count: 1 },
+      { role: 'Workers', count: 12 },
+      { role: 'Welder', count: 0 },
+    ],
+    activities: ['Plastering works.', 'Backfilling works.'].map((t) => ({ activityId: '', category: '', name: t, workDescription: '', accomplishment: '', progress: null, workStatus: 'In progress' as const, remarks: '' })),
+    bRolls: ['Backfilling works.'],
+    nextDayPlan: ['Continue plastering works.', 'Wall footing concrete pouring.'],
+    overallStatus: scheduleStatus(4.3, 5.6, '2026-11-19'),
+    photos: [{ fileId: 'F1', fileName: 'a.jpg', photoType: 'Activity photo', description: '', uploadStatus: 'uploaded' as const }],
+  };
+  const t = dailyUpdateText(r);
+  assert.equal(
+    t,
+    [
+      'Convengers Bahay Build Daily Update', '',
+      '📅 November 19, 2026', '',
+      '👷 Manpower Attendance:', '', '• 1 Foreman\n• 1 Warehouseman\n• 12 Workers', '',
+      '🏗️ Work Accomplished Today:', '', '• Plastering works.\n• Backfilling works.', '',
+      '📦 Materials & Equipment:', '', '• N/A', '',
+      '⚠️ Site Issues / Concerns:', '', '• N/A', '',
+      '📸 B-Rolls / Videos:', '', '• Backfilling works.', '',
+      '📋 Next Day Work Plan:', '', '• Continue plastering works.\n• Wall footing concrete pouring.', '',
+      '📊 Overall Status: DELAYED (Based on Gantt Chart)', '',
+      '📸 Site Photos (1)', '',
+      'Ref. DCR-20261119-ABCD',
+    ].join('\n')
+  );
+  assert.equal(manpowerTotal(r), 14);
+  assert.deepEqual(withRoleManpower(r).manpower, { skilled: 0, general: 0, subcontractor: 0, other: 14 });
+  // older reports keep their categories
+  assert.deepEqual(manpowerRolesOf({ manpower: { skilled: 6, general: 8, subcontractor: 0, other: 1 } }), [
+    { role: 'Skilled workers', count: 6 },
+    { role: 'General workers', count: 8 },
+    { role: 'Other personnel', count: 1 },
+  ]);
+  assert.equal(scheduleStatus(10, 10.2, 'x').value, 'On schedule');
+  assert.equal(scheduleStatus(12, 10, 'x').value, 'Ahead of schedule');
+});
+
+test('daily update: narrative uses the manpower roles', () => {
+  const rep = dcr({ manpowerRoles: [{ role: 'Foreman', count: 1 }, { role: 'Workers', count: 12 }] });
+  const facts = collectFacts({ type: 'daily', start: '2026-11-10', end: '2026-11-10' }, base([rep]));
+  assert.match(composeSections(facts).find((x) => x.key === 'resources')!.text, /13 workers \(1 Foreman, 12 Workers\)/);
 });

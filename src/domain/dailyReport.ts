@@ -5,7 +5,7 @@
  * Daily Construction Report — rules shared by the form, history, review and tests.
  */
 
-import type { DailyReport, DailyReportStatus, UserRole } from '../types/index.ts';
+import type { DailyOverallStatus, DailyReport, DailyReportStatus, UserRole } from '../types/index.ts';
 import { isValidIso } from './dates.ts';
 
 export const DR_PROJECT = { id: 'bahay-build', name: 'Convengers Bahay Build' };
@@ -73,6 +73,9 @@ export function blankDailyReport(date: string, user: { id: string; name: string 
     status: 'draft',
     activities: [],
     manpower: { skilled: 0, general: 0, subcontractor: 0, other: 0 },
+    manpowerRoles: DEFAULT_ROLES.map((role) => ({ role, count: 0 })),
+    bRolls: [],
+    nextDayPlan: [],
     materials: [],
     equipment: [],
     site: {
@@ -88,8 +91,6 @@ export function blankDailyReport(date: string, user: { id: string; name: string 
   };
 }
 
-export const manpowerTotal = (r: Pick<DailyReport, 'manpower'>) => r.manpower.skilled + r.manpower.general + r.manpower.subcontractor + r.manpower.other;
-
 /** Validation before SUBMISSION (drafts only need a valid date). */
 export function validateDailyReport(r: DailyReport, today: string): string[] {
   const e: string[] = [];
@@ -97,11 +98,14 @@ export function validateDailyReport(r: DailyReport, today: string): string[] {
   else if (r.date > today) e.push('The reporting date cannot be in the future.');
   if (r.projectId !== DR_PROJECT.id) e.push('The report is not linked to the project.');
   const hasContent = r.activities.length > 0 || !!r.site.observations.trim() || !!r.site.issues.trim();
-  if (!hasContent) e.push('Add at least one construction activity or a site observation.');
+  if (!hasContent) e.push('Add at least one item under Work Accomplished Today, or a site issue / observation.');
   r.activities.forEach((a, i) => {
-    if (!a.activityId) e.push(`Activity ${i + 1}: choose the construction activity.`);
-    if (!a.accomplishment.trim() && !a.workDescription.trim()) e.push(`Activity ${i + 1}: describe the work or the actual accomplishment.`);
-    if (a.progress !== null && (!Number.isFinite(a.progress) || a.progress < 0 || a.progress > 100)) e.push(`Activity ${i + 1}: progress must be between 0% and 100%.`);
+    if (!a.accomplishment.trim() && !a.workDescription.trim() && !a.name.trim()) e.push(`Work item ${i + 1}: describe the work accomplished.`);
+    if (a.progress !== null && (!Number.isFinite(a.progress) || a.progress < 0 || a.progress > 100)) e.push(`Work item ${i + 1}: progress must be between 0% and 100%.`);
+  });
+  (r.manpowerRoles || []).forEach((x) => {
+    if (!Number.isInteger(x.count) || x.count < 0 || x.count > 1000) e.push('Manpower counts must be whole numbers between 0 and 1,000.');
+    if (x.count > 0 && !x.role.trim()) e.push('Enter the role for every manpower count.');
   });
   const mp = r.manpower;
   (['skilled', 'general', 'subcontractor', 'other'] as const).forEach((k) => {
@@ -145,4 +149,121 @@ export function reviewActions(status: DailyReportStatus): { to: DailyReportStatu
       { to: 'returned', label: 'Return for Revision', needsRemarks: true },
     ];
   return [];
+}
+
+// ======================================================================
+// "Convengers Bahay Build Daily Update" format
+// ======================================================================
+
+export const MANPOWER_ROLES = ['Foreman', 'Warehouseman', 'Workers', 'Engineer', 'Safety officer', 'Mason', 'Carpenter', 'Steelman', 'Welder', 'Electrician', 'Plumber', 'Painter', 'Subcontractor'];
+export const DEFAULT_ROLES = ['Foreman', 'Warehouseman', 'Workers'];
+export const OVERALL_STATUSES: DailyOverallStatus['value'][] = ['Ahead of schedule', 'On schedule', 'Delayed'];
+
+/** Manpower by role: the role list when recorded, otherwise the older skilled / general / subcontractor / other counts. */
+export function manpowerRolesOf(r: Pick<DailyReport, 'manpower' | 'manpowerRoles'>): { role: string; count: number }[] {
+  if (r.manpowerRoles && r.manpowerRoles.length) return r.manpowerRoles.filter((x) => x.role.trim() && x.count > 0);
+  const m = r.manpower;
+  return (
+    [
+      ['Skilled workers', m.skilled],
+      ['General workers', m.general],
+      ['Subcontractor personnel', m.subcontractor],
+      ['Other personnel', m.other],
+    ] as [string, number][]
+  )
+    .filter(([, n]) => n > 0)
+    .map(([role, count]) => ({ role, count }));
+}
+
+/** Total headcount of a report (0 when none recorded). */
+export const manpowerTotal = (r: Pick<DailyReport, 'manpower' | 'manpowerRoles'>) =>
+  r.manpowerRoles && r.manpowerRoles.length ? r.manpowerRoles.reduce((s, x) => s + (x.count > 0 ? x.count : 0), 0) : r.manpower.skilled + r.manpower.general + r.manpower.subcontractor + r.manpower.other;
+
+/** Keep the older `manpower` field in step with the role list (total under `other`), for older readers and exports. */
+export function withRoleManpower(r: DailyReport): DailyReport {
+  if (!r.manpowerRoles || !r.manpowerRoles.length) return r;
+  return { ...r, manpower: { skilled: 0, general: 0, subcontractor: 0, other: manpowerTotal(r) } };
+}
+
+/** "Plastering works." bullets for the work accomplished today. */
+export function accomplishedItems(r: Pick<DailyReport, 'activities'>): string[] {
+  return r.activities
+    .map((a) => {
+      const text = (a.workDescription || '').trim() || (a.name || '').trim();
+      const extra = (a.accomplishment || '').trim();
+      return [text, extra && extra !== text ? `(${extra})` : ''].filter(Boolean).join(' ');
+    })
+    .filter(Boolean);
+}
+
+export const linesOf = (s?: string) =>
+  (s || '')
+    .split(/\n+/)
+    .map((x) => x.replace(/^[\s•\-*]+/, '').trim())
+    .filter(Boolean);
+
+/** Site issues / concerns bullets (issues, then delays and safety notes, labelled). */
+export function concernItems(r: Pick<DailyReport, 'site'>): string[] {
+  return [...linesOf(r.site.issues), ...linesOf(r.site.delays).map((x) => `Delay: ${x}`), ...linesOf(r.site.safety).map((x) => `Safety: ${x}`)];
+}
+
+/** Materials & equipment bullets. */
+export function materialItems(r: Pick<DailyReport, 'materials' | 'equipment'>): string[] {
+  return [
+    ...r.materials
+      .filter((m) => m.description.trim())
+      .map((m) => `${m.description.trim()}${m.quantity ? ` — ${m.quantity}${m.unit ? ` ${m.unit}` : ''}` : ''}${m.supplier ? ` (${m.supplier})` : ''}`),
+    ...r.equipment.filter((q) => q.description.trim()).map((q) => `${q.description.trim()}${q.quantity ? ` × ${q.quantity}` : ''}${q.status ? ` — ${q.status.toLowerCase()}` : ''}`),
+  ];
+}
+
+/** Overall status from the schedule (the same planned vs actual figures as the Gantt chart and dashboards). */
+export function scheduleStatus(actualPct: number, plannedPct: number, asOf: string): DailyOverallStatus {
+  const v = actualPct - plannedPct;
+  return { value: v < -0.5 ? 'Delayed' : v > 0.5 ? 'Ahead of schedule' : 'On schedule', basis: 'Gantt chart', actualPct: Math.round(actualPct * 10) / 10, plannedPct: Math.round(plannedPct * 10) / 10, asOf };
+}
+
+const longDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+/** The report as the "Convengers Bahay Build Daily Update" message (for Viber / Messenger / e-mail). */
+export function dailyUpdateText(r: DailyReport): string {
+  const list = (items: string[]) => (items.length ? items : ['N/A']).map((x) => `• ${x}`).join('\n');
+  const team = manpowerRolesOf(r).map((x) => `${x.count} ${x.role}`);
+  const uploaded = r.photos.filter((p) => p.uploadStatus === 'uploaded').length;
+  const st = r.overallStatus;
+  return [
+    'Convengers Bahay Build Daily Update',
+    '',
+    `📅 ${longDate(r.date)}`,
+    '',
+    '👷 Manpower Attendance:',
+    '',
+    list(team),
+    '',
+    '🏗️ Work Accomplished Today:',
+    '',
+    list(accomplishedItems(r)),
+    '',
+    '📦 Materials & Equipment:',
+    '',
+    list(materialItems(r)),
+    '',
+    '⚠️ Site Issues / Concerns:',
+    '',
+    list(concernItems(r)),
+    '',
+    '📸 B-Rolls / Videos:',
+    '',
+    list((r.bRolls || []).map((x) => x.trim()).filter(Boolean)),
+    '',
+    '📋 Next Day Work Plan:',
+    '',
+    list((r.nextDayPlan || []).map((x) => x.trim()).filter(Boolean)),
+    '',
+    st ? `📊 Overall Status: ${st.value.toUpperCase()} (Based on ${st.basis === 'Gantt chart' ? 'Gantt Chart' : 'Site Assessment'})` : '📊 Overall Status: Not recorded',
+    '',
+    `📸 Site Photos${uploaded ? ` (${uploaded})` : ''}`,
+    '',
+    `Ref. ${r.reference}`,
+  ].join('\n');
 }

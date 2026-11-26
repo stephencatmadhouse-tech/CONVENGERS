@@ -542,13 +542,16 @@ test('daily report: IDs are valid document IDs and references are readable', () 
 test('daily report validation: content, activity, manpower, materials, equipment, dates and failed photos', () => {
   const u = { id: 'u1', name: 'Site Engineer' };
   const r = blankDailyReport(TODAY, u);
-  assert.ok(validateDailyReport(r, TODAY).some((e) => /at least one construction activity/.test(e)));
+  assert.ok(validateDailyReport(r, TODAY).some((e) => /Work Accomplished Today/.test(e)));
   const act = { activityId: 'SC-1', category: 'Structural', name: 'Columns', workDescription: 'Formworks', accomplishment: '', progress: 40, workStatus: 'In progress' as const, remarks: '' };
   const ok = { ...r, activities: [act] };
   assert.deepEqual(validateDailyReport(ok, TODAY), []);
   assert.ok(validateDailyReport({ ...ok, date: '2099-01-01' }, TODAY).some((e) => /future/.test(e)));
-  assert.ok(validateDailyReport({ ...ok, activities: [{ ...act, activityId: '' }] }, TODAY).some((e) => /choose the construction activity/.test(e)));
-  assert.ok(validateDailyReport({ ...ok, activities: [{ ...act, workDescription: '' }] }, TODAY).some((e) => /describe the work/.test(e)));
+  // a work item does not have to be linked to a tracker activity
+  assert.deepEqual(validateDailyReport({ ...ok, activities: [{ ...act, activityId: '' }] }, TODAY), []);
+  assert.ok(validateDailyReport({ ...ok, activities: [{ ...act, workDescription: '', name: '' }] }, TODAY).some((e) => /describe the work/.test(e)));
+  assert.ok(validateDailyReport({ ...ok, manpowerRoles: [{ role: 'Workers', count: -2 }] }, TODAY).some((e) => /whole numbers/.test(e)));
+  assert.ok(validateDailyReport({ ...ok, manpowerRoles: [{ role: ' ', count: 3 }] }, TODAY).some((e) => /role/.test(e)));
   assert.ok(validateDailyReport({ ...ok, activities: [{ ...act, progress: 140 }] }, TODAY).some((e) => /between 0% and 100%/.test(e)));
   assert.ok(validateDailyReport({ ...ok, manpower: { ...ok.manpower, skilled: -1 } }, TODAY).some((e) => /whole numbers/.test(e)));
   assert.ok(validateDailyReport({ ...ok, manpower: { ...ok.manpower, general: 2.5 } }, TODAY).some((e) => /whole numbers/.test(e)));

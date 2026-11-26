@@ -25,6 +25,7 @@ import { progressPoint, completedIn, fmtVar } from './reports.ts';
 import { addDays, diffDays, fmtDate, fmtRange, isValidIso, monthRange, weekRange } from './dates.ts';
 import { plural } from '../utils/plural.ts';
 import { summarizeDailyReports, recordStamp, VERIFIED_DR, type DailyReporter, type DailySummary } from './dailyCompliance.ts';
+import { manpowerRolesOf } from './dailyReport.ts';
 
 // ---------------------------------------------------------------- types
 export type NarrativeType = 'daily' | 'weekly' | 'monthly' | 'milestone' | 'activity' | 'status' | 'summary';
@@ -233,7 +234,7 @@ export interface NarrativeFacts {
   milestones: RegisterActivity[];
   inspections: RegisterActivity[];
   /** Per reporting date, from the reports that recorded manpower (headcounts summed when a date has several reports). */
-  manpowerDays: { date: string; refs: string[]; total: number; skilled: number; general: number; subcontractor: number; other: number }[];
+  manpowerDays: { date: string; refs: string[]; total: number; roles: Record<string, number> }[];
   /** Reports in the period that recorded no manpower. */
   manpowerMissing: string[];
   manpowerPlans: ManpowerPlan[];
@@ -288,16 +289,13 @@ export function collectFacts(req: NarrativeRequest, src: NarrativeSources): Narr
   const byDate = new Map<string, NarrativeFacts['manpowerDays'][number]>();
   const manpowerMissing: string[] = [];
   reports.forEach((d) => {
-    const mp = d.manpower;
-    const total = mp.skilled + mp.general + mp.subcontractor + mp.other;
+    const roles = manpowerRolesOf(d);
+    const total = roles.reduce((x, r) => x + r.count, 0);
     if (!total) return void manpowerMissing.push(d.reference);
-    const cur = byDate.get(d.date) || { date: d.date, refs: [], total: 0, skilled: 0, general: 0, subcontractor: 0, other: 0 };
+    const cur = byDate.get(d.date) || { date: d.date, refs: [], total: 0, roles: {} };
     cur.refs.push(d.reference);
     cur.total += total;
-    cur.skilled += mp.skilled;
-    cur.general += mp.general;
-    cur.subcontractor += mp.subcontractor;
-    cur.other += mp.other;
+    roles.forEach((r) => (cur.roles[r.role] = (cur.roles[r.role] || 0) + r.count));
     byDate.set(d.date, cur);
   });
   const manpowerDays = [...byDate.values()].sort((x, y) => x.date.localeCompare(y.date));
@@ -581,8 +579,9 @@ export function composeSections(f: NarrativeFacts): NarrativeSection[] {
   if (f.manpowerDays.length) {
     const tot = f.manpowerDays.reduce((x, d) => x + d.total, 0);
     const peak = [...f.manpowerDays].sort((x, y) => y.total - x.total)[0];
-    const sum = (k: 'skilled' | 'general' | 'subcontractor' | 'other') => f.manpowerDays.reduce((x, d) => x + d[k], 0);
-    const breakdown = `skilled ${sum('skilled')}, general ${sum('general')}, subcontractor ${sum('subcontractor')}, other ${sum('other')}`;
+    const byRole = new Map<string, number>();
+    f.manpowerDays.forEach((d) => Object.entries(d.roles).forEach(([k, n]) => byRole.set(k, (byRole.get(k) || 0) + n)));
+    const breakdown = [...byRole.entries()].map(([k, n]) => `${n} ${k}`).join(', ');
     S.resources.push(
       f.manpowerDays.length === 1
         ? `Manpower recorded on ${fmtDate(peak.date)}: ${plural(tot, 'worker')} (${breakdown}), from ${list(peak.refs)}.`
@@ -629,6 +628,10 @@ export function composeSections(f: NarrativeFacts): NarrativeSection[] {
   S.nextPlan.push(`Scheduled for ${periodText(req.type === 'daily' ? 'daily' : 'weekly', nx.start, nx.end)}:`);
   if (nx.activities.length)
     S.nextPlan.push(list(nx.activities.slice(0, 15).map((r) => `${r.name} (${where(r)}, ${fmtRange(r.start, r.finish || r.start)}${r.owner ? `, ${r.owner}` : ''})`)) + (nx.activities.length > 15 ? `; and ${plural(nx.activities.length - 15, 'other activity', 'other activities')}.` : '.'));
+  if (req.type === 'daily' || req.type === 'activity')
+    f.reports
+      .filter((d) => (d.nextDayPlan || []).some((x) => x.trim()))
+      .forEach((d) => S.nextPlan.push(`Next day work plan in ${d.reference}: ${list((d.nextDayPlan || []).map((x) => x.trim().replace(/\.$/, '')).filter(Boolean))}.`));
   if (nx.events.length) S.nextPlan.push(`Calendar entries: ${list(nx.events.map((e) => `${e.title} (${fmtDate(e.date)}${e.owner ? `, ${e.owner}` : ''})`))}.`);
   if (nx.deliveries.length) S.nextPlan.push(`Expected deliveries: ${list(nx.deliveries.map((p) => `${p.material} (${fmtDate(p.expectedDelivery || p.requiredDate)})`))}.`);
   if (S.nextPlan.length === 1) S.nextPlan[0] += ` ${NR}`;

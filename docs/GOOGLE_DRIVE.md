@@ -106,15 +106,36 @@ Uploads come from:
 
 **Daily Construction Report** (Construction Operations, and *Daily Report* on the phone's bottom bar) has two tabs: **New Report** and **Report History**.
 
-**Form sections:**
-1. **Report information:** project, reporting date, reference number, weather, site location, prepared by, submission date.
-2. **Construction accomplishments:** one or more activities from the Master Project Tracker, each with category, work description, actual accomplishment, reported progress, work status and remarks.
-3. **Manpower:** skilled, general, subcontractor and other workers, with an automatic total.
-4. **Materials and deliveries:** description, quantity and unit, delivery date, supplier, remarks.
-5. **Equipment:** description, quantity, operational status, remarks.
-6. **Site conditions and issues:** observations, issues, delays, safety, corrective actions, recommendations.
-7. **Photo documentation:** Take Photo (camera) or Choose Photos (several at a time). Each photo has a type, related activity and description, plus a preview, progress, retry and remove.
-8. **Report sign-off:** prepared by, reviewed by, approval status, review remarks.
+**Form sections** — in the **Convengers Bahay Build Daily Update** format:
+1. **📅 Report information:** reporting date, reference number, weather, site location, prepared by, submission date.
+2. **👷 Manpower Attendance:** a count per role (Foreman, Warehouseman, Workers, …), with a total. Add or rename roles; roles with 0 are left out.
+3. **🏗️ Work Accomplished Today:** one line per item (e.g. "Plastering works."). An item can be linked to a Master Project Tracker activity to report its progress, which is applied only after approval.
+4. **📦 Materials & Equipment:** material deliveries (quantity, unit, supplier) and equipment (quantity, status). "N/A" when empty.
+5. **⚠️ Site Issues / Concerns:** one issue per line. Observations, delays, safety, corrective actions and recommendations are under *More site notes*.
+6. **📸 B-Rolls / Videos:** what was filmed today.
+7. **📋 Next Day Work Plan:** one item per line. **Suggest from Schedule** adds the tracker activities scheduled for the next working day ("Continue …" for work already under way).
+8. **📊 Overall Status:** taken from the schedule (Gantt chart: planned vs actual progress) — *Delayed*, *On schedule* or *Ahead of schedule*. The preparer can change it; it is then marked *Site assessment*.
+9. **📸 Site Photos:** Take Photo or Choose Photos, with type, related activity and description.
+10. **Report sign-off.**
+
+**Sharing with stakeholders:**
+* **Copy Daily Update** (form and report view) copies the report as the message below, ready to paste into Viber, Messenger or e-mail.
+* **Share** (phones) sends the message and, where the phone allows it, the photos.
+
+```
+Convengers Bahay Build Daily Update
+📅 November 19, 2026
+👷 Manpower Attendance:  • 1 Foreman • 1 Warehouseman • 12 Workers
+🏗️ Work Accomplished Today:  • Plastering works. • …
+📦 Materials & Equipment:  • N/A
+⚠️ Site Issues / Concerns:  • N/A
+📸 B-Rolls / Videos:  • Backfilling works.
+📋 Next Day Work Plan:  • Continue plastering works. • …
+📊 Overall Status: DELAYED (Based on Gantt Chart)
+📸 Site Photos (7)
+```
+
+The report view and the PDF use the same sections and order. Reports saved before this format (manpower as skilled / general / subcontractor / other) open in the new layout with their original counts.
 
 **Submission sequence.** "Successfully submitted" appears only after every step is confirmed:
 1. Validate the form.
